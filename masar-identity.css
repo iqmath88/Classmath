@@ -1,0 +1,154 @@
+/* =========================================================
+   مسار التعليم v2.8.12 — الهوية البصرية (طابع زجاجي ملكي)
+   مستوحاة من طابع منظومة نيبور: شريط علوي كحلي ملكي بخط ذهبي
+   رفيع، بطاقات زجاجية بيضاء على خلفية متدرجة من الأزرق الفاتح
+   إلى الكريمي، عناوين صغيرة ذهبية، ومربعات أيقونات ناعمة.
+   شعار مسار واسمه يبقيان كما هما.
+   كل الألوان رموز في الأعلى — لتعديل الهوية عدّل قسم "الرموز" فقط.
+   يُحمَّل بعد styles.css ولا يغيّر أي سلوك.
+   ========================================================= */
+
+/* ---------- الرموز (فاتح) ---------- */
+html:root{
+  --brand:#1F3C8F;            /* كحلي ملكي — اللون الرئيسي */
+  --brand-2:#2D52B0;          /* درجة أفتح للأزرار والتدرج */
+  --brand-deep:#1A2C66;       /* أعمق درجة (يسار الشريط العلوي) */
+  --brand-ink:#16224D;        /* نص العناوين */
+  --brand-soft:#E3E9F8;       /* خلفية العنصر النشط */
+  --brand-line:#C9D4EE;       /* حدود العنصر النشط */
+  --tile:#EEF2FB;             /* مربعات الأيقونات */
+  --tile-line:#D7DFF1;
+  --gold:#C9A146;             /* الإبراز الذهبي */
+  --gold-text:#A9822F;        /* نص ذهبي (عناوين صغيرة) */
+  --gold-line:#E2C57E;        /* الخط الذهبي الرفيع */
+  --cream:#F4ECDA;            /* شارات الحالة */
+  --cream-ink:#6A5322;
+  --glass-bg:rgba(255,255,255,.66);
+  --glass-edge:rgba(255,255,255,.9);
+  --glass-line:#D9E0F0;
+  --page-grad:linear-gradient(160deg,#DCE5F9 0%,#E9EEFA 38%,#F1EEE6 72%,#F3EAD6 100%);
+  --radius-xl:24px;--radius-lg:20px;--radius-md:13px;
+
+  /* ربط رموز التطبيق القديمة بالهوية */
+  --ink:var(--brand-ink);--paper:#E9EEFA;--card:#FFFFFF;--line:var(--glass-line);
+  --green:var(--brand);--green2:var(--brand-2);
+  --okbg:#E6F4EC;--badbg:#FBE9E8;
+  --grad:linear-gradient(90deg,var(--brand-deep) 0%,var(--brand) 55%,var(--brand-2) 100%);
+  --shadow:0 10px 30px rgba(31,60,143,.08);
+  --glass:var(--glass-bg);--glassLine:var(--glass-edge);--glassShadow:0 10px 30px rgba(31,60,143,.08);
+  --text-primary:var(--brand-ink);--text-secondary:#56607F;--text-muted:#8089A6;
+  --surface:#FFFFFF;--surface-soft:#F6F8FD;--control-bg:#FFFFFF;--control-border:#CCD6EC;
+  --focus-ring:rgba(45,82,176,.22);
+}
+/* ---------- الرموز (ليلي) ---------- */
+html.dark{
+  --brand:#8EA8F2;--brand-2:#3E64C8;--brand-deep:#0F1A40;--brand-ink:#E9EEFB;
+  --brand-soft:#1E2B5C;--brand-line:#33427A;--tile:#1A2550;--tile-line:#2E3B70;
+  --gold:#E0BE6C;--gold-text:#E0BE6C;--gold-line:#B8964A;--cream:#2E2716;--cream-ink:#F0D58F;
+  --glass-bg:rgba(20,29,66,.72);--glass-edge:rgba(255,255,255,.06);--glass-line:#2A376A;
+  --page-grad:linear-gradient(160deg,#0B1330 0%,#101A3E 55%,#17182A 100%);
+  --ink:#E9EEFB;--paper:#0D1636;--card:#141E45;--line:#2A376A;
+  --okbg:#12301F;--badbg:#3A1E24;
+  --grad:linear-gradient(90deg,#0F1A40 0%,#1A2C66 55%,#24408F 100%);
+  --shadow:0 10px 30px rgba(0,0,0,.35);
+  --glass:var(--glass-bg);--glassLine:var(--glass-edge);--glassShadow:0 10px 30px rgba(0,0,0,.35);
+  --text-primary:#E9EEFB;--text-secondary:#B4BEDB;--text-muted:#8792B8;
+  --surface:#141E45;--surface-soft:#18234F;--control-bg:#18234F;--control-border:#33427A;
+  --focus-ring:rgba(142,168,242,.3);
+}
+
+/* ---------- الخلفية ---------- */
+html body{background:var(--paper)}
+html body::before{background:radial-gradient(900px 520px at 20% 40%,rgba(120,150,235,.20),transparent 65%),var(--page-grad)!important}
+
+/* ---------- الشريط العلوي: كحلي ملكي + خط ذهبي ---------- */
+html .top{background:var(--grad)!important;border:0!important;border-bottom:2px solid var(--gold-line)!important;
+  border-radius:0 0 var(--radius-lg) var(--radius-lg)!important;box-shadow:0 10px 30px rgba(26,44,102,.22)!important}
+html .top .hBtn{background:rgba(255,255,255,.08)!important;border:1px solid rgba(255,255,255,.28)!important;color:#fff!important;border-radius:12px!important}
+html .top .year{background:rgba(255,255,255,.10)!important;color:#E7ECFA!important}
+html .top .appMiniName{color:var(--gold-line)!important;font-weight:800}
+html .top .schoolName,html .top .schoolName:disabled{-webkit-text-fill-color:#fff!important;color:#fff!important;opacity:1!important;background:transparent!important;border-bottom-color:rgba(255,255,255,.3)!important}
+html .headerBrandIcon{border-radius:12px;box-shadow:0 4px 14px rgba(0,0,0,.25)}
+
+/* ---------- البطاقات الزجاجية ---------- */
+html .card,html .lessonCard,html .qaBtn,html .behavRow,html .subCard,html .preBox,html .instCfg,
+html .lectureCard,html .eduStats>div,html .projectCard,html .blockEditor,html .blockPalette,
+html .editorTopbar,html .previewToolbar,html .lectureInfoPanel,html .propertiesPanel,
+html .briefCard,html .eduHero{
+  background:var(--glass-bg)!important;border:1px solid var(--glass-line)!important;border-radius:var(--radius-lg)!important;
+  box-shadow:inset 0 1px 0 var(--glass-edge),var(--shadow)!important;
+  -webkit-backdrop-filter:blur(14px) saturate(1.2)!important;backdrop-filter:blur(14px) saturate(1.2)!important}
+
+/* بطاقة الترحيب والبطاقة البطولية: زجاج فاتح، خط ذهبي علوي، نص كحلي */
+html .briefCard,html .eduHero{border-top:2px solid var(--gold-line)!important;border-radius:var(--radius-xl)!important;color:var(--brand-ink)!important}
+html .briefHead,html .eduHero h2{color:var(--brand-ink)!important}
+html .briefList,html .eduHero p{color:var(--text-secondary)!important}
+html .briefList b,html .briefCard b{color:var(--brand)!important}
+html .eduEyebrow{color:var(--gold-text)!important}
+html .eduEyebrow::before{content:"✦ ";color:var(--gold)}
+
+/* الأرقام */
+html .card .num{color:var(--brand)!important}
+html .card .lbl{color:var(--text-secondary)!important}
+html .card.big{background:var(--glass-bg)!important;border:1px solid var(--glass-line)!important;border-top:2px solid var(--gold-line)!important}
+html .card.big::before,html .card.big::after{display:none!important}
+html .card.big .num{color:var(--brand)!important}
+html .card.big .lbl{color:var(--text-secondary)!important}
+
+/* العناوين */
+html .h,html .h2{color:var(--brand-ink)!important}
+html .h2::before,html .h2::after{background:var(--glass-line)!important}
+
+/* مربعات الأيقونات */
+html .qaBtn{color:var(--brand-ink)!important}
+html .qaIcon,html .lessonNum{background:var(--tile)!important;color:var(--brand)!important;border:1px solid var(--tile-line)!important;border-radius:14px!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.8)}
+html .lessonMeta,html .ttTime{color:var(--text-secondary)!important}
+html .ttTime{font-size:11px;white-space:nowrap}
+html .att{border-radius:12px!important;background:var(--tile)!important;border:1px solid var(--tile-line)!important;color:var(--brand)!important}
+
+/* ---------- الأزرار ---------- */
+html .btn,html .eduPrimary{background:var(--brand-2)!important;color:#fff!important;border:0!important;border-radius:var(--radius-md)!important;
+  box-shadow:0 8px 18px rgba(31,60,143,.25)!important}
+html .btn.ghost,html .eduSecondary,html .eduGhost{background:rgba(255,255,255,.7)!important;color:var(--brand-ink)!important;
+  border:1px solid var(--control-border)!important;box-shadow:none!important;border-radius:var(--radius-md)!important}
+html.dark .btn.ghost,html.dark .eduSecondary,html.dark .eduGhost{background:var(--surface-soft)!important}
+/* أزرار ثانوية داخل البطاقة البطولية (كانت بيضاء على خلفية داكنة) */
+html body .eduHero .eduGhost,html body .eduHero .eduSecondary{background:rgba(255,255,255,.75)!important;color:var(--brand-ink)!important;-webkit-text-fill-color:var(--brand-ink)!important;border:1px solid var(--control-border)!important}
+html.dark body .eduHero .eduGhost,html.dark body .eduHero .eduSecondary{background:var(--surface-soft)!important}
+
+/* ---------- شريط التبويبات السفلي ---------- */
+html .tabs{background:var(--glass-bg)!important;border:1px solid var(--glass-line)!important;border-radius:var(--radius-xl)!important;
+  box-shadow:inset 0 1px 0 var(--glass-edge),0 10px 30px rgba(31,60,143,.12)!important;
+  -webkit-backdrop-filter:blur(16px) saturate(1.2)!important;backdrop-filter:blur(16px) saturate(1.2)!important}
+html .tab{color:var(--text-muted)!important}
+html .tab.on{color:var(--brand)!important;font-weight:800}
+html .tab.on::after{content:""!important;display:block!important;background:var(--gold)!important;height:5px!important;width:5px!important;border-radius:50%!important;left:50%!important;right:auto!important;top:auto!important;bottom:2px!important;transform:translateX(-50%)}
+html .tab.on .ticon{background:var(--brand-soft)!important;box-shadow:inset 0 0 0 1px var(--brand-line)!important}
+
+/* ---------- التنبيهات وشارات الحالة ---------- */
+html .notice{background:var(--cream)!important;border:1px solid #E8D9B4!important;color:var(--cream-ink)!important;border-radius:var(--radius-md)!important}
+html.dark .notice{border-color:#4A3E20!important}
+html .bChip.p{background:var(--brand-soft)!important;color:var(--brand)!important}
+
+/* ---------- النوافذ والحقول ---------- */
+html .sheet{border-radius:var(--radius-xl) var(--radius-xl) 0 0!important;background:var(--card)!important;border-top:2px solid var(--gold-line)!important}
+@media (min-width:700px){html .sheet{border-radius:var(--radius-xl)!important}}
+html .form input,html .form select,html .form textarea,html .lectureInfoPanel input{
+  border-radius:12px!important;border:1px solid var(--control-border)!important;background:var(--control-bg)!important;color:var(--text-primary)!important}
+html .form input:focus,html .form select:focus,html .form textarea:focus{outline:0;box-shadow:0 0 0 4px var(--focus-ring)!important;border-color:var(--brand-2)!important}
+html .toast{background:var(--brand-ink)!important;color:#fff!important;border:1px solid var(--gold-line)}
+html.dark .toast{background:#E9EEFB!important;color:#16224D!important}
+
+/* ---------- الجدول الذكي ---------- */
+html .smartAuthorTable th{background:var(--brand-soft)!important;color:var(--brand-ink)!important}
+html .smartAuthorTable td,html .smartAuthorTable th{border-color:var(--glass-line)!important}
+html .smartAuthorTable td:focus,html .smartAuthorTable th:focus{outline:2px solid var(--brand-2);outline-offset:-2px}
+html .smartTablePrint th{background:#E3E9F8!important;color:#16224D!important}
+html .visualObjectToolbar button{background:rgba(255,255,255,.75);color:var(--brand-ink);border:1px solid var(--control-border);border-radius:10px;padding:6px 10px;font:inherit;font-weight:700;cursor:pointer}
+html .visualObjectToolbar button:hover{background:var(--brand-soft)}
+html.dark .visualObjectToolbar button{background:var(--surface-soft)}
+html .visualObjectToolbar input[type=number]{border:1px solid var(--control-border);border-radius:10px;padding:5px 8px;background:var(--control-bg);color:var(--text-primary);width:64px}
+html input[type=checkbox],html input[type=range]{accent-color:var(--brand-2)}
+
+/* شاشة البداية */
+html #splash{background:var(--grad)!important}
