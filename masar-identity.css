@@ -152,3 +152,7 @@ html input[type=checkbox],html input[type=range]{accent-color:var(--brand-2)}
 
 /* شاشة البداية */
 html #splash{background:var(--grad)!important}
+
+/* v2.8.13: رموز لوحة المعادلات تُعرض LTR دائمًا (منع انعكاس ≤ ≥ في سياق RTL) */
+html .eqSymbols .eqSymbolMath{direction:ltr;unicode-bidi:isolate;display:inline-block}
+html .eqSymbols .eqSymbolMath .katex{direction:ltr}

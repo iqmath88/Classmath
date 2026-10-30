@@ -1,7 +1,7 @@
 {
   "name": "مسار التعليم — منصة المعلم",
   "short_name": "مسار التعليم",
-  "description": "مسار التعليم v2.8.12 — تصميم المحاضرات وإدارة الطلبة والاختبارات",
+  "description": "مسار التعليم v2.8.13 — تصميم المحاضرات وإدارة الطلبة والاختبارات",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
@@ -27,6 +27,6 @@
       "purpose": "any maskable"
     }
   ],
-  "version": "2.8.12",
+  "version": "2.8.13",
   "id": "masar-education-v1"
 }

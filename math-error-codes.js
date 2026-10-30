@@ -22,24 +22,24 @@
   });
 
   const DEFAULT_MESSAGES=Object.freeze({
-    [CODES.EMPTY_EXPRESSION]:"Expression is empty.",
-    [CODES.UNKNOWN_SYMBOL]:"Unknown mathematical symbol.",
-    [CODES.INVALID_NUMBER]:"Invalid numeric literal.",
-    [CODES.UNEXPECTED_TOKEN]:"Unexpected token.",
-    [CODES.MISSING_CLOSING_BRACKET]:"Missing closing bracket.",
-    [CODES.EMPTY_GROUP]:"Empty groups are not allowed.",
-    [CODES.EMPTY_FUNCTION_ARGUMENT]:"Function requires an argument.",
-    [CODES.INVALID_FUNCTION_ARGUMENT_COUNT]:"Function received an invalid number of arguments.",
-    [CODES.INVALID_AST]:"The expression tree is invalid.",
-    [CODES.PARSE_ERROR]:"The expression could not be parsed.",
-    [CODES.TOKENIZE_ERROR]:"The expression contains an invalid token.",
-    [CODES.DIVISION_BY_ZERO]:"Division by zero is undefined.",
-    [CODES.ZERO_TO_NEGATIVE_POWER]:"Zero cannot be raised to a negative power.",
-    [CODES.REAL_DOMAIN_WARNING]:"The expression is outside the real-number domain.",
-    [CODES.INDETERMINATE_FORM_WARNING]:"The expression is indeterminate in this context.",
-    [CODES.CHAINED_RELATION_WARNING]:"The chained relation may be ambiguous.",
-    [CODES.INTERNAL_ERROR]:"An internal mathematics-engine error occurred."
+    [CODES.EMPTY_EXPRESSION]:"المعادلة فارغة.",
+    [CODES.UNKNOWN_SYMBOL]:"رمز رياضي غير معروف.",
+    [CODES.INVALID_NUMBER]:"صيغة العدد غير صحيحة.",
+    [CODES.UNEXPECTED_TOKEN]:"رمز في غير موضعه — ربما ينقص حدّ بعد العملية.",
+    [CODES.MISSING_CLOSING_BRACKET]:"قوس غير مغلق — أضف القوس المقابل.",
+    [CODES.EMPTY_GROUP]:"قوسان فارغان — اكتب شيئًا داخلهما.",
+    [CODES.EMPTY_FUNCTION_ARGUMENT]:"الدالة تحتاج إلى مُدخل بين قوسين.",
+    [CODES.INVALID_FUNCTION_ARGUMENT_COUNT]:"عدد مُدخلات الدالة غير صحيح.",
+    [CODES.INVALID_AST]:"بنية المعادلة غير صحيحة.",
+    [CODES.PARSE_ERROR]:"تعذّر قراءة المعادلة.",
+    [CODES.TOKENIZE_ERROR]:"المعادلة تحتوي رمزًا غير صالح.",
+    [CODES.DIVISION_BY_ZERO]:"القسمة على صفر غير معرّفة.",
+    [CODES.ZERO_TO_NEGATIVE_POWER]:"لا يجوز رفع الصفر لأس سالب.",
+    [CODES.REAL_DOMAIN_WARNING]:"المعادلة خارج مجال الأعداد الحقيقية.",
+    [CODES.INDETERMINATE_FORM_WARNING]:"المعادلة كمية غير معيّنة في هذا السياق.",
+    [CODES.CHAINED_RELATION_WARNING]:"تسلسل العلاقات قد يكون ملتبسًا.",
+    [CODES.INTERNAL_ERROR]:"حدث خطأ داخلي في محرك الرياضيات."
   });
 
-  global.Masar.register("math.errorCodes",Object.freeze({version:"1.1.0",CODES,DEFAULT_MESSAGES}));
+  global.Masar.register("math.errorCodes",Object.freeze({version:"1.2.0-ar",CODES,DEFAULT_MESSAGES}));
 })(window);
