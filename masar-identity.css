@@ -257,11 +257,11 @@ html.dark .warnNotice{background:#3A1E24!important;border-color:#5A2C33!importan
 }
 
 /* لا يغطي الشريط السفلي آخر المحتوى */
-@media (max-width:1023px){html body{padding-bottom:calc(112px + env(safe-area-inset-bottom))!important}}
+@media screen and (max-width:1023px){html body{padding-bottom:calc(112px + env(safe-area-inset-bottom))!important}}
 
 /* ---------- الآيباد بالعرض: قائمة جانبية بدل الشريط السفلي ---------- */
 @media (min-width:1024px){
-  html body{padding-bottom:24px!important}
+
   html .tabs{position:fixed!important;top:96px!important;bottom:auto!important;right:16px!important;left:auto!important;transform:none!important;
     width:96px!important;max-width:none!important;flex-direction:column!important;gap:4px;padding:10px 8px!important;border-radius:var(--radius-xl)!important;max-height:calc(100vh - 116px);overflow-y:auto}
   html .tab{flex:0 0 auto!important;padding:10px 4px!important;border-radius:14px;font-size:11px}
@@ -339,3 +339,7 @@ html .storageWarn b{font-size:14px}.storageWarn span{flex:1 1 240px;font-size:13
 html.dark .storageWarn{background:#3A1E24;border-color:#5A2C33;color:#F7B9B9}
 html #lectureSaveState.saveFailed{color:#B3453F;font-weight:800}
 @media (max-width:1100px){html .richToolbar .rtLbl{display:none}}
+
+/* v2.8.17: مسافة أسفل الصفحة على الشاشة فقط — كانت تُطبَّق عند الطباعة فتضيف صفحة فارغة لكل PDF */
+@media screen and (min-width:1024px){html body{padding-bottom:24px!important}}
+@media print{html body{padding:0!important;margin:0!important}}

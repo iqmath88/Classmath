@@ -1,4 +1,4 @@
-const CACHE = "masar-education-2-8-16-editor-core";
+const CACHE = "masar-education-2-8-17-print-fix";
 const ASSETS = [
   "./",
   "./index.html",

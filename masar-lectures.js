@@ -613,7 +613,7 @@ function lectureBlockHTMLUnsafe(l,b,i){
   default: content=richPreview(b,'content');
  }
  const type=String(b.type||'text'),smart=SMART_TYPES.has(type),label=BLOCK_TYPES[type]?.label||'عنصر';
- const title=((smart&&ensureSmart(b).autoNumber!==false?smartLabel(l,b,i)+' — ':'')+(b.title||label));
+ const numbered=smart&&ensureSmart(b).autoNumber!==false,ownTitle=String(b.title||'').trim();const title=numbered?(ownTitle&&ownTitle!==label?smartLabel(l,b,i)+' — '+ownTitle:smartLabel(l,b,i)):(ownTitle||label);// v2.8.17: لا تكرار «تعريف 1 — تعريف»
  const solution=((b.solutionHtml||b.solution)&&(!smart||ensureSmart(b).showSolution!==false))?'<div class="lectureSolution"><b>الحل:</b>'+richPreview(b,'solution')+'</div>':'';
  const lines=smart?ensureSmart(b).answerLines:0;
  return '<section data-lecture-block="'+i+'" style="'+style+'" class="lectureBlock type-'+safe(type)+(b.pageBreakBefore?' forcePageBreak':'')+(b.keepTogether!==false?' keepTogether':'')+(d.hideTitle?' hideBlockTitle':'')+'"><div class="lectureBlockTitle"><span>'+(BLOCK_TYPES[type]?.icon||'•')+'</span><h2>'+safe(title)+'</h2></div>'+(smart?smartPrintMetaHTML(b):'')+'<div class="lectureBlockContent">'+content+solution+(smart&&lines>0?'<div class="answerLines">'+Array.from({length:lines},()=>'<span></span>').join('')+'</div>':'')+'</div></section>';
