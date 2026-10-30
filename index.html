@@ -4,27 +4,27 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#1F3C8F">
-<meta name="application-version" content="2.8.15">
+<meta name="application-version" content="2.8.16">
 <meta name="architecture-stage" content="sprint1-step3">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icon-180.png">
 <link rel="icon" type="image/png" href="favicon.png">
-<link rel="preload" href="fonts/Tajawal-Regular.woff" as="font" type="font/woff" crossorigin>
-<link rel="preload" href="fonts/Tajawal-Bold.woff" as="font" type="font/woff" crossorigin>
+<link rel="preload" href="Tajawal-Regular.woff" as="font" type="font/woff" crossorigin>
+<link rel="preload" href="Tajawal-Bold.woff" as="font" type="font/woff" crossorigin>
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="نيبور كلاس">
 <title>نيبور كلاس — منصة المعلم</title>
 
-<link rel="preload" href="katex/fonts/KaTeX_Main-Regular.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="preload" href="katex/fonts/KaTeX_Math-Italic.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="preload" href="katex/fonts/KaTeX_Size1-Regular.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="preload" href="katex/fonts/KaTeX_Size2-Regular.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="preload" href="katex/fonts/KaTeX_Size3-Regular.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="preload" href="katex/fonts/KaTeX_Size4-Regular.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="katex/katex.min.css">
-<link rel="stylesheet" href="styles.css?v=2.8.15">
-<link rel="stylesheet" href="masar-identity.css?v=2.8.15">
+<link rel="preload" href="KaTeX_Main-Regular.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="KaTeX_Math-Italic.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="KaTeX_Size1-Regular.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="KaTeX_Size2-Regular.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="KaTeX_Size3-Regular.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="KaTeX_Size4-Regular.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="katex.min.css">
+<link rel="stylesheet" href="styles.css?v=2.8.16">
+<link rel="stylesheet" href="masar-identity.css?v=2.8.16">
 </head>
 <body>
 <div id="splash">
@@ -50,38 +50,38 @@
 <div id="printArea"></div>
 <input type="file" id="importFile" accept=".json" style="display:none">
 
-<script src="src/shared/namespace.js?v=s1.3"></script>
-<script src="src/core/event-bus.js?v=s1.3"></script>
-<script src="src/core/storage-service.js?v=s1.3"></script>
-<script src="src/core/theme-manager.js?v=s1.3"></script>
-<script src="src/ui/component-registry.js?v=s1.3"></script>
-<script src="src/editor/block-registry.js?v=s1.3"></script>
-<script src="src/editor/auto-direction.js?v=2.8.15"></script>
-<script src="src/math/token-types.js?v=s2.1"></script>
-<script src="src/math/tokenizer.js?v=s2.2"></script>
-<script src="src/math/ast.js?v=s2.2"></script>
-<script src="src/math/parser.js?v=s2.2"></script>
-<script src="src/math/visitors.js?v=s2.3p1"></script>
-<script src="src/math/error-codes.js?v=s2.3p1"></script>
-<script src="src/math/diagnostics.js?v=s2.3p1"></script>
-<script src="src/math/recovery.js?v=s2.3p2"></script>
-<script src="src/math/semantic-rules.js?v=s2.3p2"></script>
-<script src="src/math/validator.js?v=s2.3p2"></script>
-<script src="src/math/live-diagnostics.js?v=s2.3p3"></script>
-<script src="src/math/api.js?v=s2.3p2"></script>
-<script src="katex/katex.min.js?v=2.8.15"></script>
-<script src="masar-core.js?v=2.8.15"></script>
-<script src="masar-icons.js?v=2.8.15"></script>
-<script src="masar-storage.js?v=2.8.15"></script>
-<script src="masar-print-engine.js?v=2.8.15"></script>
-<script src="masar-dashboard.js?v=2.8.15"></script>
-<script src="masar-document-core.js?v=2.8.15"></script>
-<script src="masar-lectures.js?v=2.8.15"></script>
-<script src="masar-students.js?v=2.8.15"></script>
-<script src="masar-exams.js?v=2.8.15"></script>
-<script src="masar-grades-attendance.js?v=2.8.15"></script>
-<script src="masar-engagement.js?v=2.8.15"></script>
-<script src="src/compatibility/legacy-bridge.js?v=s1.3"></script>
-<script src="masar-app-shell.js?v=2.8.15"></script>
+<script src="shared-namespace.js?v=s1.3"></script>
+<script src="core-event-bus.js?v=s1.3"></script>
+<script src="core-storage-service.js?v=s1.3"></script>
+<script src="core-theme-manager.js?v=s1.3"></script>
+<script src="ui-component-registry.js?v=s1.3"></script>
+<script src="editor-block-registry.js?v=s1.3"></script>
+<script src="editor-auto-direction.js?v=2.8.16"></script>
+<script src="math-token-types.js?v=s2.1"></script>
+<script src="math-tokenizer.js?v=s2.2"></script>
+<script src="math-ast.js?v=s2.2"></script>
+<script src="math-parser.js?v=s2.2"></script>
+<script src="math-visitors.js?v=s2.3p1"></script>
+<script src="math-error-codes.js?v=s2.3p1"></script>
+<script src="math-diagnostics.js?v=s2.3p1"></script>
+<script src="math-recovery.js?v=s2.3p2"></script>
+<script src="math-semantic-rules.js?v=s2.3p2"></script>
+<script src="math-validator.js?v=s2.3p2"></script>
+<script src="math-live-diagnostics.js?v=s2.3p3"></script>
+<script src="math-api.js?v=s2.3p2"></script>
+<script src="katex.min.js?v=2.8.16"></script>
+<script src="masar-core.js?v=2.8.16"></script>
+<script src="masar-icons.js?v=2.8.16"></script>
+<script src="masar-storage.js?v=2.8.16"></script>
+<script src="masar-print-engine.js?v=2.8.16"></script>
+<script src="masar-dashboard.js?v=2.8.16"></script>
+<script src="masar-document-core.js?v=2.8.16"></script>
+<script src="masar-lectures.js?v=2.8.16"></script>
+<script src="masar-students.js?v=2.8.16"></script>
+<script src="masar-exams.js?v=2.8.16"></script>
+<script src="masar-grades-attendance.js?v=2.8.16"></script>
+<script src="masar-engagement.js?v=2.8.16"></script>
+<script src="compatibility-legacy-bridge.js?v=s1.3"></script>
+<script src="masar-app-shell.js?v=2.8.16"></script>
 </body>
 </html>

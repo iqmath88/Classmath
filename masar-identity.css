@@ -291,3 +291,51 @@ html.dark .warnNotice{background:#3A1E24!important;border-color:#5A2C33!importan
 html header.top,html .top{width:100%!important;max-width:none!important;margin:0!important;margin-inline:0!important;border-radius:0!important;left:0;right:0}
 html .top{padding-inline:max(16px,env(safe-area-inset-left),env(safe-area-inset-right))!important}
 @media (min-width:1024px){html .top{padding-inline:28px!important}}
+
+/* =========================================================
+   v2.8.16 — محرر النصوص
+   ========================================================= */
+/* المحاذاة التي يختارها المعلم تتغلب على محاذاة الاتجاه التلقائي */
+html .richContent [data-align="center"],html .lectureBlockContent [data-align="center"]{text-align:center!important}
+html .richContent [data-align="right"],html .lectureBlockContent [data-align="right"]{text-align:right!important}
+html .richContent [data-align="left"],html .lectureBlockContent [data-align="left"]{text-align:left!important}
+html .richContent [data-align="justify"],html .lectureBlockContent [data-align="justify"]{text-align:justify!important}
+
+/* شريط أدوات مضغوط: سطر رئيسي + سطر «المزيد» */
+html .richToolbar{display:flex!important;flex-direction:column!important;gap:6px!important;padding:8px!important;flex-wrap:nowrap!important}
+html .richToolbar .rtRow{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+html .richToolbar .rtRow[hidden]{display:none}
+html .richToolbar .rtGroup{display:inline-flex;align-items:center;gap:2px;padding:2px;border-radius:12px;background:var(--surface-soft);border:1px solid var(--glass-line)}
+html .richToolbar button,html .richToolbar .richColor{min-width:36px;height:36px;padding:0 9px;display:inline-flex;align-items:center;justify-content:center;gap:5px;border:0;border-radius:10px;background:transparent;color:var(--brand-ink);font:inherit;font-weight:700;font-size:13px;cursor:pointer}
+html .richToolbar button:hover{background:var(--brand-soft)}
+html .richToolbar button .ic{width:18px;height:18px}
+html .richToolbar .rtSigma{font-size:17px;line-height:1;font-family:'Times New Roman',serif}
+html .richToolbar .rtInsert button{color:var(--brand)}
+html .richToolbar .rtMoreBtn{margin-inline-start:auto;border:1px solid var(--glass-line);background:var(--card)}
+html .richToolbar .rtMoreBtn.on{background:var(--brand-soft);border-color:var(--brand-line)}
+html .richToolbar select{height:36px;border-radius:10px;border:1px solid var(--control-border);background:var(--control-bg);color:var(--text-primary);padding:0 8px;font:inherit;font-size:13px}
+html .richToolbar .richDirectionStatus{font-size:11px;color:var(--text-secondary);padding:0 6px}
+html .richToolbar .toolbarDivider{display:none}
+@media (max-width:700px){
+  html .richToolbar .rtLbl{display:none}
+  html .richToolbar .rtRow.rtMain{flex-wrap:wrap}
+  html .richToolbar select{max-width:96px}
+}
+
+/* المعادلة المستقلة داخل فقرة (span بعرض كامل) */
+html .richContent span.richEquationDisplay,html .lectureBlockContent span.eduMathDisplay{display:block!important}
+
+/* استرجاع المسودة */
+html .draftBanner{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:14px 16px;margin-bottom:14px;border-radius:var(--radius-lg);
+  background:var(--cream);border:1px solid #E8D9B4;border-inline-start:4px solid var(--gold)}
+.draftIc{display:inline-flex;width:40px;height:40px;border-radius:12px;align-items:center;justify-content:center;background:var(--card);color:var(--gold-text);border:1px solid #E8D9B4}
+.draftIc .ic{width:20px;height:20px}
+.draftText{flex:1 1 220px;display:flex;flex-direction:column;gap:2px}
+.draftText b{color:var(--cream-ink);font-size:15px}.draftText span{color:var(--cream-ink);opacity:.85;font-size:13px}
+
+/* تنبيه امتلاء التخزين */
+html .storageWarn{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:12px 16px;margin:0 0 12px;border-radius:var(--radius-lg);background:#FDECEC;border:1px solid #F3C7C4;color:#8A2E2E}
+html .storageWarn b{font-size:14px}.storageWarn span{flex:1 1 240px;font-size:13px}
+html.dark .storageWarn{background:#3A1E24;border-color:#5A2C33;color:#F7B9B9}
+html #lectureSaveState.saveFailed{color:#B3453F;font-weight:800}
+@media (max-width:1100px){html .richToolbar .rtLbl{display:none}}

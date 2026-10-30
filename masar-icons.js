@@ -5,6 +5,17 @@
 (function(global){
 "use strict";
 const P={
+  table:'<rect x="3.5" y="4.5" width="17" height="15" rx="2.5"/><path d="M3.5 9.5h17M3.5 14.5h17M9.5 9.5v10M14.5 9.5v10"/>',
+  image:'<rect x="3.5" y="4.5" width="17" height="15" rx="2.5"/><circle cx="9" cy="10" r="1.8"/><path d="M20.5 16l-5-5-8.5 8.5"/>',
+  graph:'<path d="M4 20.5V3.5M4 20.5h16.5"/><path d="M6.5 17c2.5-.2 3.6-9.5 6.5-9.5s3.5 6 6.5 6"/>',
+  more:'<circle cx="6" cy="12" r="1.3"/><circle cx="12" cy="12" r="1.3"/><circle cx="18" cy="12" r="1.3"/>',
+  alignRight:'<path d="M20 6H4M20 10h-10M20 14H4M20 18h-10"/>',
+  alignCenter:'<path d="M20 6H4M17 10H7M20 14H4M17 18H7"/>',
+  alignLeft:'<path d="M4 6h16M4 10h10M4 14h16M4 18h10"/>',
+  listBullet:'<path d="M9 7h11M9 12h11M9 17h11"/><circle cx="4.8" cy="7" r=".9"/><circle cx="4.8" cy="12" r=".9"/><circle cx="4.8" cy="17" r=".9"/>',
+  listNumber:'<path d="M10 7h10M10 12h10M10 17h10"/><path d="M4 5.5l1.3-.8V9M3.8 14.2c.3-.7 1.9-.8 1.9.3 0 .9-1.9 1.6-1.9 2.5h2M3.8 9h2.4"/>',
+  eraser:'<path d="M8.5 19.5l-4-4a1.6 1.6 0 0 1 0-2.3l8.7-8.7a1.6 1.6 0 0 1 2.3 0l4 4a1.6 1.6 0 0 1 0 2.3l-7 7z"/><path d="M8.5 19.5h11M9.7 9.2l5.6 5.6"/>',
+  undo:'<path d="M9 7L4.5 11.5 9 16"/><path d="M4.5 11.5H14a5.5 5.5 0 0 1 0 11h-2"/>',
   home:'<rect x="3.5" y="3.5" width="7" height="7" rx="2"/><rect x="13.5" y="3.5" width="7" height="7" rx="2"/><rect x="3.5" y="13.5" width="7" height="7" rx="2"/><rect x="13.5" y="13.5" width="7" height="7" rx="2"/>',
   book:'<path d="M12 6.5C10.3 5.2 7.9 4.6 4 4.8v13.4c3.9-.2 6.3.4 8 1.7 1.7-1.3 4.1-1.9 8-1.7V4.8c-3.9-.2-6.3.4-8 1.7z"/><path d="M12 6.5v13.4"/>',
   users:'<circle cx="9" cy="8.5" r="3.3"/><path d="M3.2 19.5c.7-3.2 3-5 5.8-5s5.1 1.8 5.8 5"/><path d="M15.5 5.6a3.1 3.1 0 0 1 0 5.9"/><path d="M17.3 14.7c1.8.6 3.1 2.2 3.5 4.8"/>',

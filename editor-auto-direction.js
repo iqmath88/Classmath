@@ -49,11 +49,20 @@
    * - Switching the keyboard later does NOT flip the whole paragraph.
    * - Unicode BiDi renders English/math LTR inside Arabic paragraphs automatically.
    */
+  // v2.8.16: لا نلغي محاذاة اختارها المستخدم (توسيط/يمين/يسار) — نضبط "start" فقط إن لم توجد محاذاة صريحة.
+  function keepAlign(element){
+    if(!element||!element.style)return;
+    const chosen=(element.dataset&&element.dataset.align)||"";
+    const cur=element.style.textAlign;
+    if(chosen){element.style.textAlign=chosen;return;}
+    if(!cur||cur==="start"||cur==="end")element.style.textAlign="start";
+  }
+
   function setVisualDirection(element,dir,mode,lock){
     if(!element||!dir)return null;
     element.setAttribute("dir",dir);
     element.style.direction=dir;
-    element.style.textAlign="start";
+    keepAlign(element);
     element.style.unicodeBidi="plaintext";
     if(element.dataset){
       element.dataset.dirMode=mode||"auto";
@@ -67,7 +76,7 @@
     if(!element)return;
     element.setAttribute("dir","auto");
     element.style.removeProperty("direction");
-    element.style.textAlign="start";
+    keepAlign(element);
     element.style.unicodeBidi="plaintext";
     if(element.dataset){
       element.dataset.dirMode="auto";
@@ -155,7 +164,7 @@
       if(block.closest(".katex,.richEquation,.eduMath"))return;
       if(!block.dataset.dirMode)block.dataset.dirMode="auto";
       block.style.unicodeBidi="plaintext";
-      block.style.textAlign="start";
+      keepAlign(block);
       if(isVisuallyEmpty(block)&&block.dataset.dirMode!=="manual")resetAuto(block);
       else apply(block);
     });
@@ -178,7 +187,7 @@
     editor.dataset.dirLocked=editor.dataset.dirLocked||"false";
     editor.setAttribute("dir",editor.getAttribute("dir")||"auto");
     editor.style.unicodeBidi="plaintext";
-    editor.style.textAlign="start";
+    keepAlign(editor);
 
     const observer=new MutationObserver(()=>normalizeNewBlocks(editor));
     observer.observe(editor,{childList:true,subtree:true});
@@ -239,7 +248,7 @@
     input.dataset.dirLocked=input.dataset.dirLocked||"false";
     input.setAttribute("dir",input.getAttribute("dir")||"auto");
     input.style.unicodeBidi="plaintext";
-    input.style.textAlign="start";
+    keepAlign(input);
     input.addEventListener("keydown",e=>{if(!e.ctrlKey&&!e.metaKey&&!e.altKey&&!input.value)prepareFirstInput(input,eventText(e));});
     input.addEventListener("compositionupdate",e=>{if(!input.value)prepareFirstInput(input,eventText(e));});
     input.addEventListener("beforeinput",e=>{
@@ -257,7 +266,7 @@
   }
 
   const api=Object.freeze({
-    version:"3.1.0",
+    version:"3.2.0",
     firstStrongDirection,
     startsMathTyping,
     isVisuallyEmpty,
