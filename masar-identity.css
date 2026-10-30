@@ -156,3 +156,133 @@ html #splash{background:var(--grad)!important}
 /* v2.8.13: رموز لوحة المعادلات تُعرض LTR دائمًا (منع انعكاس ≤ ≥ في سياق RTL) */
 html .eqSymbols .eqSymbolMath{direction:ltr;unicode-bidi:isolate;display:inline-block}
 html .eqSymbols .eqSymbolMath .katex{direction:ltr}
+
+/* =========================================================
+   v2.8.14 — واجهة نيبور كلاس: أيقونات خطية، بطاقة «الآن»،
+   إحصاءات مدمجة، بطاقات إجراءات أفقية، وقائمة جانبية للآيباد.
+   ========================================================= */
+html .ic{width:1.15em;height:1.15em;flex:0 0 auto;vertical-align:-.2em}
+html .notice .ic{margin-inline-end:6px;color:currentColor}
+html .hIc{width:1em;height:1em;color:var(--brand)}
+.appVersionLine{margin:-6px 0 14px;font-size:12px;color:var(--text-muted)}
+
+/* الشريط العلوي */
+html .top .hBtn{display:inline-flex;align-items:center;gap:6px;min-height:38px}
+html .top .hBtn .ic{width:18px;height:18px}
+html .top .schoolName,html .top .schoolName:disabled{border-bottom-color:transparent!important}
+html .top .schoolName:not(:disabled):focus{border-bottom-color:var(--gold-line)!important}
+
+/* شريط التبويبات */
+html .tab .ticon{display:inline-flex;align-items:center;justify-content:center;padding:4px 12px}
+html .tab .ticon .ic{width:22px;height:22px}
+
+/* عناوين الأقسام */
+html .secH{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+html .secIc{display:inline-flex;width:30px;height:30px;border-radius:10px;align-items:center;justify-content:center;background:var(--tile);border:1px solid var(--tile-line);color:var(--brand)}
+html .secIc .ic{width:17px;height:17px}
+html .secExtra{font-size:12px;font-weight:700;color:var(--text-secondary);margin-inline-start:auto}
+
+/* بطاقة «الآن» */
+html .nowCard{display:flex;gap:18px;align-items:stretch;justify-content:space-between;flex-wrap:wrap;
+  background:var(--glass-bg);border:1px solid var(--glass-line);border-top:2px solid var(--gold-line);border-radius:var(--radius-xl);
+  box-shadow:inset 0 1px 0 var(--glass-edge),var(--shadow);-webkit-backdrop-filter:blur(14px) saturate(1.2);backdrop-filter:blur(14px) saturate(1.2);
+  padding:18px 20px;margin-bottom:14px}
+.nowMain{flex:1 1 300px;min-width:0}
+.nowEyebrow{font-size:12.5px;font-weight:800;color:var(--gold-text)}
+.nowTitle{margin:6px 0 4px;font-size:24px;line-height:1.3;color:var(--brand-ink);display:flex;align-items:center;gap:10px}
+.nowSub{margin:0 0 8px;color:var(--text-secondary);font-size:14px}
+html .nowCard .briefList{color:var(--text-secondary)!important;font-size:12.5px;margin-top:6px}
+.liveDot{width:10px;height:10px;border-radius:50%;background:#22A06B;box-shadow:0 0 0 0 rgba(34,160,107,.5);animation:livePulse 1.8s infinite}
+@keyframes livePulse{0%{box-shadow:0 0 0 0 rgba(34,160,107,.45)}70%{box-shadow:0 0 0 10px rgba(34,160,107,0)}100%{box-shadow:0 0 0 0 rgba(34,160,107,0)}}
+@media (prefers-reduced-motion:reduce){.liveDot{animation:none}}
+.nowSide{display:flex;flex-direction:column;align-items:flex-end;justify-content:space-between;gap:10px;min-width:220px}
+.nowClock{font-size:38px;font-weight:800;letter-spacing:.5px;color:var(--brand);line-height:1;direction:ltr;font-variant-numeric:tabular-nums}
+.nowDate{font-size:12.5px;color:var(--text-secondary);font-weight:700}
+.nowActions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+html .nowActions .btn{display:inline-flex;align-items:center;gap:7px;padding:10px 16px;font-size:13.5px;width:auto;margin:0}
+html .nowActions .btn .ic{width:18px;height:18px}
+
+/* صف الإحصاءات */
+.statRow{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;margin:0 0 16px}
+html .stat{display:flex;align-items:center;gap:10px;padding:12px 14px;background:var(--glass-bg);border:1px solid var(--glass-line);border-radius:var(--radius-lg);box-shadow:inset 0 1px 0 var(--glass-edge),var(--shadow)}
+.statIc{display:inline-flex;width:36px;height:36px;border-radius:12px;align-items:center;justify-content:center;background:var(--tile);border:1px solid var(--tile-line);color:var(--brand);flex:0 0 auto}
+.statIc .ic{width:19px;height:19px}
+.stat.ok .statIc{color:#17804F}.stat.bad .statIc{color:#B3453F}
+.statNum{font-size:22px;font-weight:800;color:var(--brand-ink);line-height:1.1;font-variant-numeric:tabular-nums}
+.statLbl{font-size:12px;color:var(--text-secondary);font-weight:700}
+.stat.main .statNum{color:var(--brand)}
+
+/* بطاقة البداية الفارغة */
+html .emptyCard{display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding:16px 18px;margin-bottom:16px;border-radius:var(--radius-lg);
+  background:var(--brand-soft);border:1px dashed var(--brand-line)}
+.emptyCard>div{flex:1 1 220px}.emptyCard b{color:var(--brand-ink);font-size:15px}.emptyCard p{margin:4px 0 0;color:var(--text-secondary);font-size:13px}
+.emptyIc{display:inline-flex;width:44px;height:44px;border-radius:14px;align-items:center;justify-content:center;background:var(--card);color:var(--brand);border:1px solid var(--brand-line)}
+.emptyIc .ic{width:22px;height:22px}
+html .emptyCard .btn{width:auto;margin:0}
+
+/* بطاقات الإجراءات الأفقية */
+html .qaGrid{display:grid!important;grid-template-columns:repeat(auto-fill,minmax(230px,1fr))!important;gap:10px!important;margin-bottom:18px}
+html .qaCard{display:flex;align-items:center;gap:12px;text-align:start;padding:14px;cursor:pointer;font:inherit;color:var(--brand-ink);
+  background:var(--glass-bg);border:1px solid var(--glass-line);border-radius:var(--radius-lg);box-shadow:inset 0 1px 0 var(--glass-edge),var(--shadow);transition:transform .15s ease,box-shadow .15s ease}
+html .qaCard:hover{transform:translateY(-1px);box-shadow:inset 0 1px 0 var(--glass-edge),0 14px 30px rgba(31,60,143,.12)}
+html .qaCard:active{transform:scale(.98)}
+.qaTile{display:inline-flex;width:46px;height:46px;border-radius:14px;align-items:center;justify-content:center;flex:0 0 auto;background:var(--tile);border:1px solid var(--tile-line);color:var(--brand);box-shadow:inset 0 1px 0 rgba(255,255,255,.8)}
+.qaTile .ic{width:22px;height:22px}
+.qaText{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.qaText b{font-size:14.5px}.qaText small{font-size:12px;color:var(--text-secondary);font-weight:600}
+.qaArrow{color:var(--brand);opacity:.8;display:inline-flex}.qaArrow .ic{width:18px;height:18px}
+
+/* حصص اليوم */
+html .shiftIc{display:inline-flex;color:var(--gold-text)}
+html .shiftIc .ic{width:15px;height:15px}
+html .att{display:inline-flex;align-items:center;justify-content:center}
+html .att .ic{width:17px;height:17px}
+html .warnNotice{background:#FDECEC!important;border-color:#F3C7C4!important;color:#8A2E2E!important}
+html.dark .warnNotice{background:#3A1E24!important;border-color:#5A2C33!important;color:#F7B9B9!important}
+
+/* الهاتف */
+@media (max-width:640px){
+  .statRow{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .statRow .stat.main{grid-column:1/-1}
+  .nowSide{min-width:0;width:100%;flex-direction:row;align-items:center;flex-wrap:wrap}
+  .nowClock{font-size:28px}
+  .nowActions{width:100%;justify-content:stretch}
+  html .nowActions .btn{flex:1 1 140px;justify-content:center}
+  .nowTitle{font-size:20px}
+}
+@media (min-width:641px) and (max-width:1023px){
+  html .stat{flex-direction:column;align-items:flex-start;gap:8px;padding:12px}
+  .nowSide{min-width:0;width:100%;flex-direction:row;align-items:center;flex-wrap:wrap;border-top:1px solid var(--glass-line);padding-top:12px}
+  .nowClock{font-size:30px}.nowActions{margin-inline-start:auto}
+}
+
+/* لا يغطي الشريط السفلي آخر المحتوى */
+@media (max-width:1023px){html body{padding-bottom:calc(112px + env(safe-area-inset-bottom))!important}}
+
+/* ---------- الآيباد بالعرض: قائمة جانبية بدل الشريط السفلي ---------- */
+@media (min-width:1024px){
+  html body{padding-bottom:24px!important}
+  html .tabs{position:fixed!important;top:96px!important;bottom:auto!important;right:16px!important;left:auto!important;transform:none!important;
+    width:96px!important;max-width:none!important;flex-direction:column!important;gap:4px;padding:10px 8px!important;border-radius:var(--radius-xl)!important;max-height:calc(100vh - 116px);overflow-y:auto}
+  html .tab{flex:0 0 auto!important;padding:10px 4px!important;border-radius:14px;font-size:11px}
+  html .tab.on{background:var(--brand-soft)!important;box-shadow:inset 0 0 0 1px var(--brand-line)}
+  html .tab.on .ticon{background:transparent!important;box-shadow:none!important}
+  html .tab.on::after{bottom:4px!important}
+  html .content{margin-right:112px!important;margin-left:auto!important;max-width:none!important;width:auto!important}
+  html #fabBox{right:128px}
+}
+@media (min-width:1280px){
+  html .tabs{width:224px!important}
+  html .tab{flex-direction:row!important;justify-content:flex-start!important;gap:10px!important;padding:10px 12px!important;font-size:14px!important}
+  html .tab .ticon{padding:6px!important;border-radius:11px;background:var(--tile);border:1px solid var(--tile-line)}
+  html .tab.on .ticon{background:var(--brand)!important;color:#fff!important;border-color:var(--brand)!important}
+  html .tab.on::after{left:auto!important;right:auto!important;inset-inline-end:14px!important;top:50%!important;bottom:auto!important;transform:translateY(-50%)!important}
+  html .content{margin-right:248px!important}
+  html #fabBox{right:264px}
+}
+@media (max-width:640px){
+  html .qaGrid{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+  html .qaCard{flex-direction:column;align-items:flex-start;gap:8px;padding:12px}
+  html .qaCard .qaText small,html .qaCard .qaArrow{display:none}
+  .qaTile{width:40px;height:40px}
+}

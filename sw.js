@@ -1,4 +1,4 @@
-const CACHE = "masar-education-2-8-13-editor-equations";
+const CACHE = "masar-education-2-8-14-nibor-class-ui";
 const ASSETS = [
   "./",
   "./index.html",
@@ -25,6 +25,7 @@ const ASSETS = [
   "./math-api.js",
   "./compatibility-legacy-bridge.js",
   "./masar-core.js",
+  "./masar-icons.js",
   "./masar-storage.js",
   "./masar-print-engine.js",
   "./masar-dashboard.js",

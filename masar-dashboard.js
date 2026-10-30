@@ -4,10 +4,10 @@ function toast(m){const b=document.getElementById("toastBox");b.innerHTML='<div 
 function el(id){return document.getElementById(id)}
 
 /* ============ التنقل ============ */
-const TABS=[["home","الرئيسية","▦"],["lectures","المحاضرات","📚"],["students","الطلبة","👤"],["attendance","الحضور","✓"],["evaluation","التقييم","٪"],["teaching","التدريس","📝"],["payments","الأقساط","💰"],["settings","الإعدادات","⚙️"]];
+const TABS=[["home","الرئيسية","home"],["lectures","المحاضرات","book"],["students","الطلبة","users"],["attendance","الحضور","check"],["evaluation","التقييم","percent"],["teaching","التدريس","pen"],["payments","الأقساط","wallet"],["settings","الإعدادات","settings"]];
 function renderTabs(){
   el("tabs").innerHTML=TABS.map(([k,l,i])=>
-    '<button class="tab'+(S.tab===k?" on":"")+'" data-tab="'+k+'"><span class="ticon">'+i+'</span><span>'+l+'</span></button>').join("");
+    '<button class="tab'+(S.tab===k?" on":"")+'" data-tab="'+k+'" aria-label="'+l+'"><span class="ticon">'+(window.ICON?ICON(i):i)+'</span><span class="tlabel">'+l+'</span></button>').join("");
   el("tabs").querySelectorAll(".tab").forEach(b=>b.onclick=()=>{goToTab(b.dataset.tab)});
 }
 function fixFilterState(){
@@ -56,9 +56,9 @@ function backupBanner(){
 }
 /* v2.8.12: حصص المؤسسة الحالية فقط (أو كل المؤسسات إذا لم تُختر واحدة) */
 function TT_VIS(){const def=INSTS()[0];return S.curInst?S.timetable.filter(t=>(t.inst||def)===S.curInst):S.timetable}
-function morningBriefHTML(){
-  const h=new Date().getHours();
-  const greeting=h<12?"صباح الخير":(h<18?"مساء الخير":"مساء الخير");
+/* v2.8.14: عدّ عربي سليم للحصص */
+function lessonsCountAr(n){if(n===0)return 'لا حصص اليوم';if(n===1)return 'لديك اليوم <b>1</b> حصة';if(n===2)return 'لديك اليوم <b>حصتان</b>';if(n<=10)return 'لديك اليوم <b>'+n+'</b> حصص';return 'لديك اليوم <b>'+n+'</b> حصة'}
+function briefLines(){
   const today=new Date().getDay();
   const lessonsToday=TT_VIS().filter(t=>t.day===today).length;
   const pendingStudents=new Set();
@@ -67,16 +67,44 @@ function morningBriefHTML(){
   const lastVals=active.map(s=>lastVal((S.grades[s.id]||{})[MYSUB()]||{},s.grade)).filter(v=>v!==null);
   const avgAll=lastVals.length?Math.round(lastVals.reduce((a,b)=>a+b,0)/lastVals.length):null;
   const improved=active.map(s=>({s,t:trendOf((S.grades[s.id]||{})[MYSUB()]||{},s.grade)})).filter(x=>x.t!==null&&x.t>0).sort((a,b)=>b.t-a.t)[0];
-  const lines=[];
-  lines.push('لديك اليوم <b>'+lessonsToday+'</b> '+(lessonsToday===1?'حصة':'حصص')+'.');
+  const lines=lessonsToday?[lessonsCountAr(lessonsToday)+'.']:[];
   if(pendingStudents.size>0)lines.push('<b>'+pendingStudents.size+'</b> طالب لم يسلّموا واجبات مستحقة.');
-  if(avgAll!==null)lines.push('متوسط آخر الدرجات المرصودة لكل طلبتك: <b>'+avgAll+'</b>.');
-  if(improved)lines.push('الأكثر تحسناً هذه الفترة: <b>'+esc(improved.s.name)+'</b> (+'+improved.t+').');
-  return '<div class="briefCard">'+
-    '<div class="briefHead">'+greeting+' يا أستاذ '+esc((S.settings.teacher||"").split(" ")[0]||"")+' 🌹</div>'+
-    '<ul class="briefList">'+lines.map(l=>'<li>'+l+'</li>').join("")+'</ul>'+
-  '</div>';
+  if(avgAll!==null)lines.push('متوسط آخر الدرجات المرصودة: <b>'+avgAll+'</b>.');
+  if(improved)lines.push('الأكثر تحسنًا: <b>'+esc(improved.s.name)+'</b> (+'+improved.t+').');
+  return lines;
 }
+function morningBriefHTML(){const l=briefLines();return l.length?'<ul class="briefList">'+l.map(x=>'<li>'+x+'</li>').join("")+'</ul>':''}
+/* v2.8.14: بطاقة «الآن» — الحصة الحالية/التالية حسب أوقات الحصص */
+function toMin(hm){const m=String(hm||'').match(/^(\d{1,2}):(\d{2})/);return m?Number(m[1])*60+Number(m[2]):null}
+function nowStatus(lessons){
+  lessons=lessons.slice().sort((a,b)=>((a.shift||"صباحي")===(b.shift||"صباحي")?a.period-b.period:((a.shift||"صباحي")==="صباحي"?-1:1)));
+  if(!lessons.length)return {title:'لا حصص اليوم',sub:'يوم هادئ — راجع الواجبات أو حضّر محاضرتك القادمة.'};
+  const now=new Date(),cur=now.getHours()*60+now.getMinutes();
+  const withT=lessons.map(t=>{const pt=periodTime(t.period,t.shift||"صباحي")||{};return {t,s:toMin(pt.start),e:toMin(pt.end),pt}});
+  const timed=withT.filter(x=>x.s!=null&&x.e!=null);
+  const who=x=>esc(x.t.grade)+' — '+esc(secTerm(x.t.inst||S.curInst))+' '+esc(x.t.section);
+  if(timed.length){
+    const c=timed.find(x=>x.s<=cur&&cur<x.e);if(c)return {title:'الآن: الحصة '+c.t.period,sub:who(c)+' · حتى '+esc(c.pt.end),live:true};
+    const n=timed.filter(x=>x.s>cur).sort((a,b)=>a.s-b.s)[0];if(n)return {title:'التالية: الحصة '+n.t.period,sub:who(n)+' · تبدأ '+esc(n.pt.start)};
+    if(timed.length===lessons.length)return {title:'انتهت حصص اليوم',sub:lessons.length+' '+(lessons.length===1?'حصة':lessons.length===2?'حصتان':'حصص')+' اليوم — لا تنسَ تسجيل الحضور إن لم تسجّله.'};
+  }
+  const f=withT[0];return {title:lessons.length===1?'حصة واحدة اليوم':(lessons.length===2?'حصتان اليوم':lessons.length+' حصص اليوم'),sub:'أولها الحصة '+f.t.period+': '+who(f)};
+}
+function nowCardHTML(lessons){
+  const h=new Date().getHours();const greeting=h<12?"صباح الخير":"مساء الخير";
+  const name=esc((S.settings.teacher||"").split(" ")[0]||"");const st=nowStatus(lessons);
+  const d=new Date();const clock=String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
+  let dateStr=DAYS[d.getDay()];try{dateStr+=' · '+d.toLocaleDateString('ar-IQ-u-nu-latn',{day:'numeric',month:'long'})}catch(_){}
+  return '<section class="nowCard'+(st.live?' isLive':'')+'">'+
+    '<div class="nowMain"><span class="nowEyebrow">✦ '+greeting+(name?' يا أستاذ '+name:' يا أستاذ')+'</span>'+
+      '<h2 class="nowTitle">'+(st.live?'<span class="liveDot"></span>':'')+st.title+'</h2><p class="nowSub">'+st.sub+'</p>'+morningBriefHTML()+'</div>'+
+    '<div class="nowSide"><div class="nowClock">'+clock+'</div><div class="nowDate">'+dateStr+'</div>'+
+      '<div class="nowActions"><button class="btn" id="nowAtt">'+ICON('check')+'<span>تسجيل الحضور</span></button><button class="btn ghost" id="ttBtn">'+ICON('calendar')+'<span>جدول الحصص</span></button></div></div>'+
+  '</section>';
+}
+function secH(icon,title,extra){return '<h3 class="h2 secH"><span class="secIc">'+ICON(icon)+'</span><span>'+title+'</span>'+(extra||'')+'</h3>'}
+function qaCard(id,icon,title,sub){return '<button class="qaCard" id="'+id+'"><span class="qaTile">'+ICON(icon)+'</span><span class="qaText"><b>'+title+'</b><small>'+sub+'</small></span><span class="qaArrow">'+ICON('chevron')+'</span></button>'}
+function statTile(icon,num,label,cls){return '<div class="stat'+(cls?' '+cls:'')+'"><span class="statIc">'+ICON(icon)+'</span><div><div class="statNum">'+num+'</div><div class="statLbl">'+label+'</div></div></div>'}
 function renderHome(){
   const t=S.attendance[todayStr()]||{};
   const vals=Object.values(t);
@@ -92,39 +120,39 @@ function renderHome(){
   el("content").innerHTML=
     (canSave?"":'<div class="notice">⚠️ المتصفح مانع التخزين المحلي — البيانات ما تنحفظ تلقائياً. استخدم زر «نسخة احتياطية» قبل ما تسكّر، وزر «استيراد» حتى ترجّعها.</div>')+
     backupBanner()+
-    morningBriefHTML()+
-    (!(S.settings.sync&&S.settings.sync.userId)?'<div class="notice" id="homeAcctNotice" style="cursor:pointer">👤 ما سجّلت دخول بحساب بعد — اضغط هنا لتسجيل الدخول أو إنشاء حسابك (معلم/طالب/ولي أمر)</div>':"")+
-    (todayLessons.length>0&&!attTakenToday?'<div class="notice" style="background:#FDECEC;border-color:#F3C7C4;color:#8A2E2E">📋 عندك حصص اليوم ولسا ما سجّلت حضور — اضغط أي حصة أدناه لتسجيله.</div>':"")+
-    '<h2 class="h">📊 لوحة المتابعة</h2>'+
-    '<h3 class="h2" style="margin-top:0">⚡ إجراءات سريعة</h3>'+
-    '<div class="quickActions">'+
-      '<button class="qaBtn" id="qaAtt"><span class="qaIcon">✓</span><span>تسجيل حضور</span></button>'+
-      '<button class="qaBtn" id="qaAddStudent"><span class="qaIcon">👤+</span><span>إضافة طالب</span></button>'+
-      '<button class="qaBtn" id="qaExam"><span class="qaIcon">📝</span><span>امتحان جديد</span></button>'+
-      '<button class="qaBtn" id="qaPayments"><span class="qaIcon">💰</span><span>الأقساط</span></button>'+
+    nowCardHTML(todayLessons)+
+    (!(S.settings.sync&&S.settings.sync.userId)?'<div class="notice" id="homeAcctNotice" style="cursor:pointer">'+ICON('user')+' لم تسجّل الدخول بحساب بعد — اضغط هنا لتسجيل الدخول أو إنشاء حسابك (معلم/طالب/ولي أمر)</div>':"")+
+    (todayLessons.length>0&&!attTakenToday?'<div class="notice warnNotice">'+ICON('clipboard')+' عندك حصص اليوم ولم تسجّل الحضور بعد — اضغط أي حصة أدناه لتسجيله.</div>':"")+
+    '<div class="statRow">'+
+      statTile('users',VIS().length,'إجمالي الطلبة','main')+
+      statTile('user',male,'ذكور')+
+      statTile('user',(VIS().length-male),'إناث')+
+      statTile('check',present,'حاضر اليوم','ok')+
+      statTile('alert',absent,'غائب اليوم','bad')+
     '</div>'+
-    '<h3 class="h2">🗓 حصص اليوم — '+DAYS[new Date().getDay()]+'</h3>'+
+    (VIS().length===0?'<div class="emptyCard"><span class="emptyIc">'+ICON('userPlus')+'</span><div><b>ابدأ بإضافة طلبتك</b><p>أضف أول طالب لتظهر هنا الإحصاءات وإنذارات الغياب والمتفوقون.</p></div><button class="btn" id="emptyAddStudent">إضافة طالب</button></div>':"")+
+    secH('bolt','إجراءات سريعة')+
+    '<div class="qaGrid quickActions">'+
+      qaCard('qaAtt','check','تسجيل الحضور','حضور حصة اليوم بنقرة')+
+      qaCard('qaAddStudent','userPlus','إضافة طالب','طالب جديد لأي شعبة')+
+      qaCard('qaExam','exam','امتحان جديد','أنشئ واطبع امتحانًا')+
+      qaCard('qaPayments','wallet','الأقساط','الدفعات والمتأخرات')+
+    '</div>'+
+    secH('calendar','حصص اليوم — '+DAYS[new Date().getDay()])+
     '<div id="lessonsBox"></div>'+
-    '<button class="btn ghost full" id="ttBtn" style="margin-top:8px">إدارة جدول الحصص الأسبوعي</button>'+
-    '<div class="cards">'+
-      '<div class="card big"><div class="num">'+VIS().length+'</div><div class="lbl">إجمالي الطلبة</div></div>'+
-      '<div class="card"><div class="num">'+male+'</div><div class="lbl">ذكور</div></div>'+
-      '<div class="card"><div class="num">'+(VIS().length-male)+'</div><div class="lbl">إناث</div></div>'+
-      '<div class="card ok"><div class="num">'+present+'</div><div class="lbl">حاضر اليوم</div></div>'+
-      '<div class="card bad"><div class="num">'+absent+'</div><div class="lbl">غائب اليوم</div></div>'+
-    '</div>'+
-    '<h3 class="h2">الطلبة حسب الصف</h3>'+
+    '<div class="homeInsights"'+(VIS().length===0?' hidden':'')+'>'+
+    secH('chart','الطلبة حسب الصف')+
     '<div class="bars">'+myGrades.map(g=>{
       const n=VIS().filter(s=>s.grade===g).length;
-      return '<div class="barRow"><span>'+g+'</span><div class="barTrack"><div class="barFill" style="width:'+(n/max*100)+'%"></div></div><span class="barNum">'+n+'</span></div>';
+      return '<div class="barRow"><span>'+esc(g)+'</span><div class="barTrack"><div class="barFill" style="width:'+(n/max*100)+'%"></div></div><span class="barNum">'+n+'</span></div>';
     }).join("")+'</div>'+
-    (VIS().length===0?'<p class="empty">لا يوجد طلبة بعد — افتح تبويب «الطلبة» وأضف أول طالب.</p>':"")+
-    '<h3 class="h2">⚠️ إنذارات الغياب — الحد: <input id="absLim" class="limIn" inputmode="numeric" value="'+(S.settings.absLimit||5)+'"> أيام</h3>'+
+    secH('alert','إنذارات الغياب',' <span class="secExtra">الحد: <input id="absLim" class="limIn" inputmode="numeric" value="'+(S.settings.absLimit||5)+'"> أيام</span>')+
     '<div id="alertBox"></div>'+
-    '<h3 class="h2">🌟 الطلبة المتفوقون (90 فأكثر)</h3>'+
+    secH('star','الطلبة المتفوقون (90 فأكثر)')+
     '<div id="topBox"></div>'+
-    '<h3 class="h2">📉 طلبة معرّضون للرسوب (دون 50)</h3>'+
+    secH('trendDown','طلبة معرّضون للرسوب (دون 50)')+
     '<div id="riskBox"></div>'+
+    '</div>'+
     '<div id="hwFollowBox"></div>';
   el("bkNow")&&(el("bkNow").onclick=()=>exportBackup());
   el("absLim").onchange=e=>{
@@ -136,6 +164,8 @@ function renderHome(){
   el("qaAddStudent").onclick=()=>{goToTab("students");openForm(null)};
   el("qaExam").onclick=()=>openExamBuilder();
   el("qaPayments").onclick=()=>goToTab("payments");
+  el("nowAtt").onclick=()=>goToTab("attendance");
+  if(el("emptyAddStudent"))el("emptyAddStudent").onclick=()=>{goToTab("students");openForm(null)};
   const homeAcctNotice=el("homeAcctNotice");
   if(homeAcctNotice)homeAcctNotice.onclick=openSyncSheet;
   renderLessons();
@@ -174,7 +204,7 @@ function renderRiskBox(){
 }
 function renderSettings(){
   el("content").innerHTML=
-    '<h2 class="h">⚙️ الإعدادات</h2>'+
+    '<h2 class="h">'+ICON('settings','hIc')+' الإعدادات</h2>'+'<p class="appVersionLine">نيبور كلاس · الإصدار v'+APP_VER+'</p>'+
 
     '<h3 class="h2" style="margin-top:0">🎨 مظهر التطبيق</h3>'+
     '<label style="font-size:11.5px;margin-bottom:10px">نوع خط واجهة التطبيق (كل الشاشات، مو الطباعة)<select id="setAppFont">'+PRINT_FONT_OPTIONS.map(f=>'<option value="'+f.id+'"'+((S.settings.appFont||"tajawal")===f.id?" selected":"")+'>'+f.label+'</option>').join("")+'</select></label>'+
@@ -250,7 +280,7 @@ function renderSettings(){
     S.settings.appFont=e.target.value;save.settings();applyAppFont();toast("تم تغيير خط التطبيق ✓");
   };
   el("setTeacher").onchange=e=>{S.settings.teacher=e.target.value.trim();save.settings()};
-  el("setAcadYear").onchange=e=>{S.settings.acadYear=e.target.value.trim();save.settings();el("yearLbl").textContent=academicYearStr()+" · v"+APP_VER;toast("تم تحديث السنة الدراسية")};
+  el("setAcadYear").onchange=e=>{S.settings.acadYear=e.target.value.trim();save.settings();el("yearLbl").textContent=academicYearStr();toast("تم تحديث السنة الدراسية")};
   el("setSubject").onchange=e=>{S.settings.subject=e.target.value.trim();save.settings();if(S.settings.subject)toast("تم تغيير المادة إلى "+S.settings.subject)};
   const savePrintDesign=()=>{
     S.settings.printDesign={
@@ -393,16 +423,16 @@ function renderLessons(){
   const today=new Date().getDay();
   const lessons=TT_VIS().filter(t=>t.day===today).sort((a,b)=>((a.shift||"صباحي")===(b.shift||"صباحي")?a.period-b.period:((a.shift||"صباحي")==="صباحي"?-1:1)));
   el("lessonsBox").innerHTML=lessons.length===0?
-    '<p class="empty">لا توجد حصص اليوم'+(S.timetable.length===0?' — أضف جدولك من الزر أدناه':'')+' 😌</p>':
+    '<p class="empty">لا توجد حصص اليوم'+(S.timetable.length===0?' — أضف جدولك من زر «جدول الحصص» أعلاه':'')+'.</p>':
     lessons.map((t,i)=>
       '<div class="lessonCard" data-goatt="'+i+'">'+
         '<div class="lessonNum">'+t.period+'</div>'+
-        '<div class="lessonInfo"><div class="lessonTitle">'+(t.shift==="مسائي"?"🌙":"☀️")+' '+esc(t.grade)+' — '+esc(secTerm(t.inst||S.curInst))+' '+esc(t.section)+'</div>'+(periodTimeStr(t.period,t.shift||"صباحي")?'<div class="lessonMeta">⏰ '+esc(periodTimeStr(t.period,t.shift||"صباحي"))+'</div>':'')+
+        '<div class="lessonInfo"><div class="lessonTitle"><span class="shiftIc" title="'+(t.shift==="مسائي"?"مسائي":"صباحي")+'">'+ICON(t.shift==="مسائي"?"moon":"sun")+'</span> '+esc(t.grade)+' — '+esc(secTerm(t.inst||S.curInst))+' '+esc(t.section)+'</div>'+(periodTimeStr(t.period,t.shift||"صباحي")?'<div class="lessonMeta">⏰ '+esc(periodTimeStr(t.period,t.shift||"صباحي"))+'</div>':'')+
         (INSTS().length>1&&t.inst?'<div class="lessonMeta">🏫 '+esc(t.inst)+'</div>':'')+'</div>'+
         '<div class="attBtns">'+
-          '<button class="att" data-pre="'+i+'" title="بطاقة ما قبل الحصة">📌</button>'+
-          '<button class="att" data-go="grades|'+esc(t.grade)+'|'+esc(t.section)+'" title="الدرجات">٪</button>'+
-          '<button class="att" data-go="homework|'+esc(t.grade)+'|'+esc(t.section)+'" title="الواجبات">📋</button>'+
+          '<button class="att" data-pre="'+i+'" title="بطاقة ما قبل الحصة" aria-label="بطاقة ما قبل الحصة">'+ICON('pin')+'</button>'+
+          '<button class="att" data-go="grades|'+esc(t.grade)+'|'+esc(t.section)+'" title="الدرجات" aria-label="الدرجات">'+ICON('percent')+'</button>'+
+          '<button class="att" data-go="homework|'+esc(t.grade)+'|'+esc(t.section)+'" title="الواجبات" aria-label="الواجبات">'+ICON('clipboard')+'</button>'+
         '</div>'+
       '</div><div class="preBox" id="preBox'+i+'" style="display:none"></div>').join("");
   el("lessonsBox").querySelectorAll("[data-pre]").forEach(b=>b.onclick=e=>{

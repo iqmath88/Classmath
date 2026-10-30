@@ -300,7 +300,7 @@ function buildReportCanvas(s,logoImg,sigImg){
     ctx.fillText(cts.join("   •   "),W/2,H-64);
   }
   ctx.textAlign="center";ctx.fillStyle="#94A3B8";F("",18);
-  ctx.fillText("صادر آلياً من تطبيق مسار — بتطوير الأستاذ "+(S.settings.teacher||"أستاذ المادة")+" — "+instOf(s),W/2,H-28);
+  ctx.fillText("صادر آلياً من تطبيق نيبور كلاس — بتطوير الأستاذ "+(S.settings.teacher||"أستاذ المادة")+" — "+instOf(s),W/2,H-28);
   return cv;
 }
 function buildAbsenceReportCanvas(grade,sectionName,inst,dateStr,rows,logoImg,sigImg){
@@ -409,7 +409,7 @@ function buildAbsenceReportCanvas(grade,sectionName,inst,dateStr,rows,logoImg,si
     ctx.fillText(cts.join("   •   "),W/2,H-64);
   }
   ctx.textAlign="center";ctx.fillStyle="#94A3B8";F("",18);
-  ctx.fillText("صادر آلياً من تطبيق مسار — بتطوير الأستاذ "+(S.settings.teacher||"أستاذ المادة")+" — "+inst,W/2,H-28);
+  ctx.fillText("صادر آلياً من تطبيق نيبور كلاس — بتطوير الأستاذ "+(S.settings.teacher||"أستاذ المادة")+" — "+inst,W/2,H-28);
   return cv;
 }
 function loadImg(src){return new Promise(res=>{if(!src)return res(null);const im=new Image();im.onload=()=>res(im);im.onerror=()=>res(null);im.src=src})}
@@ -550,7 +550,7 @@ function buildNotifCard(s,logoImg,opts,sigImg){
     ctx.fillText(cts.join("   •   "),W/2,H-64);
   }
   ctx.textAlign="center";ctx.fillStyle="#94A3B8";F("",18);
-  ctx.fillText("صادر آلياً من تطبيق مسار — بتطوير الأستاذ "+(S.settings.teacher||"أستاذ المادة")+" — "+instOf(s),W/2,H-28);
+  ctx.fillText("صادر آلياً من تطبيق نيبور كلاس — بتطوير الأستاذ "+(S.settings.teacher||"أستاذ المادة")+" — "+instOf(s),W/2,H-28);
   return cv;
 }
 /* إرسال موحّد لأي بطاقة (تقرير درجات أو تبليغ) كصورة فقط */
@@ -832,7 +832,7 @@ function openFunctionPlotter(){
   redraw();
 }
 const ONBOARD_STEPS=[
-  {icon:"👋",title:"أهلاً بيك بتطبيق مسار",body:"تطبيق شخصي لإدارة طلبتك بكل مؤسساتك — بيانات، حضور، درجات، أقساط، ومراسلة أولياء الأمور، كله بمكان وحدة وبدون إنترنت."},
+  {icon:"👋",title:"أهلاً بيك بتطبيق نيبور كلاس",body:"تطبيق شخصي لإدارة طلبتك بكل مؤسساتك — بيانات، حضور، درجات، أقساط، ومراسلة أولياء الأمور، كله بمكان وحدة وبدون إنترنت."},
   {icon:"🏫",title:"مؤسساتك",body:"تكدر تضيف أكثر من مدرسة أو معهد من ⚙️ الإعدادات ← إدارة مؤسساتي. لكل مؤسسة شعارها ونوع خطابها (رسمي أو تدريس خاص) وحتى تسمية الشعب أو المجموعات الخاصة فيها."},
   {icon:"👤",title:"أضف طلبتك",body:"من تبويب «الطلبة» تكدر تضيف طالباً واحداً، أو تستورد قائمة أسماء دفعة وحدة. سجّل رقم ولي الأمر ورقم الطالب نفسه إذا متوفر."},
   {icon:"✓",title:"الحضور والدرجات",body:"سجّل الحضور اليومي ودرجات الامتحانات اليومية والشهرية بسهولة، والتطبيق يحسب المعدلات والنتيجة النهائية تلقائياً حسب قوانين النجاح والإكمال."},
@@ -1028,7 +1028,7 @@ async function boot(){
   S.students.forEach(s=>{if(!s.inst){s.inst=INSTS()[0];migrated=true}});
   S.timetable.forEach(t=>{if(!t.inst){t.inst=INSTS()[0];migrated=true}});
   if(migrated){save.students();save.timetable()}
-  el("yearLbl").textContent=academicYearStr()+" · v"+APP_VER;
+  el("yearLbl").textContent=academicYearStr();el("yearLbl").title="الإصدار v"+APP_VER;
   const sn=el("schoolName");
   sn.onchange=()=>{
     if(!S.curInst){updateHeader();return}
@@ -1036,12 +1036,13 @@ async function boot(){
     updateHeader();
   };
   el("wsBtn").onclick=openInstSheet;
+  if(window.ICON)el("wsBtn").innerHTML=ICON("building")+"<span>مؤسساتي</span>";
   const fsBtn=el("fsBtn");
   const fsSupported=!!(document.documentElement.requestFullscreen||document.documentElement.webkitRequestFullscreen);
   if(!fsSupported)fsBtn.style.display="none";
   const updateFsIcon=()=>{
     const isFs=!!(document.fullscreenElement||document.webkitFullscreenElement);
-    fsBtn.textContent=isFs?"⛶":"⛶";
+    fsBtn.innerHTML=window.ICON?ICON("expand"):"⛶";
     fsBtn.title=isFs?"الخروج من ملء الشاشة":"ملء الشاشة";
     fsBtn.style.opacity=isFs?"1":"";
   };
@@ -1064,7 +1065,7 @@ async function boot(){
   const applyDark=()=>{
     document.documentElement.classList.toggle("dark",!!S.settings.dark);
     document.body.style.background=S.settings.dark?"#020617":"";
-    db.textContent=S.settings.dark?"☀️":"🌙";
+    db.innerHTML=window.ICON?ICON(S.settings.dark?"sun":"moon"):(S.settings.dark?"☀️":"🌙");db.title=S.settings.dark?"الوضع النهاري":"الوضع الليلي";
   };
   db.onclick=()=>{S.settings.dark=!S.settings.dark;save.settings();applyDark()};
   applyDark();

@@ -34,7 +34,7 @@ const storage={
   },
   validateBackup(payload){
     if(!payload||typeof payload!=="object")return {ok:false,error:"ملف النسخة الاحتياطية غير صالح."};
-    if(payload.schema!==BACKUP_SCHEMA)return {ok:false,error:"هذا الملف لا يخص مسار التعليم."};
+    if(payload.schema!==BACKUP_SCHEMA)return {ok:false,error:"هذا الملف لا يخص نيبور كلاس."};
     if(payload.schemaVersion!==BACKUP_VERSION)return {ok:false,error:"إصدار النسخة الاحتياطية غير مدعوم."};
     if(!payload.data||typeof payload.data!=="object"||Array.isArray(payload.data))return {ok:false,error:"بيانات النسخة الاحتياطية ناقصة."};
     const invalid=Object.keys(payload.data).filter(k=>!keyAllowed(k));
