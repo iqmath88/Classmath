@@ -286,3 +286,8 @@ html.dark .warnNotice{background:#3A1E24!important;border-color:#5A2C33!importan
   html .qaCard .qaText small,html .qaCard .qaArrow{display:none}
   .qaTile{width:40px;height:40px}
 }
+
+/* v2.8.15: الشريط العلوي ممتد بعرض الصفحة كاملًا — بلا زوايا ولا هوامش جانبية */
+html header.top,html .top{width:100%!important;max-width:none!important;margin:0!important;margin-inline:0!important;border-radius:0!important;left:0;right:0}
+html .top{padding-inline:max(16px,env(safe-area-inset-left),env(safe-area-inset-right))!important}
+@media (min-width:1024px){html .top{padding-inline:28px!important}}
