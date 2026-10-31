@@ -1,4 +1,4 @@
-const CACHE = "masar-education-2-9-1-writing-mode";
+const CACHE = "masar-education-2-9-2-ipad-keyboard";
 const ASSETS = [
   "./",
   "./index.html",
