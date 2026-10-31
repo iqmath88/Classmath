@@ -360,3 +360,105 @@ html .snRow{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:10px 
 .snInfo{flex:1 1 180px;display:flex;flex-direction:column;gap:2px}.snInfo b{font-size:13.5px;color:var(--brand-ink)}.snInfo small{font-size:11.5px;color:var(--text-secondary)}
 html .snRow .btn{width:auto;margin:0;padding:7px 12px;font-size:12.5px;display:inline-flex;align-items:center;gap:5px}
 html .snRow .btn .ic{width:16px;height:16px}
+
+/* =========================================================
+   v2.9.1 — وضع الكتابة المريح
+   ========================================================= */
+/* وضع التركيز: إخفاء قائمة التطبيق أثناء التأليف */
+html body.editorFocus .tabs{display:none!important}
+html body.editorFocus .content{margin-right:auto!important;margin-left:auto!important}
+@media screen and (max-width:1023px){html body.editorFocus{padding-bottom:24px!important}}
+
+/* عمود كتابة واحد بعرض قراءة مريح */
+html .writeMode .builderLayout{display:block!important}
+html .writeMode .blocksCanvas{max-width:820px;margin:0 auto;min-width:0}
+html .writeMode .lectureInfoDetails,html .writeMode .editorTopbar{max-width:1040px;margin-inline:auto}
+html .writeMode .richContent{font-size:17px;line-height:1.95}
+html .writeMode .canvasHeader{margin:4px 2px 6px}
+
+/* بيانات المحاضرة: سطر مطوي */
+html .lectureInfoDetails{margin:12px auto;border-radius:var(--radius-lg);background:var(--glass-bg);border:1px solid var(--glass-line);box-shadow:inset 0 1px 0 var(--glass-edge),var(--shadow)}
+html .lectureInfoDetails>summary{list-style:none;display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:12px 16px;cursor:pointer}
+html .lectureInfoDetails>summary::-webkit-details-marker{display:none}
+.lidTitle{font-weight:800;color:var(--brand-ink);font-size:15px}.lidMeta{color:var(--text-secondary);font-size:12.5px}
+.lidEdit{margin-inline-start:auto;font-size:12px;font-weight:700;color:var(--brand);background:var(--brand-soft);border:1px solid var(--brand-line);border-radius:999px;padding:4px 12px}
+html .lectureInfoDetails[open] .lidEdit{background:var(--card)}
+html .lectureInfoDetails .lectureInfoPanel{margin:0!important;border:0!important;box-shadow:none!important;background:transparent!important;border-top:1px solid var(--glass-line)!important;border-radius:0 0 var(--radius-lg) var(--radius-lg)!important}
+
+/* أزرار الشريط العلوي للمحرر */
+html .editorActions{flex-wrap:wrap;justify-content:flex-end}
+html .editorActions .etIcon{display:inline-flex;align-items:center;gap:6px;min-width:42px;justify-content:center}
+html .editorActions .etIcon .ic{width:18px;height:18px}
+html #focusToggle.on{background:var(--brand-soft)!important;border-color:var(--brand-line)!important;color:var(--brand)!important}
+@media (max-width:700px){html .editorActions .etIcon span{display:none}html .editorTitle span{display:none}}
+
+/* النوافذ الجانبية: قائمة العناصر (من اليمين) والخصائص (من اليسار) */
+html .writeMode .blockPalette,html .writeMode .propertiesPanel{position:fixed!important;top:0!important;bottom:0!important;z-index:70;width:min(360px,90vw)!important;max-height:none!important;overflow:auto!important;
+  margin:0!important;border-radius:0!important;background:var(--card)!important;box-shadow:0 20px 60px rgba(16,24,64,.28)!important;transition:transform .22s ease;padding:16px!important;display:block!important;grid-template-columns:none!important;visibility:hidden}
+html .writeMode .blockPalette{right:0!important;left:auto!important;transform:translateX(105%)}
+html .writeMode .propertiesPanel{left:0!important;right:auto!important;transform:translateX(-105%)}
+html .writeMode.showPalette .blockPalette{transform:none;visibility:visible}
+html .writeMode.showProps .propertiesPanel{transform:none;visibility:visible}
+html .drawerBackdrop{position:fixed;inset:0;z-index:65;background:rgba(14,20,48,.32);opacity:0;pointer-events:none;transition:opacity .2s}
+html .writeMode.showPalette .drawerBackdrop,html .writeMode.showProps .drawerBackdrop{opacity:1;pointer-events:auto}
+@media (prefers-reduced-motion:reduce){html .writeMode .blockPalette,html .writeMode .propertiesPanel{transition:none}}
+.drawerHead{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}.drawerHead b{font-size:17px;color:var(--brand-ink)}
+html .drawerClose{width:36px;height:36px;border-radius:10px;border:1px solid var(--glass-line);background:var(--surface-soft);cursor:pointer;color:var(--brand-ink)}
+html .writeMode #paletteTypes{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+html .writeMode #paletteTypes[hidden]{display:none}
+html .writeMode #paletteTypes .paletteHint{grid-column:1/-1;margin:0 0 4px;font-size:12px;color:var(--text-secondary)}
+html .writeMode .blockPalette button[data-add-block]{margin:0!important;min-height:48px;display:flex;align-items:center;gap:8px;border-radius:12px!important;font-size:13.5px}
+.pIc,.bhIc{display:inline-flex;width:28px;height:28px;border-radius:9px;align-items:center;justify-content:center;background:var(--tile);border:1px solid var(--tile-line);color:var(--brand);flex:0 0 auto}
+.pIc .ic,.bhIc .ic{width:16px;height:16px}
+.bhIc{margin-inline-end:6px}
+html .pIc .rtSigma,html .bhIc .rtSigma{font-size:15px;font-family:'Times New Roman',serif}
+
+/* «إدراج عنصر هنا» أوضح وأسهل للمس */
+html .writeMode .canvasInsert{display:flex;align-items:center;justify-content:center;width:100%;min-height:36px;margin:2px 0;border:1px dashed transparent;border-radius:12px;color:var(--text-muted);background:transparent;font-size:12.5px;cursor:pointer}
+html .writeMode .canvasInsert:hover,html .writeMode .canvasInsert:focus{border-color:var(--brand-line);color:var(--brand);background:var(--brand-soft)}
+
+/* رأس الكتلة المبسط + قائمة ⋯ */
+html .writeMode .blockEditorHead{position:relative;min-height:52px}
+html .writeMode .blockEditorHead strong{display:flex;align-items:center;gap:4px;flex-wrap:wrap;font-size:15px}
+html .writeMode .blockHeadTools{display:flex;align-items:center;gap:6px;position:relative}
+html .writeMode .bhBtn{width:40px!important;height:40px!important;border-radius:12px!important;display:inline-flex;align-items:center;justify-content:center;border:1px solid var(--glass-line)!important;background:var(--card)!important;color:var(--brand-ink);cursor:pointer}
+html .writeMode .bhBtn .ic{width:19px;height:19px}
+html .writeMode .blockMenu{display:none;position:absolute;top:46px;left:0;z-index:30;min-width:200px;padding:6px;border-radius:14px;background:var(--card);border:1px solid var(--glass-line);box-shadow:0 18px 40px rgba(16,24,64,.18)}
+html .writeMode .blockEditor.menuOpen .blockMenu{display:flex;flex-direction:column;gap:2px}
+html .writeMode .blockMenu button{width:100%!important;height:42px!important;display:flex;align-items:center;gap:10px;padding:0 12px;border:0!important;border-radius:10px!important;background:transparent!important;color:var(--brand-ink);font:inherit;font-size:14px;cursor:pointer;text-align:start}
+html .writeMode .blockMenu button:hover{background:var(--brand-soft)!important}
+html .writeMode .blockMenu button.danger{color:#B3453F}
+html .writeMode .blockEditor.menuOpen{z-index:20;position:relative}
+html .writeMode .dragHandle{width:28px;height:40px}
+
+/* شريط أدوات واحد: للحقل النشط فقط، ويبقى ظاهرًا أثناء التمرير */
+html .writeMode .compoundEditor:not(.rtActive) .richToolbar{display:none!important}
+html .writeMode .compoundEditor.rtActive .richToolbar{position:sticky;top:84px;z-index:12;box-shadow:0 8px 24px rgba(16,24,64,.10)}
+@media (max-width:700px){html .writeMode .compoundEditor.rtActive .richToolbar{top:70px}}
+
+/* حقول ثانوية مضغوطة حتى تُستخدم (الحل، الشروط، النتيجة) */
+html .writeMode .solutionEditor:not(.rtActive) .richContent,html .writeMode .conditionsEditor:not(.rtActive) .richContent,html .writeMode .conclusionEditor:not(.rtActive) .richContent{min-height:46px!important}
+html .writeMode .compoundEditor:not(.rtActive) .richContent{min-height:64px}
+html .writeMode .solutionLabel{font-size:12.5px;margin-top:10px}
+
+/* التلميحات والخيارات الثانوية: تظهر للكتلة المحددة فقط */
+html .writeMode .blockEditor:not(.selectedBlock) .blockHints{display:none!important}
+/* الشريط الثابت يحتاج ألا يكون أي أب بـ overflow:hidden (وإلا يُدفع داخل الصندوق) */
+html .writeMode .blockEditor,html .writeMode .compoundEditor,html .writeMode .blockEditorBody,html .writeMode .blocksCanvas,html .writeMode .smartBlocksList,html .writeMode .builderLayout{overflow:visible!important}
+html .writeMode .blockEditorHead{border-radius:var(--radius-lg) var(--radius-lg) 0 0}
+html .writeMode .compoundEditor .richToolbar{border-radius:15px 15px 0 0}
+html .writeMode .compoundEditor .richContent{border-radius:0 0 15px 15px}
+html .writeMode .compoundEditor:not(.rtActive) .richContent{border-radius:15px}
+/* overflow-x:hidden على body يعطّل sticky — clip يمنع التمرير الجانبي دون ذلك */
+html body.inLectureEditor,html:has(body.inLectureEditor){overflow-x:clip!important;overflow-y:visible!important}
+@media (max-width:700px){
+  html .writeMode .editorTopbar{flex-wrap:wrap;gap:8px}
+  html .writeMode .editorActions{display:grid!important;grid-template-columns:repeat(5,40px) 1fr 1fr;gap:6px;width:100%}
+  html .writeMode .editorActions button{height:40px;min-width:0!important;padding:0 6px!important;font-size:13px}
+  html .writeMode .canvasHeader{display:none}
+}
+@media (max-width:700px){
+  html .writeMode .editorActions{grid-template-columns:repeat(10,1fr)!important}
+  html .writeMode .editorActions button{grid-column:span 2}
+  html .writeMode .editorActions #previewLecture,html .writeMode .editorActions #saveLecture{grid-column:span 5}
+}

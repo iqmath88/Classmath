@@ -5,6 +5,7 @@
 (function(global){
 "use strict";
 const P={
+  plus:'<path d="M12 5v14M5 12h14"/>',
   table:'<rect x="3.5" y="4.5" width="17" height="15" rx="2.5"/><path d="M3.5 9.5h17M3.5 14.5h17M9.5 9.5v10M14.5 9.5v10"/>',
   image:'<rect x="3.5" y="4.5" width="17" height="15" rx="2.5"/><circle cx="9" cy="10" r="1.8"/><path d="M20.5 16l-5-5-8.5 8.5"/>',
   graph:'<path d="M4 20.5V3.5M4 20.5h16.5"/><path d="M6.5 17c2.5-.2 3.6-9.5 6.5-9.5s3.5 6 6.5 6"/>',
