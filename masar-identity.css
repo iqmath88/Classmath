@@ -615,3 +615,23 @@ html .pdfSheet .sheetFoot .ic{width:17px;height:17px}
 .lecturePaginationMeasure .lecturePaper,#lecturePreviewArea .lecturePaper{width:210mm!important;max-width:none!important;padding:16mm 16mm 18mm!important}
 #lecturePreviewArea .lecturePaper:not(.lecturePagedPaper){min-height:297mm!important}
 html #pdfLecture,html #pdfLecture span{color:#fff!important}
+
+/* ---------- v2.9.9: هوية لونية للمستند (ملكي / أسود) ----------
+   ملكي: نص أزرق ملكي داكن، عناوين حمراء داكنة (تبقى غامقة إذا طُبعت بالأبيض والأسود)، خط ذهبي تحت الرأس.
+   أسود: ألوان محايدة للاستنساخ. */
+[data-theme="royal"]{--lec-text:#1B2A6B;--lec-head:#A11D21;--lec-title:#14215A;--lec-tint:#EEF2FB;--lec-line:#D5DDF0;--lec-muted:#4A5578}
+[data-theme="classic"]{--lec-text:#111827;--lec-head:#111827;--lec-title:#0f172a;--lec-tint:#F3F4F6;--lec-line:#D1D5DB;--lec-muted:#374151}
+[data-theme] .lectureBlockContent,[data-theme] .lectureSolution{color:var(--lec-text)!important}
+[data-theme] .lectureBlockContent .katex{color:inherit}
+[data-theme] .lectureBlock{border-color:var(--lec-line)}
+[data-theme] .lectureBlockTitle{background:var(--lec-tint)!important;border-right-color:var(--lec-head)!important}
+[data-theme] .lectureBlock[data-accent] .lectureBlockTitle{border-right-color:var(--print-accent)!important}
+[data-theme] .lectureBlockTitle h2,[data-theme] .lectureBlockTitle .lbIc{color:var(--lec-head)!important}
+[data-theme] .lectureSolution>b{color:var(--lec-head)}
+[data-theme] .lectureDocHead h1{color:var(--lec-title)!important}
+[data-theme] .lectureDocHead p,[data-theme] .lectureDocHead span,[data-theme] .lectureDocMeta,[data-theme] .lectureDocFoot,[data-theme] .lectureFlowFoot{color:var(--lec-muted)!important}
+[data-theme] .lectureNumber{color:var(--lec-title)!important;border-color:var(--lec-title)!important}
+[data-theme="classic"] .lectureNumber b{color:#111827!important}
+[data-theme] .smartTablePrint th{background:var(--lec-tint)!important;color:var(--lec-title)!important}
+[data-theme] .smartTablePrint td{color:var(--lec-text)}
+@media print{[data-theme] .lectureBlockTitle,[data-theme] .smartTablePrint th,[data-theme] .lectureSolution{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
