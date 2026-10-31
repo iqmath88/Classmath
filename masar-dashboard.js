@@ -263,10 +263,12 @@ function renderSettings(){
     '<button class="btn ghost full" id="pinBtn" style="margin-top:0">'+((S.settings.pinHash||S.settings.pin)?"🔒 تغيير أو إزالة رمز القفل":"🔓 تفعيل رمز قفل التطبيق")+'</button>'+
 
     '<h3 class="h2">☁️ البيانات والنسخ الاحتياطي</h3>'+
+    '<div class="dataSafety" id="dataSafety"><div class="dsRow">جارِ فحص حالة التخزين…</div></div>'+
+    '<button class="btn ghost full" id="snapBtn" style="margin-top:0">'+ICON('clock')+' اللقطات الاحتياطية التلقائية — استعادة أو تنزيل</button>'+
     (featureOn("archive")?'<button class="btn ghost full" id="arcBtn" style="margin-top:0">📦 أرشيف السنوات — طي السنة وبدء جديدة</button>':'')+
     '<button class="btn ghost full" id="syncBtn" style="margin-top:0">'+(syncOn()?"☁️ المزامنة التلقائية مفعّلة ✓":"☁️ تفعيل المزامنة التلقائية بين الأجهزة")+'</button>'+
     (S.settings.lastBackup?'<p class="empty" style="padding:2px 4px;font-size:11px">آخر نسخة احتياطية: '+S.settings.lastBackup+'</p>':'')+
-    '<div class="actions"><button class="btn ghost" id="bkShare">📤 مزامنة لجهاز آخر</button><button class="btn ghost" id="bkExp">⬇ نسخة احتياطية</button><button class="btn ghost" id="bkImp">⬆ استيراد نسخة</button></div>'+
+    '<div class="actions"><button class="btn ghost" id="bkShare">📤 مزامنة لجهاز آخر</button><button class="btn ghost" id="bkExp">⬇ نسخة احتياطية كاملة</button><button class="btn ghost" id="bkImp">⬆ استيراد نسخة</button></div>'+
 
     '<h3 class="h2">❔ المساعدة والتخصيص</h3>'+
     '<button class="btn ghost full" id="tourBtn" style="margin-top:0">🎓 جولة تعريفية بالتطبيق</button>'+
@@ -348,6 +350,8 @@ function renderSettings(){
   el("wizardBtn").onclick=openSetupWizard;
   el("pluginsBtn").onclick=openPluginsSheet;
   el("bkExp").onclick=()=>exportBackup();
+  el("snapBtn").onclick=openSnapshotsSheet;
+  renderDataSafety();
   el("bkImp").onclick=()=>el("importFile").click();
   el("bkShare").onclick=shareBackup;
 }
@@ -950,9 +954,42 @@ function renderAlerts(){
   });
   el("alertBox").querySelectorAll(".srow").forEach(r=>r.onclick=()=>openDetail(r.dataset.id));
 }
+/* ============ v2.9.0: حماية البيانات — حالة التخزين واللقطات التلقائية ============ */
+function fmtBytes(n){if(!n&&n!==0)return "—";if(n<1024)return n+" بايت";if(n<1048576)return (n/1024).toFixed(0)+" كيلوبايت";if(n<1073741824)return (n/1048576).toFixed(1)+" ميغابايت";return (n/1073741824).toFixed(2)+" غيغابايت"}
+function fmtWhen(iso){try{return new Date(iso).toLocaleString("ar-IQ-u-nu-latn",{year:"numeric",month:"long",day:"numeric",hour:"2-digit",minute:"2-digit"})}catch(_){return iso||""}}
+function isStandaloneApp(){try{return matchMedia("(display-mode: standalone)").matches||navigator.standalone===true}catch(_){return false}}
+async function renderDataSafety(){
+  const box=el("dataSafety");if(!box)return;const DB=window.MasarDB;
+  if(!DB){box.innerHTML='<div class="dsRow warn">التخزين: localStorage (سعة محدودة ~5MB)</div>';return}
+  try{await DB.ready}catch(_){}
+  const est=await DB.estimate(),snaps=await DB.listSnapshots().catch(()=>[]),persisted=await DB.requestPersist();
+  const rows=[];
+  rows.push(DB.mode==="idb"?'<div class="dsRow ok">'+ICON("check")+'<span><b>تخزين موسّع (IndexedDB)</b> — سعة أكبر بكثير من التخزين القديم'+(est&&est.quota?' · المستخدم '+fmtBytes(est.usage)+' من '+fmtBytes(est.quota):'')+'</span></div>':'<div class="dsRow warn">'+ICON("alert")+'<span><b>تخزين محدود (localStorage)</b> — هذا المتصفح لا يدعم التخزين الموسّع.</span></div>');
+  if(persisted===true)rows.push('<div class="dsRow ok">'+ICON("check")+'<span><b>محمي من الحذف التلقائي</b> — لن يمسح المتصفح البيانات عند امتلاء الجهاز.</span></div>');
+  else if(!isStandaloneApp())rows.push('<div class="dsRow warn">'+ICON("alert")+'<span><b>ثبّت التطبيق على الشاشة الرئيسية</b> — Safari قد يحذف بيانات المواقع غير المستخدمة لعدة أيام. من زر المشاركة ⬆ اختر «إضافة إلى الشاشة الرئيسية».</span></div>');
+  rows.push(snaps.length?'<div class="dsRow ok">'+ICON("clock")+'<span><b>لقطات تلقائية داخل الجهاز:</b> '+snaps.length+' — آخرها '+fmtWhen(snaps[0].at)+'</span></div>':'<div class="dsRow">'+ICON("clock")+'<span>تُؤخذ لقطة تلقائية يوميًا عند فتح التطبيق.</span></div>');
+  const last=S.settings.lastBackup;const days=last?Math.floor((new Date(todayStr())-new Date(last))/86400000):null;
+  rows.push(last&&days<7?'<div class="dsRow ok">'+ICON("check")+'<span><b>آخر ملف نسخة احتياطية:</b> '+esc(last)+'</span></div>':'<div class="dsRow warn">'+ICON("alert")+'<span><b>'+(last?'مرّ '+days+' يومًا على آخر ملف نسخة احتياطية':'لم تنزّل ملف نسخة احتياطية بعد')+'</b> — اللقطات داخل الجهاز لا تحمي من ضياع الجهاز نفسه. احفظ الملف في «الملفات» أو iCloud.</span></div>');
+  box.innerHTML=rows.join("");
+}
+async function openSnapshotsSheet(){
+  const DB=window.MasarDB;
+  el("modal").innerHTML='<div class="overlay"><div class="sheet"><div class="sheetHead"><h3>اللقطات الاحتياطية التلقائية</h3><button class="x" id="snX">✕</button></div><div class="form"><p class="empty" style="padding:4px 2px;font-size:12px">يأخذ التطبيق لقطة كاملة لكل بياناتك ومحاضراتك مرة يوميًا، وقبل أي استيراد أو استعادة. تُحفظ آخر 7 لقطات يومية داخل هذا الجهاز.</p><div id="snList" class="snList"><p class="empty">جارِ التحميل…</p></div></div><div class="sheetFoot"><button class="btn ghost" id="snNow">'+ICON("clock")+' لقطة الآن</button><button class="btn" id="snClose">تم</button></div></div></div>';
+  el("snX").onclick=el("snClose").onclick=closeModal;
+  const draw=async()=>{
+    if(!DB||DB.mode!=="idb"){el("snList").innerHTML='<p class="empty">اللقطات تحتاج التخزين الموسّع (IndexedDB)، وهو غير متاح في هذا المتصفح.</p>';return}
+    const list=await DB.listSnapshots();
+    el("snList").innerHTML=list.length?list.map(x=>'<div class="snRow"><div class="snInfo"><b>'+esc(fmtWhen(x.at))+'</b><small>'+esc(x.reason||"")+' · '+fmtBytes(x.size)+'</small></div><button class="btn ghost" data-sn-dl="'+x.id+'">'+ICON("exam")+' تنزيل</button><button class="btn ghost" data-sn-restore="'+x.id+'">'+ICON("undo")+' استعادة</button></div>').join(""):'<p class="empty">لا توجد لقطات بعد.</p>';
+    el("snList").querySelectorAll("[data-sn-dl]").forEach(b=>b.onclick=async()=>{const sn=await DB.getSnapshot(b.dataset.snDl);if(!sn)return;const payload={schema:"nibor-class-full-backup",schemaVersion:1,appVersion:APP_VER,exportedAt:sn.at,kv:sn.kv};const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([JSON.stringify(payload)],{type:"application/json"}));a.download="نيبور_كلاس_نسخة_كاملة_"+String(sn.at).slice(0,10)+".json";a.click();toast("تم تنزيل اللقطة كملف ✓")});
+    el("snList").querySelectorAll("[data-sn-restore]").forEach(b=>b.onclick=async()=>{if(!confirm("استعادة هذه اللقطة تستبدل كل البيانات والمحاضرات الحالية بها. (تُحفظ لقطة من الحالة الحالية قبل ذلك.) متابعة؟"))return;try{await DB.restoreSnapshot(b.dataset.snRestore);toast("تمت الاستعادة — جارِ إعادة التحميل…");setTimeout(()=>location.reload(),800)}catch(err){console.error(err);toast("تعذرت الاستعادة")}});
+  };
+  el("snNow").onclick=async()=>{if(!DB||DB.mode!=="idb")return;await DB.snapshot("لقطة يدوية");toast("تم أخذ لقطة ✓");draw();renderDataSafety()};
+  draw();
+}
 function backupData(){
   return JSON.stringify({
     masarBackup:true,appVersion:APP_VER,schemaVersion:MASAR_SCHEMA_VERSION,exportedAt:new Date().toISOString(),
+    lectureStore:(()=>{try{return window.MasarStorage?window.MasarStorage.exportBackup():null}catch(_){return null}})(), // v2.9.0: المحاضرات والمشاريع ضمن نفس الملف
     data:{students:S.students,grades:S.grades,attendance:S.attendance,payments:S.payments,behavior:S.behavior,homework:S.homework,timetable:S.timetable,dailyPlans:S.dailyPlans||[],settings:S.settings,exams:S.exams,messages:S.messages,events:S.events,qbank:S.qbank,examTemplates:S.examTemplates}
   });
 }
@@ -1026,6 +1063,8 @@ el("importFile").onchange=e=>{
       try{d=JSON.parse(await decryptBackupObj(d,pass))}
       catch(err){toast("كلمة المرور غير صحيحة أو الملف تالف");return}
     }
+    if(d&&d.schema==="nibor-class-full-backup"){if(!window.MasarDB){toast("هذا الإصدار لا يدعم النسخ الكاملة");return}if(!confirm("استيراد نسخة كاملة يستبدل كل البيانات والمحاضرات الحالية (تُحفظ لقطة قبلها تلقائيًا). متابعة؟"))return;const n=await window.MasarDB.importAll(d);toast("تم استيراد "+n+" عنصرًا — جارِ إعادة التحميل…");setTimeout(()=>location.reload(),900);return}
+    const lectureStore=(d&&d.masarBackup&&d.lectureStore)||null;
     d=unwrapBackup(d);
     const schemaErr=validateBackupSchema(d);
     if(schemaErr){toast("⚠️ "+schemaErr+" — أُلغي الاستيراد لحماية بياناتك");return}
@@ -1033,11 +1072,13 @@ el("importFile").onchange=e=>{
       if(!confirm("هذا الملف يحتوي أيضاً على رمز قفل و/أو إعدادات مزامنة سحابية — استيراده سيستبدل رمز القفل وإعدادات المزامنة الحالية بجهازك. متابعة؟"))return;
     }
     d=sanitizeImportedData(d);
+    if(window.MasarDB&&window.MasarDB.mode==="idb"){try{await window.MasarDB.snapshot("قبل استيراد نسخة احتياطية")}catch(_){}}
     if(!await createPreImportSnapshot()){if(!confirm("تعذّر إنشاء نقطة استرجاع تلقائية قبل الاستيراد. متابعة رغم ذلك؟"))return}
     S.students=d.students||[];S.grades=d.grades||{};S.attendance=d.attendance||{};
     S.payments=d.payments||{};S.behavior=d.behavior||{};S.homework=d.homework||[];S.timetable=d.timetable||[];S.dailyPlans=d.dailyPlans||[];S.exams=d.exams||[];S.messages=d.messages||{};S.events=d.events||[];S.qbank=d.qbank||[];S.examTemplates=d.examTemplates||[];S.settings=d.settings||S.settings;
     save.students();save.grades();save.attendance();save.payments();save.behavior();save.homework();save.timetable();save.dailyPlans&&save.dailyPlans();save.exams();save.messages();save.events();save.qbank();save.examTemplates();save.settings();
-    el("schoolName").value=S.settings.school;render();toast("تم استيراد البيانات ✓");
+    let lecMsg="";if(lectureStore&&window.MasarStorage){try{window.MasarStorage.importBackup(lectureStore,{replace:true});lecMsg=" مع المحاضرات"}catch(err){console.error("lectures import",err);lecMsg=" (تعذر استيراد المحاضرات)"}}
+    el("schoolName").value=S.settings.school;render();toast("تم استيراد البيانات"+lecMsg+" ✓");
   }catch(err){toast("ملف غير صالح")}};
   r.readAsText(f);e.target.value="";
 };

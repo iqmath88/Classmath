@@ -14,16 +14,18 @@ function parseJSON(raw,fallback){
 }
 function clone(value){return value===undefined?undefined:JSON.parse(JSON.stringify(value))}
 function keyAllowed(key){return typeof key==="string"&&key.startsWith(PREFIX)}
+// v2.9.0: القراءة والكتابة عبر MasarDB (IndexedDB) إن توفر، وإلا localStorage كما كان
+const LS={getItem:k=>window.MasarDB?window.MasarDB.getItem(k):localStorage.getItem(k),setItem:(k,v)=>window.MasarDB?window.MasarDB.setItem(k,v):localStorage.setItem(k,v),removeItem:k=>window.MasarDB?window.MasarDB.removeItem(k):localStorage.removeItem(k),allKeys:()=>window.MasarDB?window.MasarDB.keys():Object.keys(localStorage)};
 
 const storage={
-  get(key,fallback=null){return clone(parseJSON(localStorage.getItem(key),fallback))},
-  set(key,value){localStorage.setItem(key,JSON.stringify(value));return true},
-  remove(key){localStorage.removeItem(key)},
-  has(key){return localStorage.getItem(key)!==null},
-  keys(){return Object.keys(localStorage).filter(keyAllowed).sort()},
+  get(key,fallback=null){return clone(parseJSON(LS.getItem(key),fallback))},
+  set(key,value){LS.setItem(key,JSON.stringify(value));return true},
+  remove(key){LS.removeItem(key)},
+  has(key){return LS.getItem(key)!==null},
+  keys(){return LS.allKeys().filter(keyAllowed).sort()},
   exportBackup(){
     const data={};
-    this.keys().forEach(k=>{data[k]=parseJSON(localStorage.getItem(k),null)});
+    this.keys().forEach(k=>{data[k]=parseJSON(LS.getItem(k),null)});
     return {
       schema:BACKUP_SCHEMA,
       schemaVersion:BACKUP_VERSION,
@@ -44,15 +46,15 @@ const storage={
   importBackup(payload,{replace=false}={}){
     const check=this.validateBackup(payload);if(!check.ok)throw new Error(check.error);
     const rollback={};
-    this.keys().forEach(k=>{rollback[k]=localStorage.getItem(k)});
+    this.keys().forEach(k=>{rollback[k]=LS.getItem(k)});
     try{
-      if(replace)this.keys().forEach(k=>localStorage.removeItem(k));
-      Object.entries(payload.data).forEach(([k,v])=>localStorage.setItem(k,JSON.stringify(v)));
-      localStorage.setItem(PREFIX+"last-backup-import",JSON.stringify({importedAt:new Date().toISOString(),sourceExportedAt:payload.exportedAt||null}));
+      if(replace)this.keys().forEach(k=>LS.removeItem(k));
+      Object.entries(payload.data).forEach(([k,v])=>LS.setItem(k,JSON.stringify(v)));
+      LS.setItem(PREFIX+"last-backup-import",JSON.stringify({importedAt:new Date().toISOString(),sourceExportedAt:payload.exportedAt||null}));
       return true;
     }catch(err){
-      this.keys().forEach(k=>localStorage.removeItem(k));
-      Object.entries(rollback).forEach(([k,v])=>localStorage.setItem(k,v));
+      this.keys().forEach(k=>LS.removeItem(k));
+      Object.entries(rollback).forEach(([k,v])=>LS.setItem(k,v));
       throw err;
     }
   },

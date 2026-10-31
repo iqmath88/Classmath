@@ -343,3 +343,20 @@ html #lectureSaveState.saveFailed{color:#B3453F;font-weight:800}
 /* v2.8.17: مسافة أسفل الصفحة على الشاشة فقط — كانت تُطبَّق عند الطباعة فتضيف صفحة فارغة لكل PDF */
 @media screen and (min-width:1024px){html body{padding-bottom:24px!important}}
 @media print{html body{padding:0!important;margin:0!important}}
+
+/* =========================================================
+   v2.9.0 — حماية البيانات
+   ========================================================= */
+html .dataSafety{display:flex;flex-direction:column;gap:6px;margin:0 0 10px}
+html .dsRow{display:flex;align-items:flex-start;gap:8px;padding:10px 12px;border-radius:var(--radius-md);background:var(--glass-bg);border:1px solid var(--glass-line);font-size:12.5px;color:var(--text-secondary);line-height:1.6}
+html .dsRow .ic{width:18px;height:18px;margin-top:2px;flex:0 0 auto}
+html .dsRow b{color:var(--brand-ink)}
+html .dsRow.ok .ic{color:#17804F}
+html .dsRow.warn{background:var(--cream);border-color:#E8D9B4;color:var(--cream-ink)}
+html .dsRow.warn .ic{color:var(--gold-text)}html .dsRow.warn b{color:var(--cream-ink)}
+html #snapBtn{display:flex;align-items:center;justify-content:center;gap:8px}
+.snList{display:flex;flex-direction:column;gap:8px}
+html .snRow{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:10px 12px;border-radius:var(--radius-md);background:var(--surface-soft);border:1px solid var(--glass-line)}
+.snInfo{flex:1 1 180px;display:flex;flex-direction:column;gap:2px}.snInfo b{font-size:13.5px;color:var(--brand-ink)}.snInfo small{font-size:11.5px;color:var(--text-secondary)}
+html .snRow .btn{width:auto;margin:0;padding:7px 12px;font-size:12.5px;display:inline-flex;align-items:center;gap:5px}
+html .snRow .btn .ic{width:16px;height:16px}

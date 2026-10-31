@@ -979,6 +979,7 @@ function openOnboarding(){
   modalEl.addEventListener("touchend",onEnd,{passive:true});
 }
 async function boot(){
+  if(window.MasarDB){try{await window.MasarDB.ready}catch(_){}if(window.MasarDB.mode==="idb"){hasLocal=true;canSave=true;if(storeMode==="none")storeMode="local";try{updateStorageBanner()}catch(_){}}}
   S.wsId="";
   S.students=await loadKey("students",[]);
   S.grades=await loadKey("grades",{});

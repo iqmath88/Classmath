@@ -535,12 +535,14 @@ async function cloudSet(k,s){
     catch(e2){console.error("cloud set failed:",e2);return false}
   }
 }
+const DBS=()=>window.MasarDB||localStorage; // v2.9.0: IndexedDB عبر ذاكرة مؤقتة متزامنة
 async function loadRaw(k,fb){
+  if(window.MasarDB)try{await window.MasarDB.ready}catch(_){}
   if(storeMode==="cloud"){
     try{const r=await window.storage.get(k);if(r)return JSON.parse(r.value)}catch(e){}
   }
   if(hasLocal){
-    try{const v=localStorage.getItem("sdb:"+k);if(v!==null)return JSON.parse(v)}catch(e){}
+    try{const v=DBS().getItem("sdb:"+k);if(v!==null)return JSON.parse(v)}catch(e){}
   }
   if(k in memStore)return JSON.parse(memStore[k]);
   return fb;
@@ -553,13 +555,13 @@ async function saveRaw(k,v){
     downgrade();
   }
   if(storeMode==="local"||hasLocal){
-    try{localStorage.setItem("sdb:"+k,s);return}catch(e){downgrade()}
+    try{DBS().setItem("sdb:"+k,s);return}catch(e){downgrade()}
   }
 }
 async function delRaw(k){
   delete memStore[k];
   if(hasCloud){try{await window.storage.delete(k)}catch(e){}}
-  if(hasLocal){try{localStorage.removeItem("sdb:"+k)}catch(e){}}
+  if(hasLocal){try{DBS().removeItem("sdb:"+k)}catch(e){}}
 }
 /* ============ تخزين صور الطلبة بـ IndexedDB (سعته أكبر بكثير من localStorage، يمنع امتلاء التخزين) ============ */
 const photoCache={};
