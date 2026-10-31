@@ -1040,7 +1040,7 @@ async function shareBackup(){
   const file=new File([data],"مزامنة_الطلبة_"+todayStr()+".json",{type:"application/json"});
   if(navigator.share&&navigator.canShare&&navigator.canShare({files:[file]})){
     try{
-      await navigator.share({files:[file],title:"بيانات طلبتي"});
+      await navigator.share({files:[file]});
       S.settings.lastBackup=todayStr();save.settings();
       if(S.tab==="home")render();
       toast("أرسل الملف لنفسك وافتحه بالجهاز الآخر ثم «استيراد نسخة»");
@@ -1081,7 +1081,7 @@ function openBackupSheet(){
     if(btn.disabled)return;if(pass&&pass.value.trim()!==ready.pass)return;
     const file=ready.file;
     if(navigator.share&&navigator.canShare&&navigator.canShare({files:[file]})){
-      navigator.share({files:[file],title:file.name}).then(()=>markBackupDone("share")).catch(err=>{if(err&&err.name==="AbortError")return;console.warn("share failed",err);downloadBackupFile(file);markBackupDone("download")});
+      navigator.share({files:[file]}).then(()=>markBackupDone("share")).catch(err=>{if(err&&err.name==="AbortError")return;console.warn("share failed",err);downloadBackupFile(file);markBackupDone("download")});
     }else{downloadBackupFile(file);markBackupDone("download")}
   };
 }
