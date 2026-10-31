@@ -1,4 +1,4 @@
-const CACHE = "masar-education-2-9-4-data-safety";
+const CACHE = "masar-education-2-9-6-print-ipad";
 const ASSETS = [
   "./",
   "./index.html",
@@ -29,6 +29,9 @@ const ASSETS = [
   "./masar-icons.js",
   "./masar-storage.js",
   "./masar-print-engine.js",
+  "./masar-pdf-export.js",
+  "./html2canvas.min.js",
+  "./jspdf.umd.min.js",
   "./masar-dashboard.js",
   "./masar-document-core.js",
   "./masar-lectures.js",

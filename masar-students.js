@@ -262,6 +262,7 @@ function backToHome(){
   _tabHistActive=false;
   S.tab="home";render();
 }
+let _ignoreNextPop=false,_ignorePopT=0;
 history.pushState({root:true},""); // حارس أساسي يمنع الخروج المباشر من أول ضغطة رجوع
 new MutationObserver(()=>{
   if(_isLockShown())return; // شاشة القفل لا تُغلق بزر الرجوع لأسباب أمنية
@@ -271,10 +272,13 @@ new MutationObserver(()=>{
     history.pushState({modalOpen:true},"");
   }else if(!open&&_modalHistActive&&!_suppressPop){
     _modalHistActive=false;
+    // v2.9.5: رجوع برمجي لإزالة قيد النافذة فقط — لا يُعامل كضغطة «رجوع» من المعلم (كان يعيده للرئيسية)
+    _ignoreNextPop=true;clearTimeout(_ignorePopT);_ignorePopT=setTimeout(()=>{_ignoreNextPop=false},600);
     history.back();
   }
 }).observe(el("modal"),{childList:true});
 window.addEventListener("popstate",()=>{
+  if(_ignoreNextPop){_ignoreNextPop=false;clearTimeout(_ignorePopT);return}
   if(_isLockShown())return;
   if(_modalHistActive&&el("modal").innerHTML.trim()===""){_modalHistActive=false} // تصحيح حالة عالقة إن وجدت
   if(_modalHistActive){

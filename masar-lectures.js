@@ -716,13 +716,27 @@ async function paginateLectureHTML(l){
   return lectureDocumentHTML(lecture);
  }finally{measure.remove()}
 }
+// v2.9.5: نافذة «PDF جاهز» — المشاركة تتم بلمسة مباشرة حتى يقبلها سفاري
+function showPdfReady(res){
+  const modal=document.getElementById('modal');if(!modal)return;
+  const url=URL.createObjectURL(res.blob);
+  const size=typeof window.fmtBytes==='function'?window.fmtBytes(res.blob.size):Math.round(res.blob.size/1024)+' KB';
+  const canShare=!!(navigator.share&&navigator.canShare&&navigator.canShare({files:[res.file]}));
+  const I=n=>(window.ICON?ICON(n):'');
+  modal.innerHTML='<div class="overlay"><div class="sheet pdfSheet"><div class="sheetHead"><h3>ملف PDF جاهز</h3><button class="x" id="pdfX">✕</button></div><div class="form"><div class="pdfReady"><span class="pdfIc">'+I('exam')+'</span><div><b>'+safe(res.file.name)+'</b><small>'+res.pages+' '+(res.pages===1?'صفحة':(res.pages===2?'صفحتان':'صفحات'))+' · '+safe(size)+'</small></div></div><p class="pdfHint">'+(canShare?'«مشاركة» تتيح لك: حفظ في الملفات، أو الإرسال عبر واتساب وتليغرام، أو الطباعة.':'«تنزيل» يحفظ الملف في مجلد التنزيلات.')+' الملف بصفحات A4 مطابقة للمعاينة، بلا رابط الصفحة أو التاريخ.</p></div><div class="sheetFoot"><button class="btn ghost" id="pdfOpen">'+I('expand')+'<span>فتح</span></button>'+(canShare?'<button class="btn" id="pdfShare">'+I('clipboard')+'<span>مشاركة / حفظ</span></button>':'<button class="btn" id="pdfDl">'+I('clipboard')+'<span>تنزيل</span></button>')+'</div></div></div>';
+  const close=()=>{modal.innerHTML='';setTimeout(()=>URL.revokeObjectURL(url),60000)};
+  document.getElementById('pdfX').onclick=close;
+  document.getElementById('pdfOpen').onclick=()=>{const a=document.createElement('a');a.href=url;a.target='_blank';a.rel='noopener';document.body.appendChild(a);a.click();a.remove()};
+  const sh=document.getElementById('pdfShare');if(sh)sh.onclick=()=>{navigator.share({files:[res.file],title:res.file.name}).then(close).catch(err=>{if(err&&err.name==='AbortError')return;console.warn('share pdf',err);const a=document.createElement('a');a.href=url;a.download=res.file.name;document.body.appendChild(a);a.click();a.remove()})};
+  const dl=document.getElementById('pdfDl');if(dl)dl.onclick=()=>{const a=document.createElement('a');a.href=url;a.download=res.file.name;document.body.appendChild(a);a.click();a.remove();close()};
+}
 async function renderLecturePreview(){
   // المعاينة تظهر فورًا أولًا، ثم يُطبّق التقسيم الذكي في الخلفية.
   // بهذه الطريقة لا تبقى الشاشة فارغة إذا أخفق القياس على Safari/iPad.
   try{ syncMeta(); }catch(err){ console.warn('تعذر مزامنة بيانات المحاضرة قبل المعاينة.',err); }
 
   const lecture=normalizeLecture(clone(editorLecture||{}));
-  setContent('<section class="previewShell"><div class="previewToolbar"><button class="eduGhost" id="backEditor">‹ رجوع للتحرير</button><div><b>معاينة A4</b><span id="lecturePreviewStatus">تم فتح المعاينة الآمنة — جارِ تحسين توزيع الصفحات…</span></div><button class="eduPrimary" id="printLecture">🖨 طباعة / PDF</button></div><div id="lecturePreviewArea"></div></section>');
+  setContent('<section class="previewShell"><div class="previewToolbar"><button class="eduGhost" id="backEditor">‹ رجوع للتحرير</button><div><b>معاينة A4</b><span id="lecturePreviewStatus">تم فتح المعاينة الآمنة — جارِ تحسين توزيع الصفحات…</span></div><div class="previewActs"><button class="eduSecondary" id="printLecture">طباعة</button><button class="eduPrimary" id="pdfLecture">'+(window.ICON?ICON('exam'):'')+'<span>حفظ PDF</span></button></div></div><div id="lecturePreviewArea"></div></section>');
 
   const back=document.getElementById('backEditor');
   if(back)back.onclick=renderLectureEditor;
@@ -758,27 +772,59 @@ async function renderLecturePreview(){
     }
   })();
 
-  if(btn)btn.onclick=async()=>{
-    btn.disabled=true;btn.textContent='⏳ تحضير الطباعة…';
+  const pdfBtn=document.getElementById('pdfLecture');
+  if(pdfBtn)pdfBtn.onclick=async()=>{
+    if(pdfBtn.disabled)return;const label=pdfBtn.querySelector('span');pdfBtn.disabled=true;
+    const say=t=>{if(label)label.textContent=t;if(status)status.textContent=t};
     try{
-      const print=document.getElementById('printArea');
+      if(!window.NiborPDF)throw new Error('PDF_MODULE_MISSING');
+      const res=await window.NiborPDF.exportLecture(lecture,{paginate:paginateLectureHTML,waitAssets:waitLectureAssets,onProgress:say});
+      if(status)status.textContent='ملف PDF جاهز — '+res.pages+' صفحة';
+      showPdfReady(res);
+    }catch(err){
+      console.error('تعذر إنشاء PDF',err);
+      const offline=/LIB_LOAD_FAILED|LIBS_MISSING/.test(String(err&&err.message));
+      if(status)status.textContent=offline?'تعذر تحميل أدوات PDF — افتح التطبيق مرة مع الإنترنت ثم أعد المحاولة، أو استخدم «طباعة».':'تعذر إنشاء PDF — استخدم «طباعة» مؤقتًا.';
+    }finally{pdfBtn.disabled=false;if(label)label.textContent='حفظ PDF'}
+  };
+
+  // v2.9.6: الطباعة تُستدعى مباشرة داخل لمسة الزر (دون انتظار) — سفاري على iPad يتجاهل window.print() بعد عمليات غير متزامنة.
+  // إذا لم تُفتح نافذة الطباعة (مثل التطبيق المثبّت على الشاشة الرئيسية) نعرض بديل «PDF ثم طباعة» من قائمة المشاركة.
+  if(btn)btn.onclick=()=>{
+    const print=document.getElementById('printArea');
+    try{
       if(!print)throw new Error('PRINT_AREA_MISSING');
       let printHTML='';
       try{ printHTML=lectureFlowHTML(lecture); }
       catch(err){ console.warn('استخدام تخطيط الطباعة الآمن.',err); printHTML=lectureDocumentHTML(lecture); }
       print.innerHTML=printHTML||lectureDocumentHTML(lecture);
-      await waitLectureAssets(print);
+      try{renderKatex(print)}catch(err){console.warn('katex print',err)}
       document.body.classList.add('printingLecture','printFlow');
       // هوامش صفحة المحاضرة تُحقن وقت الطباعة فقط (قاعدة @page العامة بهوامش صفر مخصصة للامتحانات بعرض كامل)
       let ps=document.getElementById('lecturePageStyle');if(!ps){ps=document.createElement('style');ps.id='lecturePageStyle';document.head.appendChild(ps)}ps.textContent='@page{size:A4 portrait;margin:14mm 13mm 15mm!important}';
-      setTimeout(()=>window.print(),120);
+      let opened=false;const mark=()=>{opened=true};window.addEventListener('beforeprint',mark,{once:true});
+      const t0=Date.now();
+      window.print();
+      // في المتصفحات التي توقف التنفيذ أثناء نافذة الطباعة، مرور وقت طويل يعني أنها فُتحت
+      if(Date.now()-t0>800)opened=true;
+      setTimeout(()=>{window.removeEventListener('beforeprint',mark);if(opened)return;
+        document.body.classList.remove('printingLecture','printFlow');document.getElementById('lecturePageStyle')?.remove();print.innerHTML='';
+        showPrintFallback();
+      },1600);
     }catch(err){
       console.error('تعذر تحضير الطباعة',err);
-      if(status)status.textContent='تعذر تحضير الطباعة؛ أعد المحاولة.';
-    }finally{
-      btn.disabled=false;btn.textContent='🖨 طباعة / PDF';
+      if(status)status.textContent='تعذر تحضير الطباعة؛ جرّب «حفظ PDF» ثم اختر «طباعة» من قائمة المشاركة.';
     }
   };
+  function showPrintFallback(){
+    const modal=document.getElementById('modal');if(!modal||modal.innerHTML.trim())return;
+    const I=n=>(window.ICON?ICON(n):'');
+    modal.innerHTML='<div class="overlay"><div class="sheet pdfSheet"><div class="sheetHead"><h3>لم تُفتح نافذة الطباعة</h3><button class="x" id="pfX">✕</button></div><div class="form"><p class="pdfHint">بعض أوضاع iPad (مثل التطبيق المثبّت على الشاشة الرئيسية) لا تسمح بفتح الطباعة من الصفحة. الحل: أنشئ ملف PDF، ثم من قائمة المشاركة اختر <b>«طباعة»</b>، أو احفظه وأرسله.</p></div><div class="sheetFoot"><button class="btn ghost" id="pfCancel">إغلاق</button><button class="btn" id="pfPdf">'+I('exam')+'<span>إنشاء PDF للطباعة</span></button></div></div></div>';
+    const close=()=>{modal.innerHTML=''};
+    document.getElementById('pfX').onclick=document.getElementById('pfCancel').onclick=close;
+    document.getElementById('pfPdf').onclick=()=>{close();setTimeout(()=>pdfBtn&&pdfBtn.click(),60)};
+  }
+
 }
 
 

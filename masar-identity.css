@@ -564,3 +564,22 @@ html .backupSheet #bsSave{display:inline-flex;align-items:center;gap:6px}
 html .backupSheet #bsSave .ic{width:17px;height:17px}
 html .backupSheet #bsSave:disabled{opacity:.6}
 html #bkExp{display:inline-flex;align-items:center;justify-content:center;gap:6px}html #bkExp .ic{width:17px;height:17px}
+
+/* ---------- v2.9.5: تصدير PDF داخل التطبيق ---------- */
+.pdfStage{position:fixed;left:-100000px;top:0;width:210mm;z-index:-1;pointer-events:none;background:#fff}
+body.pdfExporting .lecturePaginationMeasure .lecturePaper,.pdfStage .lecturePaper{width:210mm!important;padding:16mm 16mm 18mm!important;margin:0!important;box-shadow:none!important;border-radius:0!important}
+body.pdfExporting .lecturePaginationMeasure .lecturePagedPaper,.pdfStage .lecturePagedPaper{height:297mm!important;min-height:297mm!important}
+.pdfStage .lecturePaper.pdfTall{height:auto!important;max-height:none!important;overflow:visible!important}
+.pdfStage .lecturePaper.pdfTall .lectureDocBody{flex:none!important;overflow:visible!important}
+.previewActs{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+html #pdfLecture{display:inline-flex;align-items:center;gap:6px}
+html #pdfLecture .ic{width:17px;height:17px}
+html #pdfLecture:disabled{opacity:.75;cursor:progress}
+.pdfSheet .pdfReady{display:flex;align-items:center;gap:12px;padding:12px;border-radius:var(--radius-md);background:var(--surface-soft);border:1px solid var(--glass-line)}
+.pdfSheet .pdfIc{width:44px;height:44px;border-radius:12px;display:grid;place-items:center;background:var(--brand-soft);color:var(--brand);flex:0 0 auto}
+.pdfSheet .pdfIc .ic{width:22px;height:22px}
+.pdfSheet .pdfReady b{display:block;font-size:14px;color:var(--brand-ink);word-break:break-word}
+.pdfSheet .pdfReady small{font-size:12px;color:var(--text-secondary)}
+.pdfSheet .pdfHint{font-size:12.5px;line-height:1.8;color:var(--text-secondary);margin:2px 0}
+html .pdfSheet .sheetFoot .btn{display:inline-flex;align-items:center;gap:6px}
+html .pdfSheet .sheetFoot .ic{width:17px;height:17px}
