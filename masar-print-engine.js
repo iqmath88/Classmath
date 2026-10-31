@@ -381,3 +381,8 @@ async function printHTML(title,body,withParent,instOverride,examMode,examMeta,pa
 
 }
 
+
+/* v2.9.3: علامة لمتصفحات WebKit (كل متصفحات الآيباد/الآيفون وSafari على الماك).
+   Safari يتجاهل @page{margin:0} ويضيف هوامشه ورأسه وتذييله، فالصفحات بارتفاع 297mm الثابت تفيض
+   وتنتج صفحات فارغة أو مقصوصة. مع هذه العلامة تصبح الصفحات بارتفاع تلقائي عند الطباعة. */
+(function(){try{const ua=navigator.userAgent||"";const ios=/iPad|iPhone|iPod/.test(ua)||(/Macintosh/.test(ua)&&navigator.maxTouchPoints>1);const safari=/Safari\//.test(ua)&&!/Chrome\/|Chromium|Edg\/|OPR\/|Firefox\//.test(ua);if(ios||safari)document.documentElement.classList.add("printSafe")}catch(_){}})();

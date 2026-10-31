@@ -359,7 +359,7 @@ function ensureTable(b){
 function tableBlockEditor(i,b){const t=ensureTable(b);let rows='';for(let r=0;r<t.rows;r++){rows+='<tr>';for(let c=0;c<t.cols;c++){const tag=t.header&&r===0?'th':'td';rows+='<'+tag+' contenteditable="true" dir="'+cellDir(t.cells[r][c])+'" data-table-cell="'+r+','+c+'">'+cellEditorHTML(t.cells[r][c])+'</'+tag+'>'}rows+='</tr>'}return '<div class="smartTableEditor"><div class="visualObjectToolbar"><label>صفوف <input type="number" min="1" max="20" data-table-size="rows" value="'+t.rows+'"></label><label>أعمدة <input type="number" min="1" max="10" data-table-size="cols" value="'+t.cols+'"></label><label><input type="checkbox" data-table-header '+(t.header?'checked':'')+'> صف عناوين</label><button type="button" data-table-action="addRow">＋ صف</button><button type="button" data-table-action="addCol">＋ عمود</button><button type="button" data-table-action="delRow">− صف</button><button type="button" data-table-action="delCol">− عمود</button></div><div class="smartTableScroll"><table class="smartAuthorTable"><tbody>'+rows+'</tbody></table></div></div>'}
 function tableShrinkOk(t,k,v){v=Math.max(1,v);const lost=k==='rows'?t.cells.slice(v).flat():t.cells.flatMap((r,i)=>(t.header&&i===0)?[]:r.slice(v));if(!lost.some(x=>String(x||'').trim()))return true;return confirm('سيتم حذف خلايا فيها بيانات. يمكنك التراجع بزر ↶ لاحقًا. هل تريد المتابعة؟')}
 function bindTableBlocks(){document.querySelectorAll('.smartTableEditor').forEach(box=>{const i=Number(box.closest('.blockEditor').dataset.index),b=editorLecture.blocks[i],t=ensureTable(b);box.querySelectorAll('[data-table-cell]').forEach(cell=>{cell.oninput=()=>{const [r,c]=cell.dataset.tableCell.split(',').map(Number);t.cells[r][c]=readCellText(cell);scheduleDraft()};cell.onpaste=e=>{const txt=e.clipboardData?.getData('text/plain');if(txt==null)return;e.preventDefault();document.execCommand('insertText',false,txt.replace(/\r\n?/g,'\n'))};try{window.MasarAutoDirection?.bindEditor?.(cell)}catch(_){}});box.querySelectorAll('[data-table-size]').forEach(inp=>inp.onchange=()=>{const k=inp.dataset.tableSize,v=Number(inp.value)||1;if(!tableShrinkOk(t,k,v)){inp.value=t[k];return}t[k]=v;ensureTable(b);renderLectureEditor();scheduleDraft()});const h=box.querySelector('[data-table-header]');if(h)h.onchange=()=>{t.header=h.checked;renderLectureEditor();scheduleDraft()};box.querySelectorAll('[data-table-action]').forEach(btn=>btn.onclick=()=>{const a=btn.dataset.tableAction;if(a==='addRow')t.rows++;if(a==='addCol')t.cols++;if(a==='delRow'){if(!tableShrinkOk(t,'rows',t.rows-1))return;t.rows=Math.max(1,t.rows-1)}if(a==='delCol'){if(!tableShrinkOk(t,'cols',t.cols-1))return;t.cols=Math.max(1,t.cols-1)}ensureTable(b);renderLectureEditor();scheduleDraft()})})}
-function tablePrintHTML(b){const t=ensureTable(b);return '<div class="smartTablePrint"><table><tbody>'+t.cells.map((row,r)=>'<tr>'+row.map(v=>{const tag=(t.header&&r===0)?'th':'td';return '<'+tag+' dir="'+cellDir(v)+'">'+mathHTML(v)+'</'+tag+'>'}).join('')+'</tr>').join('')+'</tbody></table></div>'}
+function tablePrintHTML(b){const t=ensureTable(b);const cell=(v,tag)=>'<'+tag+' dir="'+cellDir(v)+'">'+mathHTML(v)+'</'+tag+'>';const rows=t.cells.map((row,r)=>({row,head:t.header&&r===0}));const head=rows.filter(x=>x.head).map(x=>'<tr>'+x.row.map(v=>cell(v,'th')).join('')+'</tr>').join('');const body=rows.filter(x=>!x.head).map(x=>'<tr>'+x.row.map(v=>cell(v,'td')).join('')+'</tr>').join('');return '<div class="smartTablePrint"><table>'+(head?'<thead>'+head+'</thead>':'')+'<tbody>'+body+'</tbody></table></div>'}
 
 function ensureMatrix(b){if(!b.matrix||typeof b.matrix!=="object")b.matrix={};const m=b.matrix;m.rows=Math.max(1,Math.min(10,Number(m.rows)||2));m.cols=Math.max(1,Math.min(10,Number(m.cols)||2));m.brackets=['round','square','bars','none'].includes(m.brackets)?m.brackets:'round';if(!Array.isArray(m.cells))m.cells=[];while(m.cells.length<m.rows)m.cells.push([]);m.cells=m.cells.slice(0,m.rows);m.cells.forEach((r,i)=>{while(r.length<m.cols)r.push('');m.cells[i]=r.slice(0,m.cols).map(x=>String(x??''))});return m}
 function matrixHTML(b,edit=false){const m=ensureMatrix(b),open={round:'(',square:'[',bars:'|',none:''}[m.brackets],close={round:')',square:']',bars:'|',none:''}[m.brackets];return '<div class="matrixObject"><span class="matrixBracket">'+open+'</span><div class="matrixGrid" style="grid-template-columns:repeat('+m.cols+',minmax(48px,auto))">'+m.cells.flatMap((row,r)=>row.map((v,c)=>edit?'<input dir="ltr" data-matrix-cell="'+r+','+c+'" value="'+safe(v)+'">':'<span dir="ltr">'+safe(v)+'</span>')).join('')+'</div><span class="matrixBracket">'+close+'</span></div>'}
@@ -643,13 +643,17 @@ function lectureBlockHTMLUnsafe(l,b,i){
  }
  const type=String(b.type||'text'),smart=SMART_TYPES.has(type),label=BLOCK_TYPES[type]?.label||'عنصر';
  const numbered=smart&&ensureSmart(b).autoNumber!==false,ownTitle=String(b.title||'').trim();const title=numbered?(ownTitle&&ownTitle!==label?smartLabel(l,b,i)+' — '+ownTitle:smartLabel(l,b,i)):(ownTitle||label);// v2.8.17: لا تكرار «تعريف 1 — تعريف»
- const solution=((b.solutionHtml||b.solution)&&(!smart||ensureSmart(b).showSolution!==false))?'<div class="lectureSolution"><b>الحل:</b>'+richPreview(b,'solution')+'</div>':'';
+ const solution=((b.solutionHtml||b.solution)&&(!smart||ensureSmart(b).showSolution!==false))?'<div class="lectureSolution"><b>الحل:</b> '+richPreview(b,'solution')+'</div>':'';
  const lines=smart?ensureSmart(b).answerLines:0;
- return '<section data-lecture-block="'+i+'" style="'+style+'" class="lectureBlock type-'+safe(type)+(b.pageBreakBefore?' forcePageBreak':'')+(b.keepTogether!==false?' keepTogether':'')+(d.hideTitle?' hideBlockTitle':'')+'"><div class="lectureBlockTitle"><span>'+(BLOCK_TYPES[type]?.icon||'•')+'</span><h2>'+safe(title)+'</h2></div>'+(smart?smartPrintMetaHTML(b):'')+'<div class="lectureBlockContent">'+content+solution+(smart&&lines>0?'<div class="answerLines">'+Array.from({length:lines},()=>'<span></span>').join('')+'</div>':'')+'</div></section>';
+ return '<section data-lecture-block="'+i+'" style="'+style+'" class="lectureBlock type-'+safe(type)+(b.pageBreakBefore?' forcePageBreak':'')+(b.keepTogether!==false?' keepTogether':'')+(d.hideTitle?' hideBlockTitle':'')+'"><div class="lectureBlockTitle"><span class="lbIc">'+blockIcon(type)+'</span><h2>'+safe(title)+'</h2></div>'+(smart?smartPrintMetaHTML(b):'')+'<div class="lectureBlockContent">'+content+solution+(smart&&lines>0?'<div class="answerLines">'+Array.from({length:lines},()=>'<span></span>').join('')+'</div>':'')+'</div></section>';
 }
 function lectureBlockHTML(l,b,i){
  try{return lectureBlockHTMLUnsafe(l,b,i)}catch(err){return previewFallbackBlockHTML(b,i,err)}
 }
+// v2.9.3: نسخة الطباعة متدفقة — المتصفح يقسّم الصفحات حسب مساحته الفعلية (Safari على الآيباد يفرض هوامشه ورأسه وتذييله).
+// الصفحات الثابتة بارتفاع 297mm كانت تفيض فتنتج صفحة فارغة بعد كل صفحة.
+function lectureFlowHTML(l){const lecture=(l&&typeof l==='object')?l:{};const blocks=Array.isArray(lecture.blocks)?lecture.blocks:[];let head='';try{head=lectureHeaderHTML(lecture,false)}catch(_){head='<header class="lectureDocHead"><div><h1>'+safe(lecture.title||'محاضرة')+'</h1></div></header>'}
+ return '<article class="lectureFlowDoc">'+head+'<div class="lectureDocBody">'+blocks.map((b,i)=>lectureBlockHTML(lecture,b,i)).join('')+'</div><footer class="lectureFlowFoot"><span>'+safe(lecture.teacher||'')+'</span><span>نيبور كلاس</span></footer></article>'}
 function lectureDocumentHTML(l){
  const lecture=(l&&typeof l==='object')?l:{};
  const blocks=Array.isArray(lecture.blocks)?lecture.blocks:[];
@@ -705,7 +709,7 @@ async function paginateLectureHTML(l){
   items.forEach((it,i)=>{const add=it.h+(cur.length?gap:0),forced=it.brk&&cur.length>0;if(forced||(cur.length&&used+add>capacity)){pages.push(cur);cur=[];used=0}cur.push(i);used+=it.h+(cur.length>1?gap:0)});
   if(cur.length)pages.push(cur);
   if(!pages.length)return lectureDocumentHTML(lecture);
-  if(pages.length>1){const ph=a=>a.reduce((t,i)=>t+(items[i].h||1),0)+Math.max(0,a.length-1)*gap;let last=pages[pages.length-1],prev=pages[pages.length-2];while(prev.length>1&&ph(last)<capacity*.34){const candidate=prev[prev.length-1];if(items[last[0]]?.brk||ph(last)+(items[candidate].h||1)+gap>capacity)break;prev.pop();last.unshift(candidate)}}
+  // v2.9.3: أُزيلت «الموازنة» التي كانت تنقل كتلًا من الصفحة السابقة فتترك نصفها فارغًا.
   return pages.map((idxs,p)=>'<div class="lecturePaper lecturePagedPaper" data-page="'+(p+1)+'">'+lectureHeaderHTML(lecture,p>0)+'<div class="lectureDocBody">'+idxs.map(i=>items[i].html).join('')+'</div>'+lectureFooterHTML(lecture,p+1,pages.length)+'</div>').join('');
  }catch(err){
   console.error('فشل التقسيم الذكي، تم الرجوع إلى التخطيط الآمن.',err);
@@ -760,11 +764,13 @@ async function renderLecturePreview(){
       const print=document.getElementById('printArea');
       if(!print)throw new Error('PRINT_AREA_MISSING');
       let printHTML='';
-      try{ printHTML=await paginateLectureHTML(lecture); }
+      try{ printHTML=lectureFlowHTML(lecture); }
       catch(err){ console.warn('استخدام تخطيط الطباعة الآمن.',err); printHTML=lectureDocumentHTML(lecture); }
       print.innerHTML=printHTML||lectureDocumentHTML(lecture);
       await waitLectureAssets(print);
-      document.body.classList.add('printingLecture');
+      document.body.classList.add('printingLecture','printFlow');
+      // هوامش صفحة المحاضرة تُحقن وقت الطباعة فقط (قاعدة @page العامة بهوامش صفر مخصصة للامتحانات بعرض كامل)
+      let ps=document.getElementById('lecturePageStyle');if(!ps){ps=document.createElement('style');ps.id='lecturePageStyle';document.head.appendChild(ps)}ps.textContent='@page{size:A4 portrait;margin:14mm 13mm 15mm!important}';
       setTimeout(()=>window.print(),120);
     }catch(err){
       console.error('تعذر تحضير الطباعة',err);
@@ -861,5 +867,5 @@ function updateEquationPreview(){
 }
 function insertEquationIntoBlock(){if(!equationTarget)return;const code=document.getElementById("eqLatexInput").value.trim(),check=validateLatex(code);if(!check.ok){alert("تعذر حفظ المعادلة: "+check.message);return}rememberEquation(code);if(equationTarget.mathBlockIndex!=null){const i=equationTarget.mathBlockIndex,b=editorLecture.blocks[i];b.latex=code;b.content=code;b.equation=b.equation||{id:'eq_'+uid()};b.equation.latex=code;b.equation.updatedAt=new Date().toISOString();closeEquationEditor();renderLectureEditor();scheduleDraft();return}const {index,field,richEditor,existingNode}=equationTarget,display=document.getElementById("eqDisplayMode").checked;if(richEditor){if(existingNode){existingNode.dataset.latex=code;existingNode.dataset.display=display?"true":"false";existingNode.classList.toggle("richEquationDisplay",display);existingNode.textContent=code;existingNode.dataset.rendered="false";syncRichEditor(richEditor);renderKatex(richEditor)}else{insertHTMLAtRich(richEditor,'<span class="richEquation'+(display?' richEquationDisplay':'')+'" contenteditable="false" tabindex="0" title="انقر مرتين لتعديل المعادلة" data-equation-id="eq_'+uid()+'" data-display="'+(display?'true':'false')+'" data-latex="'+safe(code)+'">'+safe(code)+'</span>&nbsp;');renderKatex(richEditor)}closeEquationEditor();return}const area=document.querySelector('.blockEditor[data-index="'+index+'"] [data-field="'+field+'"]');if(!area)return;const start=area.selectionStart??area.value.length,end=area.selectionEnd??start,mark=display?"$$":"$";area.setRangeText(mark+code+mark,start,end,"end");editorLecture.blocks[index][field]=area.value;scheduleDraft();closeEquationEditor()}
 
-window.addEventListener("afterprint",()=>{document.body.classList.remove("printingLecture");const p=document.getElementById("printArea");if(p)p.innerHTML=""});
+window.addEventListener("afterprint",()=>{document.body.classList.remove("printingLecture","printFlow");document.getElementById("lecturePageStyle")?.remove();const p=document.getElementById("printArea");if(p)p.innerHTML=""});
 })();

@@ -505,3 +505,31 @@ html .eqModal.kbOpen .eqActions{margin-top:6px;padding-top:6px;bottom:-12px}
 /* رسالة واحدة للتحقق: لوحة التشخيص في الوضع العادي، والسطر المختصر عند ظهور لوحة المفاتيح */
 html .eqModal:not(.kbOpen) #eqValidation{display:none}
 html .eqModal.kbOpen #eqValidation{display:block;font-size:11px;padding:2px 4px}
+
+/* =========================================================
+   v2.9.3 — طباعة صحيحة على Safari/الآيباد
+   ========================================================= */
+.lbIc{display:inline-flex;align-items:center;color:var(--print-accent,#0f172a)}
+.lbIc .ic{width:16px;height:16px}
+.lbIc .rtSigma{font-family:'Times New Roman',serif;font-size:16px}
+.lectureSolution>b{margin-inline-end:4px}
+@media print{
+  /* المحاضرة: مستند متدفق يقسّمه المتصفح حسب مساحته الفعلية */
+  html:has(body.printFlow),html body.printFlow{width:auto!important;min-height:0!important;height:auto!important}
+  body.printFlow #printArea{width:auto!important;margin:0!important;padding:0!important}
+  body.printFlow .lectureFlowDoc{display:block;width:auto;margin:0;padding:0;background:#fff;color:#111827}
+  body.printFlow .lectureFlowDoc .lectureDocBody{display:block!important;height:auto!important;min-height:0!important;flex:none!important;gap:0!important}
+  body.printFlow .lectureFlowDoc .lectureBlock{margin:0 0 10px!important;overflow:visible!important;height:auto!important}
+  body.printFlow .lectureFlowDoc .lectureBlock.keepTogether{break-inside:avoid;page-break-inside:avoid}
+  body.printFlow .lectureFlowDoc .lectureBlock.type-table{break-inside:auto;page-break-inside:auto}
+  body.printFlow .lectureFlowDoc .lectureBlockTitle,body.printFlow .lectureFlowDoc .lectureDocHead,body.printFlow .lectureFlowDoc .lectureDocMeta{break-after:avoid;page-break-after:avoid}
+  body.printFlow .lectureFlowDoc .forcePageBreak{break-before:page;page-break-before:always}
+  body.printFlow .smartTablePrint thead{display:table-header-group}
+  body.printFlow .smartTablePrint tr{break-inside:avoid;page-break-inside:avoid}
+  body.printFlow .lectureFlowFoot{display:flex;justify-content:space-between;margin-top:14px;padding-top:6px;border-top:1px solid #d8dee8;color:#64748b;font-size:9.5px;break-inside:avoid}
+  /* الامتحانات والتقارير على WebKit: بلا ارتفاع/عرض ثابت حتى لا تفيض أو تُقص */
+  html.printSafe,html.printSafe body{width:auto!important;min-height:0!important;height:auto!important}
+  html.printSafe #printArea{width:auto!important}
+  html.printSafe #printArea .printPage,html.printSafe #printArea .pageWrap{width:auto!important;height:auto!important;min-height:0!important;max-height:none!important;overflow:visible!important;break-after:page;page-break-after:always}
+  html.printSafe #printArea .printPage:last-child,html.printSafe #printArea .pageWrap:last-child{break-after:auto;page-break-after:auto}
+}
