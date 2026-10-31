@@ -45,15 +45,28 @@ function render(){
 }
 
 /* ============ الرئيسية ============ */
+/* v2.9.4: حماية البيانات — تذكير النسخ الاحتياطي يشمل المحاضرات والامتحانات، وتنبيه تثبيت التطبيق على iPad/iPhone */
+const BACKUP_REMIND_DAYS=7,BACKUP_SNOOZE_DAYS=3;
+function lectureCount(){try{const a=window.MasarStorage?window.MasarStorage.get("masar-education-v1-lectures",[]):[];return Array.isArray(a)?a.length:0}catch(_){return 0}}
+function hasUserData(){return (S.students||[]).length>0||lectureCount()>0||(S.exams||[]).length>0}
+function daysSinceBackup(){const at=S.settings.lastBackupAt||S.settings.lastBackup;if(!at)return null;const t=new Date(at).getTime();if(!isFinite(t))return null;return Math.max(0,Math.floor((Date.now()-t)/86400000))}
+function isAppleTouch(){try{const ua=navigator.userAgent||"";return /iPad|iPhone|iPod/.test(ua)||(/Macintosh/.test(ua)&&navigator.maxTouchPoints>1)}catch(_){return false}}
+function localPref(k,v){try{if(v===undefined)return localStorage.getItem(k);localStorage.setItem(k,v)}catch(_){return null}}
+function backupDue(){if(!hasUserData())return false;const d=daysSinceBackup();if(d!==null&&d<BACKUP_REMIND_DAYS)return false;const sn=S.settings.backupSnoozeUntil;return !(sn&&Date.now()<new Date(sn).getTime())}
+function installHintDue(){return isAppleTouch()&&!isStandaloneApp()&&hasUserData()&&localPref("nibor-install-hint")!=="done"}
 function backupBanner(){
-  if(!S.students.length)return "";
-  const last=S.settings.lastBackup;
-  const days=last?Math.floor((new Date(todayStr())-new Date(last))/86400000):null;
-  if(last&&days<7)return "";
-  const msg=last?
-    "⏰ مرت "+days+" أيام على آخر نسخة احتياطية — بياناتك كلها على هذا الجهاز فقط.":
-    "🛡️ لم تأخذ نسخة احتياطية بعد — إذا ضاع الجهاز تضيع البيانات.";
-  return '<div class="notice" style="display:flex;align-items:center;gap:10px;justify-content:space-between"><span>'+msg+'</span><button class="btn" id="bkNow" style="padding:8px 14px;white-space:nowrap">⬇ الآن</button></div>';
+  const out=[];
+  const inst=installHintDue();
+  if(backupDue()&&!inst){const d=daysSinceBackup();
+    out.push('<div class="safeBanner" id="backupBanner"><span class="sbIc">'+ICON("alert")+'</span><div class="sbText"><b>'+(d===null?"لم تحفظ نسخة احتياطية بعد":"مرّ "+d+" "+(d>=3&&d<=10?"أيام":"يومًا")+" على آخر نسخة احتياطية")+'</b><small>طلبتك ومحاضراتك محفوظة على هذا الجهاز فقط. احفظ نسخة في «الملفات» أو iCloud حتى لا تضيع إذا ضاع الجهاز أو مُسحت بيانات المتصفح.</small></div><div class="sbActs"><button class="btn" id="bkNow">'+ICON("clipboard")+'<span>نسخة احتياطية الآن</span></button><button class="btn ghost" id="bkLater">لاحقًا</button></div></div>');}
+  if(inst)out.push('<div class="safeBanner info" id="installBanner"><span class="sbIc">'+ICON("pin")+'</span><div class="sbText"><b>ثبّت نيبور كلاس على الشاشة الرئيسية</b><small>سفاري قد يحذف بيانات المواقع التي لا تُفتح لعدة أيام، والتطبيق المثبّت محمي من ذلك. انتبه: التطبيق المثبّت يبدأ فارغًا، فاحفظ نسخة احتياطية أولًا، ثم من زر المشاركة اختر «إضافة إلى الشاشة الرئيسية»، وافتح التطبيق الجديد واستورد النسخة من الإعدادات.</small></div><div class="sbActs"><button class="btn" id="instBackup">'+ICON("clipboard")+'<span>احفظ نسخة أولًا</span></button><button class="btn ghost" id="instDone">فهمت</button></div></div>');
+  return out.join("");
+}
+function bindBackupBanner(){
+  el("bkNow")&&(el("bkNow").onclick=()=>openBackupSheet());
+  el("bkLater")&&(el("bkLater").onclick=()=>{S.settings.backupSnoozeUntil=new Date(Date.now()+BACKUP_SNOOZE_DAYS*86400000).toISOString();save.settings();el("backupBanner")?.remove();toast("سنذكّرك بعد "+BACKUP_SNOOZE_DAYS+" أيام")});
+  el("instBackup")&&(el("instBackup").onclick=()=>openBackupSheet());
+  el("instDone")&&(el("instDone").onclick=()=>{localPref("nibor-install-hint","done");el("installBanner")?.remove()});
 }
 /* v2.8.12: حصص المؤسسة الحالية فقط (أو كل المؤسسات إذا لم تُختر واحدة) */
 function TT_VIS(){const def=INSTS()[0];return S.curInst?S.timetable.filter(t=>(t.inst||def)===S.curInst):S.timetable}
@@ -155,7 +168,7 @@ function renderHome(){
     '<div id="riskBox"></div>'+
     '</div>'+
     '<div id="hwFollowBox"></div>';
-  el("bkNow")&&(el("bkNow").onclick=()=>exportBackup());
+  bindBackupBanner();
   el("absLim").onchange=e=>{
     const v=Math.max(1,parseInt(e.target.value)||5);
     e.target.value=v;S.settings.absLimit=v;save.settings();renderAlerts();
@@ -268,8 +281,7 @@ function renderSettings(){
     '<button class="btn ghost full" id="snapBtn" style="margin-top:0">'+ICON('clock')+' اللقطات الاحتياطية التلقائية — استعادة أو تنزيل</button>'+
     (featureOn("archive")?'<button class="btn ghost full" id="arcBtn" style="margin-top:0">📦 أرشيف السنوات — طي السنة وبدء جديدة</button>':'')+
     '<button class="btn ghost full" id="syncBtn" style="margin-top:0">'+(syncOn()?"☁️ المزامنة التلقائية مفعّلة ✓":"☁️ تفعيل المزامنة التلقائية بين الأجهزة")+'</button>'+
-    (S.settings.lastBackup?'<p class="empty" style="padding:2px 4px;font-size:11px">آخر نسخة احتياطية: '+S.settings.lastBackup+'</p>':'')+
-    '<div class="actions"><button class="btn ghost" id="bkShare">📤 مزامنة لجهاز آخر</button><button class="btn ghost" id="bkExp">⬇ نسخة احتياطية كاملة</button><button class="btn ghost" id="bkImp">⬆ استيراد نسخة</button></div>'+
+    '<div class="actions"><button class="btn ghost" id="bkShare">📤 مزامنة لجهاز آخر</button><button class="btn" id="bkExp">'+ICON('clipboard')+' حفظ نسخة احتياطية</button><button class="btn ghost" id="bkImp">⬆ استيراد نسخة</button></div>'+
 
     '<h3 class="h2">❔ المساعدة والتخصيص</h3>'+
     '<button class="btn ghost full" id="tourBtn" style="margin-top:0">🎓 جولة تعريفية بالتطبيق</button>'+
@@ -350,7 +362,7 @@ function renderSettings(){
   el("tourBtn").onclick=openOnboarding;
   el("wizardBtn").onclick=openSetupWizard;
   el("pluginsBtn").onclick=openPluginsSheet;
-  el("bkExp").onclick=()=>exportBackup();
+  el("bkExp").onclick=()=>openBackupSheet();
   el("snapBtn").onclick=openSnapshotsSheet;
   renderDataSafety();
   el("bkImp").onclick=()=>el("importFile").click();
@@ -967,10 +979,10 @@ async function renderDataSafety(){
   const rows=[];
   rows.push(DB.mode==="idb"?'<div class="dsRow ok">'+ICON("check")+'<span><b>تخزين موسّع (IndexedDB)</b> — سعة أكبر بكثير من التخزين القديم'+(est&&est.quota?' · المستخدم '+fmtBytes(est.usage)+' من '+fmtBytes(est.quota):'')+'</span></div>':'<div class="dsRow warn">'+ICON("alert")+'<span><b>تخزين محدود (localStorage)</b> — هذا المتصفح لا يدعم التخزين الموسّع.</span></div>');
   if(persisted===true)rows.push('<div class="dsRow ok">'+ICON("check")+'<span><b>محمي من الحذف التلقائي</b> — لن يمسح المتصفح البيانات عند امتلاء الجهاز.</span></div>');
-  else if(!isStandaloneApp())rows.push('<div class="dsRow warn">'+ICON("alert")+'<span><b>ثبّت التطبيق على الشاشة الرئيسية</b> — Safari قد يحذف بيانات المواقع غير المستخدمة لعدة أيام. من زر المشاركة ⬆ اختر «إضافة إلى الشاشة الرئيسية».</span></div>');
+  else if(!isStandaloneApp())rows.push('<div class="dsRow warn">'+ICON("alert")+'<span><b>ثبّت التطبيق على الشاشة الرئيسية</b> — سفاري قد يحذف بيانات المواقع غير المستخدمة لعدة أيام. التطبيق المثبّت يبدأ فارغًا: احفظ نسخة احتياطية أولًا، ثم من زر المشاركة ⬆ اختر «إضافة إلى الشاشة الرئيسية»، واستورد النسخة داخله.</span></div>');
   rows.push(snaps.length?'<div class="dsRow ok">'+ICON("clock")+'<span><b>لقطات تلقائية داخل الجهاز:</b> '+snaps.length+' — آخرها '+fmtWhen(snaps[0].at)+'</span></div>':'<div class="dsRow">'+ICON("clock")+'<span>تُؤخذ لقطة تلقائية يوميًا عند فتح التطبيق.</span></div>');
-  const last=S.settings.lastBackup;const days=last?Math.floor((new Date(todayStr())-new Date(last))/86400000):null;
-  rows.push(last&&days<7?'<div class="dsRow ok">'+ICON("check")+'<span><b>آخر ملف نسخة احتياطية:</b> '+esc(last)+'</span></div>':'<div class="dsRow warn">'+ICON("alert")+'<span><b>'+(last?'مرّ '+days+' يومًا على آخر ملف نسخة احتياطية':'لم تنزّل ملف نسخة احتياطية بعد')+'</b> — اللقطات داخل الجهاز لا تحمي من ضياع الجهاز نفسه. احفظ الملف في «الملفات» أو iCloud.</span></div>');
+  const last=S.settings.lastBackupAt?fmtWhen(S.settings.lastBackupAt):S.settings.lastBackup;const days=daysSinceBackup();
+  rows.push(last&&days<BACKUP_REMIND_DAYS?'<div class="dsRow ok">'+ICON("check")+'<span><b>آخر ملف نسخة احتياطية:</b> '+esc(last)+'</span></div>':'<div class="dsRow warn">'+ICON("alert")+'<span><b>'+(last?'مرّ '+days+' يومًا على آخر ملف نسخة احتياطية':'لم تنزّل ملف نسخة احتياطية بعد')+'</b> — اللقطات داخل الجهاز لا تحمي من ضياع الجهاز نفسه. احفظ الملف في «الملفات» أو iCloud.</span></div>');
   box.innerHTML=rows.join("");
 }
 async function openSnapshotsSheet(){
@@ -1037,6 +1049,41 @@ async function shareBackup(){
     await exportBackup(data);
     toast("نزل الملف — انقله للجهاز الآخر واستورده هناك");
   }
+}
+/* v2.9.4: نافذة النسخ الاحتياطي — الملف يُجهَّز مسبقًا حتى تعمل المشاركة في سفاري (تحتاج لمسة مباشرة) */
+function backupFileName(enc){return "نيبور_كلاس_نسخة_احتياطية_"+todayStr()+(enc?"_مشفرة":"")+".json"}
+function markBackupDone(how){
+  S.settings.lastBackup=todayStr();S.settings.lastBackupAt=new Date().toISOString();delete S.settings.backupSnoozeUntil;save.settings();
+  closeModal();if(S.tab==="home")render();if(el("dataSafety"))renderDataSafety();
+  toast(how==="share"?"تم حفظ النسخة الاحتياطية ✓":"تم تنزيل النسخة — انقلها إلى «الملفات» أو iCloud ✓");
+}
+function downloadBackupFile(file){const a=document.createElement("a");const u=URL.createObjectURL(file);a.href=u;a.download=file.name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),4000)}
+function openBackupSheet(){
+  let raw,parsed;
+  try{raw=backupData();parsed=JSON.parse(raw)}catch(e){console.error("backup build",e);toast("تعذّر تجهيز النسخة الاحتياطية — حاول مرة أخرى");return}
+  const ls=parsed.lectureStore&&parsed.lectureStore.data||{};const lec=(ls["masar-education-v1-lectures"]||[]).length;
+  const d=parsed.data||{};const counts=[[ICON("users"),(d.students||[]).length,"طالب"],[ICON("book"),lec,"محاضرة"],[ICON("exam"),(d.exams||[]).length,"امتحان"]];
+  const canShareFiles=!!(navigator.share&&navigator.canShare);
+  el("modal").innerHTML='<div class="overlay"><div class="sheet backupSheet"><div class="sheetHead"><h3>نسخة احتياطية كاملة</h3><button class="x" id="bsX">✕</button></div><div class="form">'+
+    '<div class="bsSummary">'+counts.map(c=>'<div class="bsItem">'+c[0]+'<b>'+c[1]+'</b><span>'+c[2]+'</span></div>').join("")+'<div class="bsItem">'+ICON("clipboard")+'<b>'+fmtBytes(new Blob([raw]).size)+'</b><span>حجم الملف</span></div></div>'+
+    (parsed.lectureStore?'':'<p class="bsWarn">'+ICON("alert")+' تعذّر تضمين المحاضرات في هذه النسخة.</p>')+
+    '<p class="bsHint">'+(canShareFiles?'بعد الضغط على «حفظ» اختر <b>«حفظ في الملفات»</b> ثم <b>iCloud Drive</b>، أو أرسل الملف لنفسك.':'سيُنزَّل الملف؛ انقله بعد ذلك إلى مكان خارج هذا الجهاز (iCloud أو Google Drive أو بريدك).')+' اللقطات التلقائية داخل الجهاز لا تحمي من ضياع الجهاز نفسه.</p>'+
+    (hasCrypto?'<label>كلمة مرور للتشفير (اختياري)<input id="bsPass" type="password" autocomplete="new-password" placeholder="اتركها فارغة للحفظ دون تشفير"></label><p class="bsWarn" id="bsPassWarn" hidden>'+ICON("alert")+' إذا نسيت كلمة المرور لا يمكن فتح هذه النسخة نهائيًا.</p>':'')+
+    '</div><div class="sheetFoot"><button class="btn ghost" id="bsCancel">إلغاء</button><button class="btn" id="bsSave">'+ICON("clipboard")+'<span>حفظ النسخة</span></button></div></div></div>';
+  el("bsX").onclick=el("bsCancel").onclick=closeModal;
+  let ready={pass:"",file:new File([raw],backupFileName(false),{type:"application/json"})},seq=0;
+  const btn=el("bsSave"),setBusy=b=>{btn.disabled=b;btn.querySelector("span").textContent=b?"جارِ التجهيز…":"حفظ النسخة"};
+  const pass=el("bsPass");let tm;
+  if(pass)pass.oninput=()=>{const v=pass.value.trim();el("bsPassWarn").hidden=!v;setBusy(true);clearTimeout(tm);const my=++seq;
+    tm=setTimeout(async()=>{let f;if(!v)f=new File([raw],backupFileName(false),{type:"application/json"});else{try{f=new File([await encryptBackupText(raw,v)],backupFileName(true),{type:"application/json"})}catch(e){console.error("encrypt",e);if(my===seq){toast("تعذّر التشفير");pass.value="";el("bsPassWarn").hidden=true;ready={pass:"",file:new File([raw],backupFileName(false),{type:"application/json"})};setBusy(false)}return}}
+      if(my===seq){ready={pass:v,file:f};setBusy(false)}},350)};
+  btn.onclick=()=>{
+    if(btn.disabled)return;if(pass&&pass.value.trim()!==ready.pass)return;
+    const file=ready.file;
+    if(navigator.share&&navigator.canShare&&navigator.canShare({files:[file]})){
+      navigator.share({files:[file],title:file.name}).then(()=>markBackupDone("share")).catch(err=>{if(err&&err.name==="AbortError")return;console.warn("share failed",err);downloadBackupFile(file);markBackupDone("download")});
+    }else{downloadBackupFile(file);markBackupDone("download")}
+  };
 }
 async function exportBackup(preparedData){
   try{
