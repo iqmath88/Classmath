@@ -71,7 +71,8 @@ function loadProjects(){let list=storageGet(PROJECTS_KEY,[]);if(!Array.isArray(l
 function saveProjects(list){storageSet(PROJECTS_KEY,list)}
 function projectById(id){return loadProjects().find(p=>p.id===id)}
 function chapterById(project,id){return project?.chapters?.find(c=>c.id===id)}
-function blankLecture(){const p=projectById(navigation.projectId),c=chapterById(p,navigation.chapterId);return normalizeLecture({id:uid(),projectId:p?.id||null,chapterId:c?.id||null,title:"الصيغة الجبرية للعدد المركب",subject:"الرياضيات",grade:p?.grade||"السادس العلمي",chapter:c?.title||"الأعداد المركبة",lectureNo:"1",teacher:"الأستاذ فائز الحمداني",theme:"academic",createdAt:new Date().toISOString(),updatedAt:new Date().toISOString(),blocks:[
+function lastTeacherInfo(){try{const L=loadLectures().filter(x=>x&&x.updatedAt).sort((a,b)=>String(b.updatedAt).localeCompare(String(a.updatedAt)));const t=L.find(x=>x.teacher);const p=L.find(x=>typeof x.phone==='string');return {teacher:t?t.teacher:'الأستاذ فائز الحمداني',phone:p?p.phone:DEFAULT_TEACHER_PHONE}}catch(_){return {teacher:'الأستاذ فائز الحمداني',phone:DEFAULT_TEACHER_PHONE}}}
+function blankLecture(){const p=projectById(navigation.projectId),c=chapterById(p,navigation.chapterId);return normalizeLecture({id:uid(),projectId:p?.id||null,chapterId:c?.id||null,title:"الصيغة الجبرية للعدد المركب",subject:"الرياضيات",grade:p?.grade||"السادس العلمي",chapter:c?.title||"الأعداد المركبة",lectureNo:"1",teacher:lastTeacherInfo().teacher,phone:lastTeacherInfo().phone,theme:"academic",createdAt:new Date().toISOString(),updatedAt:new Date().toISOString(),blocks:[
   {id:uid(),type:"heading",title:"أهداف المحاضرة",content:"أن يتعرّف الطالب إلى الصيغة الجبرية للعدد المركب ويميّز بين جزئه الحقيقي والتخيلي."},
   {id:uid(),type:"definition",title:"تعريف",content:"العدد المركب هو عدد يُكتب بالصورة $z=a+bi$، حيث $a,b\\in\\mathbb{R}$ و $i^2=-1$."},
   {id:uid(),type:"example",title:"مثال محلول",content:"اكتب العدد $z=3-2i$ محددًا الجزء الحقيقي والجزء التخيلي.",solution:"لدينا $\\operatorname{Re}(z)=3$ و $\\operatorname{Im}(z)=-2$."},
@@ -170,7 +171,7 @@ function renderLectureEditor(){
   const I2=n=>(window.ICON?ICON(n):'');
   setContent('<section class="lectureEditor writeMode">'+
    '<div class="editorTopbar"><button class="eduGhost" id="backLectures">‹ المحاضرات</button><div class="editorTitle"><b>تحرير المحاضرة</b><span id="lectureSaveState">مسودة محلية</span></div><div class="editorActions"><button class="eduGhost etIcon" id="openPalette" title="إضافة عنصر">'+I2('plus')+'<span>عنصر</span></button><button class="eduGhost etIcon" id="openProps" title="خصائص العنصر المحدد">'+I2('settings')+'</button><button class="eduGhost etIcon" id="focusToggle" title="وضع التركيز: إخفاء قائمة التطبيق" aria-pressed="false">'+I2('expand')+'</button><button class="eduGhost" id="undoLecture" title="تراجع">↶</button><button class="eduGhost" id="redoLecture" title="إعادة">↷</button><button class="eduSecondary" id="previewLecture">معاينة</button><button class="eduPrimary" id="saveLecture">حفظ</button></div></div>'+
-   '<details class="lectureInfoDetails"'+(editorLecture.title?'':' open')+'><summary><span class="lidTitle">'+safe(editorLecture.title||'محاضرة بلا عنوان')+'</span><span class="lidMeta">'+safe([editorLecture.subject,editorLecture.grade,editorLecture.chapter].filter(Boolean).join(' · '))+'</span><span class="lidEdit">بيانات المحاضرة</span></summary><div class="lectureInfoPanel"><label>عنوان المحاضرة<input id="lecTitle" value="'+safe(editorLecture.title)+'"></label><label>المادة<input id="lecSubject" value="'+safe(editorLecture.subject)+'"></label><label>الصف<input id="lecGrade" value="'+safe(editorLecture.grade)+'"></label><label>الفصل أو الوحدة<input id="lecChapter" value="'+safe(editorLecture.chapter)+'"></label><label>رقم المحاضرة<input id="lecNo" value="'+safe(editorLecture.lectureNo)+'"></label><label>إعداد<input id="lecTeacher" value="'+safe(editorLecture.teacher)+'"></label><label>حجم خط الطباعة<select id="lecTextSize">'+[['12','12 — مضغوط'],['13','13 — متوازن (مقترح)'],['14','14 — كبير']].map(([v,t])=>'<option value="'+v+'"'+(lectureTextSize(editorLecture)===Number(v)?' selected':'')+'>'+t+'</option>').join('')+'</select></label><label>ألوان المستند<select id="lecColorTheme"><option value="royal"'+(lectureTheme(editorLecture)==='royal'?' selected':'')+'>ملكي (كحلي وأحمر)</option><option value="classic"'+(lectureTheme(editorLecture)==='classic'?' selected':'')+'>أسود (للاستنساخ)</option></select></label>'+watermarkPanelHTML()+'</div></details>'+
+   '<details class="lectureInfoDetails"'+(editorLecture.title?'':' open')+'><summary><span class="lidTitle">'+safe(editorLecture.title||'محاضرة بلا عنوان')+'</span><span class="lidMeta">'+safe([editorLecture.subject,editorLecture.grade,editorLecture.chapter].filter(Boolean).join(' · '))+'</span><span class="lidEdit">بيانات المحاضرة</span></summary><div class="lectureInfoPanel"><label>عنوان المحاضرة<input id="lecTitle" value="'+safe(editorLecture.title)+'"></label><label>المادة<input id="lecSubject" value="'+safe(editorLecture.subject)+'"></label><label>الصف<input id="lecGrade" value="'+safe(editorLecture.grade)+'"></label><label>الفصل أو الوحدة<input id="lecChapter" value="'+safe(editorLecture.chapter)+'"></label><label>رقم المحاضرة<input id="lecNo" value="'+safe(editorLecture.lectureNo)+'"></label><label>اسم الأستاذ<input id="lecTeacher" value="'+safe(editorLecture.teacher)+'"></label><label>رقم الهاتف<input id="lecPhone" type="tel" dir="ltr" inputmode="tel" value="'+safe(lecturePhone(editorLecture))+'" placeholder="07xxxxxxxxx"></label><label>حجم خط الطباعة<select id="lecTextSize">'+[['12','12 — مضغوط'],['13','13 — متوازن (مقترح)'],['14','14 — كبير']].map(([v,t])=>'<option value="'+v+'"'+(lectureTextSize(editorLecture)===Number(v)?' selected':'')+'>'+t+'</option>').join('')+'</select></label><label>ألوان المستند<select id="lecColorTheme"><option value="royal"'+(lectureTheme(editorLecture)==='royal'?' selected':'')+'>ملكي (كحلي وأحمر)</option><option value="classic"'+(lectureTheme(editorLecture)==='classic'?' selected':'')+'>أسود (للاستنساخ)</option></select></label>'+watermarkPanelHTML()+'</div></details>'+
    '<div class="builderLayout authorCanvasLayout"><aside class="blockPalette" aria-label="إضافة عنصر"><div class="drawerHead"><b>إضافة عنصر</b><button class="drawerClose" data-close-drawer title="إغلاق">✕</button></div><div class="paletteTabs"><button class="active" data-palette-tab="types">العناصر</button><button data-palette-tab="library">مكتبتي</button></div><div id="paletteTypes"><p class="paletteHint" id="paletteHint">اختر نوع الكتلة.</p>'+Object.entries(BLOCK_TYPES).map(([k,v])=>'<button data-add-block="'+k+'"><span class="pIc">'+blockIcon(k)+'</span>'+v.label+'</button>').join("")+'</div><div id="paletteLibrary" hidden>'+libraryPaletteHTML()+'</div></aside><main class="blocksCanvas authorCanvas"><div class="canvasHeader"><div><b>لوحة التأليف</b><span>'+editorLecture.blocks.length+' عناصر</span></div><button class="eduGhost" id="addPageBreak">＋ فاصل صفحة</button></div><div id="blocksList" class="smartBlocksList">'+canvasBlocksHTML()+'</div></main><aside class="propertiesPanel" id="propertiesPanel">'+propertiesPanelHTML()+'</aside></div><div class="drawerBackdrop" data-close-drawer></div>'+
   '</section>');
   bindEditor();
@@ -379,7 +380,7 @@ function bindIllustrationBlocks(){document.querySelectorAll('.illustrationBlockE
 
 function createEditorBlock(type){const t=BLOCK_TYPES[type]||BLOCK_TYPES.text;const base=window.MasarDocumentCore?.createBlock?window.MasarDocumentCore.createBlock(type,{title:t.label,content:'',keepTogether:true}):{id:uid(),type,title:t.label,content:'',keepTogether:true};ensureSmart(base);if(type==='graph')ensureGraph(base);if(type==='geometry')ensureGeometry(base);if(type==='conic')ensureConic(base);if(type==='table')ensureTable(base);if(type==='matrix')ensureMatrix(base);if(type==='illustration')ensureIllustration(base);if(['exercise','activity','check','ministerial','homework'].includes(type)&&!base.smart.answerLines)base.smart.answerLines=4;return base}
 function syncWatermark(){const t=document.getElementById("lecWmType");if(!t)return;const w=Object.assign({},editorLecture.watermark||{});w.type=t.value;const tx=document.getElementById("lecWmText");if(tx)w.text=tx.value.trim();const op=document.getElementById("lecWmOpacity");if(op)w.opacity=Number(op.value)/100;editorLecture.watermark=w}
-function syncMeta(){syncWatermark();const ts=document.getElementById("lecTextSize");if(ts)editorLecture.textSize=Number(ts.value)||13;const ct=document.getElementById("lecColorTheme");if(ct)editorLecture.colorTheme=ct.value==='classic'?'classic':'royal';[ ["lecTitle","title"],["lecSubject","subject"],["lecGrade","grade"],["lecChapter","chapter"],["lecNo","lectureNo"],["lecTeacher","teacher"]].forEach(([id,k])=>{const e=document.getElementById(id);if(e)editorLecture[k]=e.value.trim()})}
+function syncMeta(){syncWatermark();const ts=document.getElementById("lecTextSize");if(ts)editorLecture.textSize=Number(ts.value)||13;const ph=document.getElementById("lecPhone");if(ph)editorLecture.phone=ph.value.trim();const ct=document.getElementById("lecColorTheme");if(ct)editorLecture.colorTheme=ct.value==='classic'?'classic':'royal';[ ["lecTitle","title"],["lecSubject","subject"],["lecGrade","grade"],["lecChapter","chapter"],["lecNo","lectureNo"],["lecTeacher","teacher"]].forEach(([id,k])=>{const e=document.getElementById(id);if(e)editorLecture[k]=e.value.trim()})}
 function bindEditor(){
   document.getElementById("backLectures").onclick=()=>{if(editorLecture){syncMeta();draftSave()}navigation.projectId&&navigation.chapterId?renderChapter(navigation.projectId,navigation.chapterId):renderProjectsDashboard()};
   document.querySelectorAll(".lectureInfoPanel input").forEach(e=>e.oninput=()=>{syncMeta();scheduleDraft()});
@@ -643,8 +644,18 @@ function watermarkPanelHTML(){const w=lectureWatermark(editorLecture);return '<d
 function lectureTheme(l){return (l&&l.colorTheme==='classic')?'classic':'royal'}
 function lectureSizeStyle(l){return ' style="--lec-fs:'+lectureTextSize(l)+'pt" data-theme="'+lectureTheme(l)+'"'}
 function blockFontScale(d){const v=Number(d&&d.fontSize);if(!v||v===13.5)return 1;if(v>3)return Math.round(v/13.5*100)/100;return v}
-function lectureHeaderHTML(l,compact=false){return '<header class="lectureDocHead'+(compact?' lectureDocHeadCompact':'')+'"><div><span>'+safe(l.subject)+'</span><h1>'+safe(l.title)+'</h1><p>'+safe(l.grade)+(l.chapter?' — '+safe(l.chapter):'')+'</p></div><div class="lectureNumber">المحاضرة<br><b>'+safe(l.lectureNo||"—")+'</b></div></header>'+(l.teacher?'<div class="lectureDocMeta"><span>إعداد: '+safe(l.teacher)+'</span></div>':'<div class="lectureDocMeta lectureDocMetaEmpty"></div>')}
-function lectureFooterHTML(l,page,total){return '<footer class="lectureDocFoot"><span>'+safe(l.teacher)+'</span><span class="lecturePageNumber">صفحة '+page+' من '+total+'</span><span></span></footer>'}
+// v2.10.1: رأس وتذييل بهوية ملزمة: شريط الأستاذ (الاسم بخط كبير + رقم الهاتف)، ورأس جارٍ مختصر في الصفحات التالية.
+const DEFAULT_TEACHER_PHONE='07810295140';
+function lecturePhone(l){return l&&typeof l.phone==='string'?l.phone.trim():DEFAULT_TEACHER_PHONE}
+const PHONE_IC='<svg class="lecPhIc" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M6.6 10.8a15.1 15.1 0 0 0 6.6 6.6l2.2-2.2a1 1 0 0 1 1-.25c1.1.37 2.3.57 3.6.57a1 1 0 0 1 1 1V20a1 1 0 0 1-1 1A17 17 0 0 1 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.25.2 2.45.57 3.6a1 1 0 0 1-.25 1z"/></svg>';
+function teacherRole(l){const t=String(l.teacher||'');if(!l.subject)return '';return (/^(الست|المدرسة|الأستاذة|المدرّسة)/.test(t)?'مدرّسة':'مدرّس')+' مادة '+safe(l.subject)}
+function phoneHTML(ph,cls){return ph?'<span class="'+cls+'" dir="ltr">'+PHONE_IC+'<bdi>'+safe(ph)+'</bdi></span>':''}
+function teacherBandHTML(l){const t=String(l.teacher||'').trim(),ph=lecturePhone(l);if(!t&&!ph)return '';const role=teacherRole(l);return '<div class="lecBand"><div class="lecBandWho">'+(t?'<b class="lecTeacher">'+safe(t)+'</b>':'')+(t&&role?'<small class="lecRole">'+role+'</small>':'')+'</div>'+phoneHTML(ph,'lecPhone')+'</div>'}
+function lectureHeaderHTML(l,compact=false){const kick=[l.subject,l.grade,l.chapter].filter(Boolean).map(safe).join(' <i>·</i> ');
+ if(compact)return '<header class="lectureDocHead lectureDocHeadCompact lecRun"><span class="lecRunWho">'+safe(l.teacher||'')+'</span><span class="lecRunTitle">'+safe(l.title||'')+'</span><span class="lectureNumber lecRunNo">المحاضرة <b>'+safe(l.lectureNo||"—")+'</b></span></header>';
+ return teacherBandHTML(l)+'<header class="lectureDocHead lecHeadMain"><div class="lecHeadTxt">'+(kick?'<span class="lecKicker">'+kick+'</span>':'')+'<h1>'+safe(l.title)+'</h1></div><div class="lectureNumber">المحاضرة<br><b>'+safe(l.lectureNo||"—")+'</b></div></header>'}
+function lectureFootSide(l){return [l.subject,l.grade].filter(Boolean).map(safe).join(' — ')}
+function lectureFooterHTML(l,page,total){return '<footer class="lectureDocFoot lecFoot"><span class="lecFootWho"><b>'+safe(l.teacher||'')+'</b>'+phoneHTML(lecturePhone(l),'lecFootPh')+'</span><span class="lecturePageNumber">صفحة '+page+' من '+total+'</span><span class="lecFootSide">'+lectureFootSide(l)+'</span></footer>'}
 function previewFallbackBlockHTML(b,i,err){
  const type=String(b?.type||'text'),label=BLOCK_TYPES[type]?.label||'عنصر',title=String(b?.title||label),plain=String(b?.content||b?.latex||'').trim();
  console.warn('تعذر عرض عنصر المحاضرة رقم '+(i+1),{type,error:err});
@@ -680,7 +691,7 @@ function lectureBlockHTML(l,b,i){
 // v2.9.3: نسخة الطباعة متدفقة — المتصفح يقسّم الصفحات حسب مساحته الفعلية (Safari على الآيباد يفرض هوامشه ورأسه وتذييله).
 // الصفحات الثابتة بارتفاع 297mm كانت تفيض فتنتج صفحة فارغة بعد كل صفحة.
 function lectureFlowHTML(l){const lecture=(l&&typeof l==='object')?l:{};const blocks=Array.isArray(lecture.blocks)?lecture.blocks:[];let head='';try{head=lectureHeaderHTML(lecture,false)}catch(_){head='<header class="lectureDocHead"><div><h1>'+safe(lecture.title||'محاضرة')+'</h1></div></header>'}
- return '<article class="lectureFlowDoc"'+lectureSizeStyle(lecture)+'>'+watermarkHTML(lecture)+head+'<div class="lectureDocBody">'+blocks.map((b,i)=>lectureBlockHTML(lecture,b,i)).join('')+'</div><footer class="lectureFlowFoot"><span>'+safe(lecture.teacher||'')+'</span></footer></article>'}
+ return '<article class="lectureFlowDoc"'+lectureSizeStyle(lecture)+'>'+watermarkHTML(lecture)+head+'<div class="lectureDocBody">'+blocks.map((b,i)=>lectureBlockHTML(lecture,b,i)).join('')+'</div><footer class="lectureFlowFoot lecFoot"><span class="lecFootWho"><b>'+safe(lecture.teacher||'')+'</b>'+phoneHTML(lecturePhone(lecture),'lecFootPh')+'</span><span class="lecFootSide">'+lectureFootSide(lecture)+'</span></footer></article>'}
 function lectureDocumentHTML(l){
  const lecture=(l&&typeof l==='object')?l:{};
  const blocks=Array.isArray(lecture.blocks)?lecture.blocks:[];
@@ -750,7 +761,7 @@ async function paginateLectureHTML(l){
  if(!blocks.length)return lectureDocumentHTML(lecture);
  const measure=document.createElement('div');
  measure.className='lecturePaginationMeasure';measure.setAttribute('aria-hidden','true');
- measure.innerHTML='<div class="lecturePaper lecturePagedPaper"'+lectureSizeStyle(lecture)+'>'+lectureHeaderHTML(lecture,false)+'<div class="lectureDocBody">'+blocks.join('')+'</div>'+lectureFooterHTML(lecture,1,1)+'</div>';
+ measure.innerHTML='<div class="lecturePaper lecturePagedPaper"'+lectureSizeStyle(lecture)+'>'+lectureHeaderHTML(lecture,false)+'<div class="lectureDocBody">'+blocks.join('')+'</div>'+lectureFooterHTML(lecture,1,1)+'</div><div class="lecturePaper lecturePagedPaper lecMeasureN"'+lectureSizeStyle(lecture)+'>'+lectureHeaderHTML(lecture,true)+'<div class="lectureDocBody"></div>'+lectureFooterHTML(lecture,2,2)+'</div>';
  document.body.appendChild(measure);
  try{
   try{await waitLectureAssets(measure)}catch(err){console.warn('تجاوز خطأ تجهيز أصول المعاينة',err)}
@@ -761,8 +772,12 @@ async function paginateLectureHTML(l){
   const paperH=rawPaperH-(parseFloat(cs.paddingTop)||0)-(parseFloat(cs.paddingBottom)||0);
   if(!Number.isFinite(paperH)||paperH<300)return lectureDocumentHTML(lecture);
   const h=n=>{try{const v=n?.getBoundingClientRect?.().height;return Number.isFinite(v)?v:0}catch(_){return 0}};
-  const headH=h(head),metaH=h(meta),footH=h(foot),bodyCS=getComputedStyle(body),gap=parseFloat(bodyCS.rowGap||bodyCS.gap)||10;
-  const capacity=Math.max(300,paperH-headH-metaH-footH-10);
+  const footH=h(foot),bodyCS=getComputedStyle(body),gap=parseFloat(bodyCS.rowGap||bodyCS.gap)||10;
+  // v2.10.1: ارتفاع منطقة الرأس = من أعلى محتوى الورقة إلى بداية الجسم (يشمل شريط الأستاذ والهوامش)
+  const zone=(pp,bd)=>{try{const r=pp.getBoundingClientRect(),c=getComputedStyle(pp);return Math.max(0,bd.getBoundingClientRect().top-r.top-(parseFloat(c.paddingTop)||0))}catch(_){return 0}};
+  const capacity=Math.max(300,paperH-zone(paper,body)-footH-10);
+  const pN=measure.querySelector('.lecMeasureN'),bN=pN?.querySelector('.lectureDocBody');
+  const capN=pN&&bN?Math.max(capacity,Math.min(paperH-60,paperH-zone(pN,bN)-footH-10)):capacity;
   const nodes=[...body.children],heights=sourceBlocks.map((_,i)=>Math.max(1,h(nodes[i])));let used=0;
   // v2.8.12: عناصر الصفحات. الجدول الأطول من صفحة يُقسَّم إلى أجزاء مع تكرار صف العناوين.
   const items=[];let breakNext=false;
@@ -777,11 +792,11 @@ async function paginateLectureHTML(l){
    items.push({html:blocks[i],h:bh,brk:forceBrk||!!b?.pageBreakBefore,node:nodes[i],splittable:SPLIT_TYPES.has(b?.type)&&!(b?.design&&b.design.hideTitle)});
   });
   // v2.10.0: توزيع الكتل مع تقسيم الكتل النصية والأمثلة عند حدود الفقرات (أو داخل الحل) بدل نقلها كاملة
-  const htmlPages=[];let curH=[];
+  const capFirst=capacity;const htmlPages=[];let curH=[];
   const flush=()=>{if(curH.length)htmlPages.push(curH);curH=[];used=0};
   const queue=items.slice();
   while(queue.length){
-   const it=queue.shift();
+   const it=queue.shift();const capacity=htmlPages.length?capN:capFirst;
    if(it.full){flush();htmlPages.push([it.html]);continue}
    if(it.brk&&curH.length)flush();
    const add=it.h+(curH.length?gap:0);
