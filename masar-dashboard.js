@@ -26,7 +26,7 @@ function fixFilterState(){
   if(S.fs&&!sections.includes(S.fs))S.fs="";
 }
 function render(){
-  if(S.tab!=="lectures")document.body.classList.remove("editorFocus","inLectureEditor");
+  if(S.tab!=="lectures")document.body.classList.remove("editorFocus","inLectureEditor","pvActive");
   fixFilterState();
   renderTabs();
   el("fabBox").innerHTML="";

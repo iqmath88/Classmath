@@ -925,3 +925,112 @@ html .hbSheet .hbCustom input[type=color]{opacity:0!important;position:absolute!
 .bookSheet .bkStatus{font-size:13px;font-weight:700;color:var(--brand,#14215A);background:var(--brand-soft,#EEF2FB);border-radius:10px;padding:10px 12px;margin:0}
 html .bookSheet .sheetFoot .btn{display:inline-flex;align-items:center;gap:6px}html .bookSheet .sheetFoot .ic{width:17px;height:17px}
 .bookCover .bcYear small{font-size:11pt;font-weight:600;opacity:.85;margin-inline-end:2mm}
+
+/* =========================================================
+   v2.12.0 — «عرض الصفحة»: المحرر صفحة بيضاء بشكل الطباعة
+   ========================================================= */
+html body.pvActive header.top,html body.pvActive .tabs{display:none!important}
+html body.pvActive .content{margin-right:auto!important;margin-left:auto!important;padding-top:0!important}
+html .pageView .canvasHeader,html .pageView .canvasInsert{display:none!important}
+html .pageView .blocksCanvas{max-width:none!important;background:transparent!important;border:0!important;box-shadow:none!important;padding:0!important}
+html .pageView .editorTopbar{position:sticky;top:0;z-index:30;margin-top:6px}
+html .pageView .lectureInfoDetails{margin:8px auto!important}
+/* الورقة */
+html .pageView .lecturePaper.pvPaper{width:auto!important;max-width:900px;min-height:70vh;margin:6px auto 60px!important;padding:34px 44px 22px!important;border-radius:6px;box-shadow:0 10px 34px rgba(15,23,42,.14),0 0 0 1px rgba(15,23,42,.05);display:flex;flex-direction:column;color:var(--lec-text,#1B2A6B)}
+html .pageView .pvHead{display:block;width:100%;background:none;border:0;padding:0;margin:0;cursor:pointer;text-align:inherit;font:inherit;color:inherit;border-radius:12px}
+html .pageView .pvHead:hover,html .pageView .pvHead:focus-visible{outline:2px dashed rgba(37,99,235,.35);outline-offset:4px}
+.pvHeadEmpty{display:block;padding:10px;border:1px dashed #cbd5e1;border-radius:10px;color:#94a3b8;font-size:13px;margin-bottom:12px}
+html .pageView .pvFootWrap{margin-top:auto;padding-top:18px;pointer-events:none;opacity:.85}
+html .pageView .pvFootWrap .lectureDocFoot{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:12px}
+html .pageView .pvFootWrap .lecFootSide{text-align:left}
+html .pageView .pvAddEnd{align-self:center;display:inline-flex;align-items:center;gap:6px;margin:6px auto 0;padding:9px 18px;border-radius:999px;border:1.5px dashed #cbd5e1;background:#fff;color:#64748b;font:inherit;font-size:14px;font-weight:700;cursor:pointer}
+html .pageView .pvAddEnd .ic{width:16px;height:16px}
+html .pageView .pvAddEnd:hover{border-color:var(--brand,#14215A);color:var(--brand,#14215A)}
+/* الكتلة: صندوق بشكل الطباعة، بلا أدوات حتى تُختار */
+html .pageView .blockEditor{background:#fff!important;border:1px solid var(--lec-line,#D5DDF0)!important;box-shadow:none!important;padding:0!important;margin:0 0 12px!important;border-radius:12px!important;position:relative;overflow:visible!important}
+html .pageView .blockEditor.selectedBlock{outline:2px solid rgba(37,99,235,.38);outline-offset:3px}
+html .pageView .blockEditorHead{display:none!important}
+html .pageView .blockEditor.selectedBlock .blockEditorHead{display:flex!important;position:absolute;top:-19px;left:10px;z-index:6;gap:4px;padding:3px;border-radius:12px;background:#fff;border:1px solid #dbe3ef;box-shadow:0 4px 12px rgba(15,23,42,.12);min-height:0!important;width:auto!important}
+html .pageView .blockEditor.selectedBlock .blockEditorHead strong{display:none!important}
+html .pageView .blockEditor.selectedBlock .blockEditorHead .bhBtn,html .pageView .blockEditor.selectedBlock .blockEditorHead .dragHandle{width:34px!important;height:34px!important;min-width:34px!important;min-height:34px!important;padding:0!important;border-radius:9px!important}
+html .pageView .blockEditor.selectedBlock .blockEditorHead .blockHeadTools{display:flex;gap:4px;margin:0!important}
+html .pageView .blockEditorBody{padding:0!important;display:block!important}
+/* العنوان: شريط بلون الصندوق */
+.lectureEditor:not(.pageView) .pvTitle{display:contents}
+.lectureEditor:not(.pageView) .pvTitle .lbIc{display:none}
+html .pageView .pvTitle{display:flex;align-items:center;gap:8px;padding:8px 14px;background:var(--lec-tint,#EEF2FB);border-right:4px solid var(--lec-head,#A11D21);border-radius:11px 11px 0 0;color:var(--lec-head,#A11D21);font-weight:800;font-size:18px}
+html .pageView .pvTitle .lbIc{display:inline-flex;width:20px;height:20px;flex:0 0 auto;color:inherit}
+html .pageView .pvTitle .lbIc .ic{width:20px;height:20px}
+html .pageView .pvTitle .pvNum{white-space:nowrap}
+html .pageView .pvTitle .pvNum+input:not(:placeholder-shown){border-inline-start:0}
+html .pageView .pvTitle .pvNum+input::before{content:"—"}
+html .pageView .pvTitle .blockTitleInput{flex:1 1 auto;min-width:60px;background:transparent!important;border:0!important;box-shadow:none!important;padding:2px 0!important;margin:0!important;font:inherit!important;color:inherit!important;height:auto!important;min-height:0!important;outline:none}
+html .pageView .pvTitle .blockTitleInput::placeholder{color:currentColor;opacity:.35;font-weight:600;font-size:14px}
+/* النص */
+html .pageView .compoundEditor{border:0!important;background:transparent!important;box-shadow:none!important;margin:0!important;padding:0!important}
+html .pageView .richContent{border:0!important;background:transparent!important;box-shadow:none!important;min-height:1.9em!important;padding:10px 16px!important;font-size:17px!important;line-height:1.9!important;color:var(--lec-text,#1B2A6B)!important;border-radius:0!important}
+html .pageView .richContent:focus{outline:none!important;background:rgba(37,99,235,.035)!important}
+html .pageView .richContent:empty::before{opacity:.45}
+/* الحل: صندوق ذهبي مثل الطباعة */
+html .pageView .solutionLabel{font-size:0!important;margin:2px 14px 0!important;padding:8px 14px 0!important;background:#FBF6E6;border-right:4px solid var(--c-goldline,#C9A146);border-radius:10px 10px 0 0;color:var(--lec-head,#A11D21)}
+html .pageView .solutionLabel::before{content:"الحل:";font-size:15px;font-weight:800}
+html .pageView .compoundEditor.solutionEditor{margin:0 14px 12px!important;background:#FBF6E6!important;border-right:4px solid var(--c-goldline,#C9A146)!important;border-radius:0 0 10px 10px!important}
+html .pageView .compoundEditor.solutionEditor .richContent{padding-top:2px!important}
+html .pageView .conditionsEditor,html .pageView .conclusionEditor{margin:0 14px 10px!important;border-top:1px dashed var(--lec-line,#D5DDF0)!important}
+html .pageView .blockEditor[data-type="theorem"] .solutionLabel,html .pageView .blockEditor[data-type="proof"] .solutionLabel{font-size:13px!important;background:transparent;border:0;padding:4px 14px 0!important}
+html .pageView .blockEditor[data-type="theorem"] .solutionLabel::before,html .pageView .blockEditor[data-type="proof"] .solutionLabel::before{content:none}
+/* سطور الإجابة */
+html .pageView .pvLines{padding:2px 16px 12px;display:flex;flex-direction:column;gap:22px;pointer-events:none}
+html .pageView .pvLines i{display:block;border-bottom:1px dotted #94A3B8;height:0}
+/* تلميحات الكتلة: للمحددة فقط */
+html .pageView .blockHints{display:none!important}
+html .pageView .blockEditor.selectedBlock .blockHints{display:flex!important;padding:6px 14px 8px!important;margin:0!important;border-top:1px dashed #e2e8f0;font-size:12px!important;opacity:.85}
+/* هوية كل صندوق (نفس ألوان الطباعة) */
+html .pageView .blockEditor[data-type="definition"]{border:1.5px solid var(--c-navy)!important}
+html .pageView .blockEditor[data-type="definition"] .pvTitle{background:var(--t-navy);border-right-color:var(--c-navy);color:var(--c-navy)}
+html .pageView .blockEditor[data-type="rule"],html .pageView .blockEditor[data-type="theorem"]{border:3px double var(--c-goldline)!important;background:var(--t-paper)!important}
+html .pageView .blockEditor[data-type="rule"] .pvTitle,html .pageView .blockEditor[data-type="theorem"] .pvTitle{background:var(--t-gold);border-right-color:var(--c-gold);color:var(--c-gold)}
+html .pageView .blockEditor[data-type="example"] .pvTitle{background:var(--t-red);border-right-color:var(--c-red);color:var(--c-red)}
+html .pageView .blockEditor[data-type="exercise"],html .pageView .blockEditor[data-type="activity"],html .pageView .blockEditor[data-type="check"]{border:1.5px dashed var(--c-navy)!important}
+html .pageView .blockEditor[data-type="exercise"] .pvTitle,html .pageView .blockEditor[data-type="activity"] .pvTitle,html .pageView .blockEditor[data-type="check"] .pvTitle{background:#fff;border-bottom:1px dashed var(--lec-line,#D5DDF0);border-right-color:var(--c-red);color:var(--c-red)}
+html .pageView .blockEditor[data-type="homework"]{border:1.5px solid var(--c-red)!important}
+html .pageView .blockEditor[data-type="homework"] .pvTitle{background:var(--c-red);border-right-color:var(--c-red);color:#fff}
+html .pageView .blockEditor[data-type="ministerial"]{border:1.5px solid var(--c-red)!important}
+html .pageView .blockEditor[data-type="ministerial"] .pvTitle{background:var(--t-red);color:var(--c-red);border-right-color:var(--c-red)}
+html .pageView .blockEditor[data-type="ministerial"] .pvTitle::after{content:"وزاري";margin-inline-start:auto;border:1.5px solid var(--c-red);border-radius:6px;padding:0 8px;font-size:12px;line-height:1.7;transform:rotate(-4deg)}
+html .pageView .blockEditor[data-type="note"]{border:0!important;border-right:4px solid var(--c-goldline)!important;border-radius:4px!important;background:var(--t-gold)!important}
+html .pageView .blockEditor[data-type="note"] .pvTitle{background:transparent;border-right:0;color:var(--c-gold);padding-bottom:0}
+html .pageView .blockEditor[data-type="summary"]{border:1.5px solid var(--c-navy)!important}
+html .pageView .blockEditor[data-type="summary"] .pvTitle{background:var(--c-navy);border-right-color:var(--c-navy);color:#fff}
+html .pageView .blockEditor[data-type="proof"] .pvTitle{background:#fff;border-right-color:var(--c-navy);color:var(--c-navy)}
+html .pageView .blockEditor[data-type="objectives"]{border:0!important;background:var(--t-navy)!important}
+html .pageView .blockEditor[data-type="objectives"] .pvTitle{background:transparent;border-right-color:var(--c-navy);color:var(--c-navy)}
+html .pageView .blockEditor[data-type="heading"]{border:0!important;background:transparent!important}
+html .pageView .blockEditor[data-type="heading"] .pvTitle{background:transparent;border-right:0;border-bottom:2px solid var(--c-red);border-radius:0;padding:4px 2px 6px;font-size:21px;color:var(--c-red)}
+html .pageView .blockEditor[data-type="heading"] .richContent{padding-inline:2px!important}
+html .pageView .blockEditor[data-type="pagebreak"]{border:0!important;background:transparent!important}
+html .pageView .blockEditor[data-type="pagebreak"] .pvTitle{background:transparent;border:0;border-top:2px dashed #94A3B8;border-radius:0;justify-content:center;color:#64748b;font-size:13px;padding-top:6px}
+html .pageView .blockEditor[data-type="pagebreak"] .pvTitle .blockTitleInput{flex:0 1 auto;text-align:center;width:auto}
+/* «إدراج»: قائمة الصناديق شبكة أيقونات في وسط الشاشة */
+html .pageView.showPalette .blockPalette{position:fixed!important;top:var(--pv-top,76px)!important;right:50%!important;left:auto!important;transform:translateX(50%)!important;width:min(640px,94vw)!important;max-height:min(70vh,620px)!important;height:auto!important;border-radius:18px!important;overflow:auto!important;z-index:80!important}
+html .pageView.showPalette #paletteTypes{display:grid!important;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px}
+html .pageView.showPalette #paletteTypes .paletteHint{grid-column:1/-1}
+html .pageView.showPalette #paletteTypes>button{display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;gap:6px!important;min-height:78px!important;text-align:center!important;width:auto!important;margin:0!important}
+html .pageView.showPalette #paletteTypes>button .pIc .ic{width:24px;height:24px}
+/* شاشات ضيقة */
+@media (max-width:700px){html .pageView .lecturePaper.pvPaper{padding:20px 14px 16px!important;border-radius:0}html .pageView .richContent{font-size:16px!important;padding:8px 10px!important}}
+/* v2.12.0 تحسينات: شريط التنسيق عائم أعلى الشاشة لا داخل الصندوق، الحل الفارغ مطوي، المعادلات بلا إطار */
+html .pageView .compoundEditor.rtActive .richToolbar{position:fixed!important;top:var(--pv-top,82px)!important;right:50%!important;left:auto!important;transform:translateX(50%);width:min(900px,96vw);z-index:40!important;border-radius:14px!important;border:1px solid var(--glass-line,#e2e8f0)!important;background:var(--card,#fff)!important;box-shadow:0 10px 28px rgba(16,24,64,.16)!important}
+html .pageView .pvFootWrap .lectureDocFoot{position:static!important;right:auto!important;left:auto!important;bottom:auto!important}
+html .pageView .pvAddEnd{margin:4px auto 18px!important}
+html .pageView .blockEditor:not(.selectedBlock) .blockTitleInput::placeholder{color:transparent!important}
+html .pageView .richEquation{background:transparent!important;border-color:transparent!important;padding:0 2px!important;margin:0 1px!important;min-height:0!important}
+html .pageView .richEquation:hover,html .pageView .richEquation.selected{background:rgba(37,99,235,.07)!important;border-color:rgba(37,99,235,.25)!important}
+/* الحل الفارغ: شريط صغير متقطع بدل صندوق كبير (لا يُطبع إذا بقي فارغًا) */
+html .pageView .solutionLabel:has(+ .solutionEditor .richContent:empty),html .pageView .solutionLabel.pvEmpty{background:transparent;border-right-color:transparent;opacity:.55;padding-top:4px!important}
+html .pageView .compoundEditor.solutionEditor:has(.richContent:empty):not(.rtActive),html .pageView .compoundEditor.solutionEditor.pvEmpty:not(.rtActive){background:transparent!important;border:1px dashed #E2D3A6!important;border-radius:10px!important}
+html .pageView .compoundEditor.solutionEditor:has(.richContent:empty):not(.rtActive) .richContent{min-height:1.4em!important;padding-block:4px!important}
+html .pageView .pvTitle .pvNum:has(+ .blockTitleInput:not(:placeholder-shown))::after{content:" —";opacity:.8}
+html .pageView .blockEditor,html .pageView .compoundEditor,html .pageView .blockEditorBody{backdrop-filter:none!important;-webkit-backdrop-filter:none!important;transform:none!important;filter:none!important}
+html .pageView .compoundEditor.solutionEditor.pvEmpty:not(.rtActive) .richContent{min-height:1.4em!important;padding-block:4px!important}
+@media (max-width:900px){html .pageView .editorTopbar{padding:8px!important}html .pageView .editorActions{gap:6px!important}html .pageView .editorTitle{display:none!important}}
