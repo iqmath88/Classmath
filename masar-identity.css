@@ -878,3 +878,50 @@ html .hbSheet .hbCustom input[type=color]{opacity:0!important;position:absolute!
 .lectureDocHead.lecBand .lecBandWho{align-items:flex-start}
 .lecturePaper .lectureDocHead.lecBand .lecPhone.lecPhoneIn,.lectureFlowDoc .lectureDocHead.lecBand .lecPhone.lecPhoneIn{margin-top:1.2mm;font-size:12pt;padding:1mm 3.2mm}
 [data-theme] .lectureDocHead.lecBand h1,.lecturePaper .lectureDocHead.lecBand h1,.lectureFlowDoc .lectureDocHead.lecBand h1{font-size:16pt!important}
+
+/* ---------- v2.11.0: الملزمة — غلاف وفهرس ---------- */
+.wsActs{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.wsActs .eduSecondary{display:inline-flex;align-items:center;gap:6px}.wsActs .ic{width:17px;height:17px}
+.lecturePaper.bookCover{display:flex!important;flex-direction:column;padding:0!important;overflow:hidden;background:#fff;color:var(--hb-main);position:relative}
+.bookCover .bcTop{display:flex;align-items:center;gap:6mm;background:var(--hb-main);color:var(--hb-on);padding:14mm 16mm 12mm;border-bottom:2.2mm solid var(--hb-accent);-webkit-print-color-adjust:exact;print-color-adjust:exact}
+.bookCover .bcLogo{height:26mm;width:auto;max-width:40mm;object-fit:contain;background:#fff;border-radius:3mm;padding:2mm}
+.bookCover .bcWho{display:flex;flex-direction:column;gap:2mm;flex:1 1 auto;min-width:0}
+.bookCover .bcName{font-size:30pt;font-weight:800;line-height:1.2;color:var(--hb-on)}
+.bookCover .bcRole{font-size:13pt;font-weight:500;color:var(--hb-on);opacity:.85}
+.bookCover .bcPhone{display:inline-flex;align-items:center;gap:2.5mm;background:#fff;color:var(--hb-main);border-radius:99px;padding:2.4mm 6mm;font-size:17pt;font-weight:800;flex:0 0 auto;font-variant-numeric:tabular-nums}
+.bookCover .bcPhone .lecPhIc{width:1em;height:1em}
+.bookCover .bcMid{flex:1 1 auto;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:6mm;padding:10mm 20mm;background:#fff}
+.bookCover .bcKicker{font-size:17pt;font-weight:700;color:var(--hb-accent)}
+.bookCover .bcTitle{font-size:44pt;font-weight:800;line-height:1.25;color:var(--hb-main);margin:0;text-wrap:balance}
+.bookCover .bcRule{display:block;width:60mm;height:2mm;border-radius:2mm;background:var(--hb-accent)}
+.bookCover .bcGrade{font-size:22pt;font-weight:700;color:var(--hb-main)}
+.bookCover .bcCount{font-size:13pt;font-weight:600;color:#4A5578;border:1.2pt solid #CBD5E1;border-radius:99px;padding:1.5mm 6mm}
+.bookCover .bcNote{font-size:14pt;font-weight:600;color:#334155;max-width:150mm;margin:2mm 0 0;line-height:1.7}
+.bookCover .bcBottom{display:flex;justify-content:space-between;align-items:center;gap:6mm;background:var(--hb-main);color:var(--hb-on);padding:7mm 16mm;font-size:13pt;font-weight:700;border-top:1.4mm solid var(--hb-accent);-webkit-print-color-adjust:exact;print-color-adjust:exact}
+.bookCover .bcYear{font-size:15pt;font-weight:800}
+[data-theme="classic"].bookCover .bcTop,[data-theme="classic"].bookCover .bcBottom{background:#fff!important;color:#111827!important;border-color:#111827!important}
+[data-theme="classic"].bookCover .bcTop{border-bottom-width:2.2mm}
+[data-theme="classic"].bookCover .bcTop{border-top:1.4mm solid #111827}
+[data-theme="classic"].bookCover .bcName,[data-theme="classic"].bookCover .bcRole{color:#111827!important}
+[data-theme="classic"].bookCover .bcPhone{border:1.4pt solid #111827;color:#111827}
+[data-theme="classic"].bookCover .bcMid{background:#fff}
+/* الفهرس */
+.lecturePaper.bookToc{display:flex!important;flex-direction:column;padding:20mm 18mm!important;color:var(--hb-main)}
+.bookToc .tocHead{font-size:26pt;font-weight:800;margin:0 0 8mm;padding-bottom:4mm;border-bottom:2pt solid var(--hb-main);position:relative;color:var(--hb-main)}
+.bookToc .tocHead::after{content:"";position:absolute;bottom:-2.2mm;right:0;width:30mm;height:1.6mm;background:var(--hb-accent);border-radius:2mm}
+.bookToc .tocList{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:3.6mm}
+.bookToc .tocList li{display:flex;align-items:baseline;gap:3mm;font-size:14pt;line-height:1.5}
+.bookToc .tocNo{flex:0 0 auto;min-width:9mm;text-align:center;background:var(--hb-main);color:var(--hb-on);border-radius:2mm;font-size:11.5pt;font-weight:800;padding:.6mm 1.6mm;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+[data-theme="classic"].bookToc .tocNo{background:#fff;color:#111827;border:1pt solid #111827}
+.bookToc .tocTitle{font-weight:700;color:var(--lec-text,#1B2A6B)}
+.bookToc .tocDots{flex:1 1 auto;border-bottom:1.6pt dotted #94A3B8;transform:translateY(-1.2mm);min-width:8mm}
+.bookToc .tocPage{flex:0 0 auto;font-size:14pt;font-weight:800;color:var(--hb-main);font-variant-numeric:tabular-nums}
+/* ورقة الملزمة */
+.bookSheet{max-width:600px}
+.bookSheet .bkLecs{display:flex;flex-direction:column;gap:2px;border:1px solid var(--glass-line,#e2e8f0);border-radius:12px;padding:8px 12px;max-height:36vh;overflow:auto}
+.bookSheet .bkLecs>b{font-size:13px;padding:2px 0 6px}
+.bookSheet .bkLecs em{font-style:normal;font-weight:800;color:var(--brand,#14215A);margin-inline-end:4px}
+.bookSheet .bkLecs small{color:#94a3b8}
+.bookSheet .bkStatus{font-size:13px;font-weight:700;color:var(--brand,#14215A);background:var(--brand-soft,#EEF2FB);border-radius:10px;padding:10px 12px;margin:0}
+html .bookSheet .sheetFoot .btn{display:inline-flex;align-items:center;gap:6px}html .bookSheet .sheetFoot .ic{width:17px;height:17px}
+.bookCover .bcYear small{font-size:11pt;font-weight:600;opacity:.85;margin-inline-end:2mm}

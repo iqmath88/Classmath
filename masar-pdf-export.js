@@ -46,10 +46,10 @@ async function exportLecture(lecture,opts){
       const p=papers[i],body=p.querySelector(".lectureDocBody");
       const tall=!p.classList.contains("lecturePagedPaper")||(body&&body.scrollHeight>body.clientHeight+2);
       if(tall)p.classList.add("pdfTall");
-      const r=p.getBoundingClientRect();const scale=Math.max(1.2,Math.min(2.5,Math.sqrt(15e6/Math.max(1,r.width*r.height))));
+      const r=p.getBoundingClientRect();const scale=Math.max(1.2,Math.min(opts.maxScale||2.5,Math.sqrt(15e6/Math.max(1,r.width*r.height))));
       const canvas=await renderPaper(p,scale);
       const pageH=canvas.width*A4H/A4W;
-      if(canvas.height<=pageH*1.01){addImg(canvas,0,A4H*Math.min(1,canvas.height/pageH));continue}
+      if(canvas.height<=pageH*1.01){addImg(canvas,0,A4H*Math.min(1,canvas.height/pageH));canvas.width=canvas.height=0;continue}
       // صفحة أطول من A4: تقسيم عند سطر فارغ، مع هامش علوي وسفلي للأجزاء التالية
       const ctx=canvas.getContext("2d",{willReadFrequently:true});const margin=Math.round(canvas.width*12/A4W);
       let y=0,part=0;
@@ -60,8 +60,9 @@ async function exportLecture(lecture,opts){
         if(part>0&&!regionHasInk(ctx,canvas.width,y,cut)){y=cut;continue}
         const h=cut-y,slice=document.createElement("canvas");slice.width=canvas.width;slice.height=Math.round(pageH);
         const sx=slice.getContext("2d");sx.fillStyle="#fff";sx.fillRect(0,0,slice.width,slice.height);sx.drawImage(canvas,0,y,canvas.width,h,0,part===0?0:margin,canvas.width,h);
-        addImg(slice,0,A4H);y=cut;part++;
+        addImg(slice,0,A4H);slice.width=slice.height=0;y=cut;part++;
       }
+      canvas.width=canvas.height=0; // v2.11.0: تحرير ذاكرة اللوحة فورًا (مهم على الآيباد مع الملازم الطويلة)
     }
     onProgress("تجهيز الملف…");
     const blob=pdf.output("blob");
