@@ -1027,10 +1027,99 @@ html .pageView .blockEditor:not(.selectedBlock) .blockTitleInput::placeholder{co
 html .pageView .richEquation{background:transparent!important;border-color:transparent!important;padding:0 2px!important;margin:0 1px!important;min-height:0!important}
 html .pageView .richEquation:hover,html .pageView .richEquation.selected{background:rgba(37,99,235,.07)!important;border-color:rgba(37,99,235,.25)!important}
 /* الحل الفارغ: شريط صغير متقطع بدل صندوق كبير (لا يُطبع إذا بقي فارغًا) */
-html .pageView .solutionLabel:has(+ .solutionEditor .richContent:empty),html .pageView .solutionLabel.pvEmpty{background:transparent;border-right-color:transparent;opacity:.55;padding-top:4px!important}
-html .pageView .compoundEditor.solutionEditor:has(.richContent:empty):not(.rtActive),html .pageView .compoundEditor.solutionEditor.pvEmpty:not(.rtActive){background:transparent!important;border:1px dashed #E2D3A6!important;border-radius:10px!important}
-html .pageView .compoundEditor.solutionEditor:has(.richContent:empty):not(.rtActive) .richContent{min-height:1.4em!important;padding-block:4px!important}
-html .pageView .pvTitle .pvNum:has(+ .blockTitleInput:not(:placeholder-shown))::after{content:" —";opacity:.8}
 html .pageView .blockEditor,html .pageView .compoundEditor,html .pageView .blockEditorBody{backdrop-filter:none!important;-webkit-backdrop-filter:none!important;transform:none!important;filter:none!important}
 html .pageView .compoundEditor.solutionEditor.pvEmpty:not(.rtActive) .richContent{min-height:1.4em!important;padding-block:4px!important}
 @media (max-width:900px){html .pageView .editorTopbar{padding:8px!important}html .pageView .editorActions{gap:6px!important}html .pageView .editorTitle{display:none!important}}
+
+/* =========================================================
+   v2.13.0 — أبعاد صفحة موحدة: --pg-w/--pg-h (الاتجاه) و--pg-pt/--pg-ps/--pg-pb (الهوامش)
+   تُكتب على كل ورقة من lectureSizeStyle، فتتطابق: المحرر، المعاينة، القياس، الطباعة، PDF
+   ========================================================= */
+html body .lecturePaper[data-orient]{width:var(--pg-w,210mm)!important;padding:var(--pg-pt,16mm) var(--pg-ps,16mm) var(--pg-pb,18mm)!important}
+html body .lecturePagedPaper[data-orient]{height:var(--pg-h,297mm)!important;min-height:var(--pg-h,297mm)!important}
+html body .lecturePaginationMeasure .lecturePaper[data-orient],html body #lecturePreviewArea .lecturePaper[data-orient],html body .pdfStage .lecturePaper[data-orient],html body.printingLecture .lecturePaper[data-orient]{width:var(--pg-w,210mm)!important;padding:var(--pg-pt,16mm) var(--pg-ps,16mm) var(--pg-pb,18mm)!important}
+html body #lecturePreviewArea .lecturePagedPaper[data-orient],html body .pdfStage .lecturePagedPaper[data-orient],html body.printingLecture .lecturePagedPaper[data-orient]{height:var(--pg-h,297mm)!important;min-height:var(--pg-h,297mm)!important;max-height:var(--pg-h,297mm)}
+html body .pdfStage .lecturePaper.pdfTall[data-orient]{height:auto!important;max-height:none!important}
+html body .pdfStage{width:auto!important}
+html body .lecturePaper.bookCover[data-orient]{padding:0!important}
+html body .lecturePaper.bookToc[data-orient]{padding:20mm 18mm!important}
+
+/* ---------- v2.13.0: صفحات A4 متتابعة داخل المحرر ---------- */
+html body .pageView .lecturePaper.pvPaper[data-orient]{width:var(--pg-w,210mm)!important;max-width:none!important;min-height:var(--pg-h,297mm)!important;padding:var(--pg-pt,16mm) var(--pg-ps,16mm) var(--pg-pb,18mm)!important;margin:6px auto 90px!important;border-radius:2px;box-shadow:0 2px 14px rgba(15,23,42,.16),0 0 0 1px rgba(15,23,42,.06);overflow:visible}
+html .pageView .blocksCanvas{overflow:visible!important}
+html .pageView #blocksList{display:block}
+/* مطابقة مقاييس الطباعة: نص الصندوق وعنوانه والمسافات كما في الورقة المطبوعة */
+html .pageView .richContent{font-size:var(--lec-fs,13pt)!important;line-height:1.8!important;padding:12px!important}
+html .pageView .pvTitle{padding:7px 10px;font-size:calc(var(--lec-fs,13pt) + 1.5pt);line-height:1.5}
+html .pageView .blockEditor{margin:0 0 20px!important}
+/* فاصل الصفحات: تذييل الصفحة + فراغ رمادي بعرض الشاشة + رأس الصفحة التالية */
+.pvSeam{display:block;margin-inline:calc(-1 * var(--pg-ps,16mm));user-select:none;-webkit-user-select:none;position:relative;cursor:default}
+.pvSeam .pvFill{height:0}
+.pvSeam .pvSeamFoot{padding-inline:var(--pg-ps,16mm);margin-bottom:var(--pg-pb,18mm);pointer-events:none}
+html .pvSeam .pvSeamFoot .lectureDocFoot,html .pageView .pvFootWrap .lectureDocFoot{display:grid!important;grid-template-columns:1fr auto 1fr;align-items:center;gap:12px;position:static!important}
+html .pvSeam .pvSeamFoot .lecFootSide{text-align:left}
+.pvSeam .pvGap{height:30px;background:#D3D9E4;box-shadow:inset 0 7px 9px -7px rgba(15,23,42,.35),inset 0 -7px 9px -7px rgba(15,23,42,.35);display:flex;align-items:center;justify-content:center}
+.pvSeam .pvGap span{font-size:11.5px;font-weight:700;color:#5B6478;background:rgba(255,255,255,.75);border-radius:99px;padding:2px 10px}
+body.dark .pvSeam .pvGap,html[data-theme-mode="dark"] .pvSeam .pvGap{background:#2A3142}
+.pvSeam .pvSeamHead{padding:var(--pg-pt,16mm) var(--pg-ps,16mm) 0;pointer-events:none}
+.pvSeam .pvSeamHead.pvNoHead{padding-bottom:0}
+.pvSeam.pvOver .pvGap span::after{content:" · المحتوى أطول قليلًا في المحرر";font-weight:600}
+html .pageView .blockEditor.pvSplit{box-shadow:inset 0 -3px 0 rgba(161,29,33,.18)}
+html .pageView .blockEditor.pvSplit::after{content:attr(data-split-note) " ↓";position:absolute;bottom:-18px;left:12px;font-size:11px;font-weight:700;color:#A11D21;background:#fff;padding:0 6px;border-radius:6px;pointer-events:none}
+/* فقرة حرة: بلا صندوق ولا عنوان */
+html .pageView .blockEditor[data-plain="1"]{border:0!important;background:transparent!important;border-radius:0!important}
+html .pageView .blockEditor[data-plain="1"] .pvTitle{display:none!important}
+html .pageView .blockEditor[data-plain="1"] .richContent{padding:2px 2px!important}
+/* إضافة فقرة بين الصناديق: شريط رفيع يظهر عند المرور (وبجوار الصندوق المحدد على اللمس) */
+html .pageView .canvasInsert{display:flex!important;align-items:center;justify-content:center;height:14px;margin:-17px 0 3px!important;padding:0!important;border:0!important;background:transparent!important;color:transparent!important;font-size:0!important;position:relative;z-index:4;cursor:pointer;width:100%;min-height:0!important;box-shadow:none!important}
+html .pageView .canvasInsert::before{content:"";position:absolute;inset:6px 18% auto;height:2px;border-radius:2px;background:transparent;transition:background .15s}
+html .pageView .canvasInsert::after{content:"＋ فقرة";font-size:11.5px;font-weight:800;color:transparent;background:transparent;border-radius:99px;padding:1px 10px;position:relative;transition:.15s}
+html .pageView .canvasInsert:hover::before,html .pageView .selectedBlock+.canvasInsert::before{background:rgba(37,99,235,.35)}
+html .pageView .canvasInsert:hover::after,html .pageView .selectedBlock+.canvasInsert::after{color:#1D4ED8;background:#fff;box-shadow:0 0 0 1px rgba(37,99,235,.35)}
+html .pageView .canvasInsert:first-child{margin-top:-6px!important}
+/* شريط التنسيق مع التكبير: يبقى بحجمه الطبيعي */
+html .pageView .compoundEditor.rtActive .richToolbar{zoom:var(--pvz-inv,1)}
+/* شريط التكبير والصفحات */
+.pvDock{position:fixed;bottom:16px;left:16px;z-index:35;display:flex;align-items:center;gap:4px;padding:5px;border-radius:14px;background:var(--card,#fff);border:1px solid var(--glass-line,#e2e8f0);box-shadow:0 8px 24px rgba(16,24,64,.16)}
+.pvDock button{min-width:40px;height:40px;border:0;border-radius:10px;background:transparent;font:inherit;font-size:15px;font-weight:800;color:var(--brand-ink,#14215A);display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:0 10px;cursor:pointer}
+.pvDock button:hover,.pvDock button.on{background:var(--brand-soft,#EEF2FB)}
+.pvDock #pvZoomVal{font-size:12.5px;min-width:64px}
+.pvDock .ic{width:18px;height:18px}.pvDock #pvPageCount{font-size:12.5px}
+.pvDockSep{width:1px;height:24px;background:var(--glass-line,#e2e8f0);margin:0 2px}
+.pvNav{position:fixed;left:16px;bottom:72px;z-index:36;width:min(280px,80vw);max-height:60vh;overflow:auto;border-radius:16px;background:var(--card,#fff);border:1px solid var(--glass-line,#e2e8f0);box-shadow:0 14px 34px rgba(16,24,64,.2);padding:8px}
+.pvNav[hidden]{display:none}
+.pvNavHead{display:flex;align-items:center;justify-content:space-between;padding:4px 6px 8px}
+.pvNavHead button{border:0;background:transparent;font-size:16px;cursor:pointer;width:34px;height:34px;border-radius:8px}
+.pvNavList{display:flex;flex-direction:column;gap:4px}
+.pvNavList button{display:flex;align-items:center;gap:10px;text-align:start;border:1px solid transparent;background:var(--surface-soft,#F6F8FC);border-radius:10px;padding:8px 10px;font:inherit;font-size:13px;cursor:pointer;min-height:40px;color:var(--text-primary,#0f172a)}
+.pvNavList button:hover{border-color:var(--brand-line,#c7d2fe)}
+.pvNavList b{min-width:26px;height:26px;border-radius:7px;background:var(--brand,#14215A);color:#fff;display:inline-grid;place-items:center;font-size:12px}
+.pvNavList span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* مطابقة الارتفاعات مع الطباعة (قِيست صندوقًا صندوقًا) */
+html .pageView .richContent p,html .pageView .richContent>div{margin:0!important}
+html .pageView .pvTitle .blockTitleInput,html .pageView .pvTitle .pvNum{height:1.5em!important;line-height:1.5em!important;padding:0!important}
+html .pageView .solutionLabel{position:relative!important;height:0!important;margin:0!important;padding:0!important;background:none!important;border:0!important;z-index:3;opacity:1!important;font-size:0!important}
+html .pageView .solutionLabel::before{content:"الحل:"!important;position:absolute;top:13px;right:24px;font-size:var(--lec-fs,13pt)!important;line-height:1.8;font-weight:800;color:var(--lec-head,#A11D21);pointer-events:none}
+html .pageView .compoundEditor.solutionEditor{margin:-4px 12px 12px!important;border-radius:8px!important;border-right:4px solid var(--c-goldline,#C9A146)!important;background:#FFFBEB!important}
+html .pageView .compoundEditor.solutionEditor .richContent{padding:9px 64px 9px 9px!important;min-height:0!important}
+html .pageView .blockEditor:not(.selectedBlock) .solutionLabel.pvEmpty,html .pageView .blockEditor:not(.selectedBlock) .compoundEditor.solutionEditor.pvEmpty:not(.rtActive){display:none!important}
+html .pageView .solutionLabel.pvEmpty::before{opacity:.5}
+html .pageView .compoundEditor.solutionEditor.pvEmpty:not(.rtActive){background:transparent!important;border:1px dashed #E2D3A6!important}
+html .pageView .blockEditor[data-type="theorem"] .solutionLabel::before{content:"الشروط:"!important}
+html .pageView .blockEditor[data-type="proof"] .solutionLabel::before{content:"النتيجة:"!important}
+html .pageView .pvLines{display:grid!important;gap:9px!important;margin:2px 12px 12px!important;padding:0!important}
+html .pageView .pvLines i{display:block;min-height:18px;border-bottom:1px dotted #94a3b8;height:auto}
+html .pageView .blockEditor.selectedBlock .blockHints{position:absolute!important;top:calc(100% + 2px);right:0;left:0;z-index:7;background:#fff;border:1px solid #e2e8f0!important;border-radius:10px;box-shadow:0 6px 16px rgba(15,23,42,.1);padding:4px 10px!important}
+html .pageView .blockEditor .pvBreakMark{position:absolute;left:-8px;right:-8px;height:0;border-top:2px dashed rgba(161,29,33,.55);z-index:5;pointer-events:none}
+html .pageView .blockEditor .pvBreakMark span{position:absolute;left:14px;top:-11px;font-size:11px;font-weight:800;color:#A11D21;background:#fff;border:1px solid rgba(161,29,33,.35);border-radius:99px;padding:1px 9px;white-space:nowrap}
+html .pageView .blockEditor.pvSplit::after{content:none!important}
+html .pageView .compoundEditor.rtActive:not(:focus-within) .richToolbar{display:none!important}
+/* الشريط السفلي ولوحة الصفحات تحت النوافذ المنبثقة دائمًا */
+.pvDock,.pvNav{z-index:19}
+
+/* v2.13.0: بلا :has() في المحرر (كانت تفرض إعادة حساب الأنماط للمستند كله مع كل ضغطة مفتاح) */
+html .pageView .pvTitle .pvNum{order:0}html .pageView .pvTitle .pvDash{order:1;font-style:normal;opacity:.8}html .pageView .pvTitle .blockTitleInput{order:2}html .pageView .pvTitle .lbIc{order:-1}
+html .pageView .pvTitle .blockTitleInput:placeholder-shown+.pvDash{display:none}
+.lectureEditor:not(.pageView) .pvDash{display:none}
+html .pageView .solutionLabel.pvEmpty::before{opacity:.5}
+.richToolbar.rtLazy{display:none!important}

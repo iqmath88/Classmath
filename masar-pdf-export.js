@@ -38,20 +38,23 @@ async function exportLecture(lecture,opts){
     stage.innerHTML=html;document.body.appendChild(stage);
     await waitAssets(stage);await nextFrame();
     const papers=[...stage.querySelectorAll(".lecturePaper")];if(!papers.length)throw new Error("NO_PAGES");
-    const {jsPDF}=global.jspdf;const pdf=new jsPDF({orientation:"portrait",unit:"mm",format:"a4",compress:true});
+    // v2.13.0: اتجاه كل صفحة من ورقتها (عمودي/أفقي)، فتصح الملازم المختلطة
+    const orientOf=p=>p.dataset.orient==="landscape"?"landscape":"portrait";
+    const {jsPDF}=global.jspdf;const pdf=new jsPDF({orientation:orientOf(papers[0]),unit:"mm",format:"a4",compress:true});
+    let PW=A4W,PH=A4H;
     pdf.setProperties({title:lecture.title||"محاضرة",author:lecture.teacher||"",creator:"نيبور كلاس"});
-    let first=true;const addImg=(c,y,h)=>{if(!first)pdf.addPage();first=false;pdf.addImage(c.toDataURL("image/jpeg",0.9),"JPEG",0,y,A4W,h,undefined,"FAST")};
+    let first=true,curO=orientOf(papers[0]);const addImg=(c,y,h)=>{if(!first)pdf.addPage("a4",curO);first=false;pdf.addImage(c.toDataURL("image/jpeg",0.9),"JPEG",0,y,PW,h,undefined,"FAST")};
     for(let i=0;i<papers.length;i++){
       onProgress("إنشاء الصفحة "+(i+1)+" من "+papers.length+"…");await nextFrame();
-      const p=papers[i],body=p.querySelector(".lectureDocBody");
+      const p=papers[i],body=p.querySelector(".lectureDocBody");curO=orientOf(p);PW=curO==="landscape"?A4H:A4W;PH=curO==="landscape"?A4W:A4H;
       const tall=!p.classList.contains("lecturePagedPaper")||(body&&body.scrollHeight>body.clientHeight+2);
       if(tall)p.classList.add("pdfTall");
       const r=p.getBoundingClientRect();const scale=Math.max(1.2,Math.min(opts.maxScale||2.5,Math.sqrt(15e6/Math.max(1,r.width*r.height))));
       const canvas=await renderPaper(p,scale);
-      const pageH=canvas.width*A4H/A4W;
-      if(canvas.height<=pageH*1.01){addImg(canvas,0,A4H*Math.min(1,canvas.height/pageH));canvas.width=canvas.height=0;continue}
+      const pageH=canvas.width*PH/PW;
+      if(canvas.height<=pageH*1.01){addImg(canvas,0,PH*Math.min(1,canvas.height/pageH));canvas.width=canvas.height=0;continue}
       // صفحة أطول من A4: تقسيم عند سطر فارغ، مع هامش علوي وسفلي للأجزاء التالية
-      const ctx=canvas.getContext("2d",{willReadFrequently:true});const margin=Math.round(canvas.width*12/A4W);
+      const ctx=canvas.getContext("2d",{willReadFrequently:true});const margin=Math.round(canvas.width*12/PW);
       let y=0,part=0;
       while(y<canvas.height-4){
         const room=part===0?pageH-margin:pageH-2*margin;const ideal=y+room;
@@ -60,7 +63,7 @@ async function exportLecture(lecture,opts){
         if(part>0&&!regionHasInk(ctx,canvas.width,y,cut)){y=cut;continue}
         const h=cut-y,slice=document.createElement("canvas");slice.width=canvas.width;slice.height=Math.round(pageH);
         const sx=slice.getContext("2d");sx.fillStyle="#fff";sx.fillRect(0,0,slice.width,slice.height);sx.drawImage(canvas,0,y,canvas.width,h,0,part===0?0:margin,canvas.width,h);
-        addImg(slice,0,A4H);slice.width=slice.height=0;y=cut;part++;
+        addImg(slice,0,PH);slice.width=slice.height=0;y=cut;part++;
       }
       canvas.width=canvas.height=0; // v2.11.0: تحرير ذاكرة اللوحة فورًا (مهم على الآيباد مع الملازم الطويلة)
     }
