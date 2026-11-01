@@ -171,7 +171,7 @@ function renderLectureEditor(){
   const I2=n=>(window.ICON?ICON(n):'');
   setContent('<section class="lectureEditor writeMode">'+
    '<div class="editorTopbar"><button class="eduGhost" id="backLectures">‹ المحاضرات</button><div class="editorTitle"><b>تحرير المحاضرة</b><span id="lectureSaveState">مسودة محلية</span></div><div class="editorActions"><button class="eduGhost etIcon" id="openPalette" title="إضافة عنصر">'+I2('plus')+'<span>عنصر</span></button><button class="eduGhost etIcon" id="openProps" title="خصائص العنصر المحدد">'+I2('settings')+'</button><button class="eduGhost etIcon" id="focusToggle" title="وضع التركيز: إخفاء قائمة التطبيق" aria-pressed="false">'+I2('expand')+'</button><button class="eduGhost" id="undoLecture" title="تراجع">↶</button><button class="eduGhost" id="redoLecture" title="إعادة">↷</button><button class="eduSecondary" id="previewLecture">معاينة</button><button class="eduPrimary" id="saveLecture">حفظ</button></div></div>'+
-   '<details class="lectureInfoDetails"'+(editorLecture.title?'':' open')+'><summary><span class="lidTitle">'+safe(editorLecture.title||'محاضرة بلا عنوان')+'</span><span class="lidMeta">'+safe([editorLecture.subject,editorLecture.grade,editorLecture.chapter].filter(Boolean).join(' · '))+'</span><span class="lidEdit">بيانات المحاضرة</span></summary><div class="lectureInfoPanel"><label>عنوان المحاضرة<input id="lecTitle" value="'+safe(editorLecture.title)+'"></label><label>المادة<input id="lecSubject" value="'+safe(editorLecture.subject)+'"></label><label>الصف<input id="lecGrade" value="'+safe(editorLecture.grade)+'"></label><label>الفصل أو الوحدة<input id="lecChapter" value="'+safe(editorLecture.chapter)+'"></label><label>رقم المحاضرة<input id="lecNo" value="'+safe(editorLecture.lectureNo)+'"></label><label>اسم الأستاذ<input id="lecTeacher" value="'+safe(editorLecture.teacher)+'"></label><label>رقم الهاتف<input id="lecPhone" type="tel" dir="ltr" inputmode="tel" value="'+safe(lecturePhone(editorLecture))+'" placeholder="07xxxxxxxxx"></label><label>حجم خط الطباعة<select id="lecTextSize">'+[['12','12 — مضغوط'],['13','13 — متوازن (مقترح)'],['14','14 — كبير']].map(([v,t])=>'<option value="'+v+'"'+(lectureTextSize(editorLecture)===Number(v)?' selected':'')+'>'+t+'</option>').join('')+'</select></label><label>ألوان المستند<select id="lecColorTheme"><option value="royal"'+(lectureTheme(editorLecture)==='royal'?' selected':'')+'>ملكي (كحلي وأحمر)</option><option value="classic"'+(lectureTheme(editorLecture)==='classic'?' selected':'')+'>أسود (للاستنساخ)</option></select></label>'+watermarkPanelHTML()+'</div></details>'+
+   '<details class="lectureInfoDetails"'+(editorLecture.title?'':' open')+'><summary><span class="lidTitle">'+safe(editorLecture.title||'محاضرة بلا عنوان')+'</span><span class="lidMeta">'+safe([editorLecture.subject,editorLecture.grade,editorLecture.chapter].filter(Boolean).join(' · '))+'</span><span class="lidEdit">بيانات المحاضرة</span></summary><div class="lectureInfoPanel"><label>عنوان المحاضرة<input id="lecTitle" value="'+safe(editorLecture.title)+'"></label><label>المادة<input id="lecSubject" value="'+safe(editorLecture.subject)+'"></label><label>الصف<input id="lecGrade" value="'+safe(editorLecture.grade)+'"></label><label>الفصل أو الوحدة<input id="lecChapter" value="'+safe(editorLecture.chapter)+'"></label><label>رقم المحاضرة<input id="lecNo" value="'+safe(editorLecture.lectureNo)+'"></label><div class="hbOpenRow"><button type="button" class="eduSecondary" id="openBrand">تخصيص الرأس والتذييل</button><small>اسم الأستاذ والهاتف والألوان وما يظهر</small></div><label>حجم خط الطباعة<select id="lecTextSize">'+[['12','12 — مضغوط'],['13','13 — متوازن (مقترح)'],['14','14 — كبير']].map(([v,t])=>'<option value="'+v+'"'+(lectureTextSize(editorLecture)===Number(v)?' selected':'')+'>'+t+'</option>').join('')+'</select></label><label>ألوان المستند<select id="lecColorTheme"><option value="royal"'+(lectureTheme(editorLecture)==='royal'?' selected':'')+'>ملكي (كحلي وأحمر)</option><option value="classic"'+(lectureTheme(editorLecture)==='classic'?' selected':'')+'>أسود (للاستنساخ)</option></select></label>'+watermarkPanelHTML()+'</div></details>'+
    '<div class="builderLayout authorCanvasLayout"><aside class="blockPalette" aria-label="إضافة عنصر"><div class="drawerHead"><b>إضافة عنصر</b><button class="drawerClose" data-close-drawer title="إغلاق">✕</button></div><div class="paletteTabs"><button class="active" data-palette-tab="types">العناصر</button><button data-palette-tab="library">مكتبتي</button></div><div id="paletteTypes"><p class="paletteHint" id="paletteHint">اختر نوع الكتلة.</p>'+Object.entries(BLOCK_TYPES).map(([k,v])=>'<button data-add-block="'+k+'"><span class="pIc">'+blockIcon(k)+'</span>'+v.label+'</button>').join("")+'</div><div id="paletteLibrary" hidden>'+libraryPaletteHTML()+'</div></aside><main class="blocksCanvas authorCanvas"><div class="canvasHeader"><div><b>لوحة التأليف</b><span>'+editorLecture.blocks.length+' عناصر</span></div><button class="eduGhost" id="addPageBreak">＋ فاصل صفحة</button></div><div id="blocksList" class="smartBlocksList">'+canvasBlocksHTML()+'</div></main><aside class="propertiesPanel" id="propertiesPanel">'+propertiesPanelHTML()+'</aside></div><div class="drawerBackdrop" data-close-drawer></div>'+
   '</section>');
   bindEditor();
@@ -385,6 +385,7 @@ function bindEditor(){
   document.getElementById("backLectures").onclick=()=>{if(editorLecture){syncMeta();draftSave()}navigation.projectId&&navigation.chapterId?renderChapter(navigation.projectId,navigation.chapterId):renderProjectsDashboard()};
   document.querySelectorAll(".lectureInfoPanel input").forEach(e=>e.oninput=()=>{syncMeta();scheduleDraft()});
   ["lecTextSize","lecColorTheme"].forEach(id=>{const e=document.getElementById(id);if(e)e.onchange=()=>{syncMeta();scheduleDraft()}});
+  {const ob=document.getElementById("openBrand");if(ob)ob.onclick=()=>{syncMeta();openBrandSheet()}}
   {const wt=document.getElementById("lecWmType");if(wt){const panel=wt.closest('.wmPanel');const show=()=>{const v=wt.value;panel.querySelector('label.wmText').hidden=v!=='text';panel.querySelector('.wmLogoRow').hidden=v!=='logo';panel.querySelector('.wmOp').hidden=v==='none'};
    wt.onchange=()=>{show();syncMeta();scheduleDraft()};
    const tx=document.getElementById("lecWmText");if(tx)tx.oninput=()=>{syncMeta();scheduleDraft()};
@@ -642,20 +643,92 @@ function watermarkHTML(l){const w=lectureWatermark(l);if(w.type==='text'&&w.text
 function watermarkImageFile(file){return new Promise((res,rej)=>{if(!file||!/^image\//.test(file.type))return rej(new Error('NOT_IMAGE'));const fr=new FileReader();fr.onload=()=>{const im=new Image();im.onload=()=>{const k=Math.min(1,700/Math.max(im.width,im.height));const c=document.createElement('canvas');c.width=Math.max(1,Math.round(im.width*k));c.height=Math.max(1,Math.round(im.height*k));c.getContext('2d').drawImage(im,0,0,c.width,c.height);res(c.toDataURL('image/png'))};im.onerror=()=>rej(new Error('BAD_IMAGE'));im.src=fr.result};fr.onerror=()=>rej(fr.error);fr.readAsDataURL(file)})}
 function watermarkPanelHTML(){const w=lectureWatermark(editorLecture);return '<div class="wmPanel"><label>العلامة المائية<select id="lecWmType"><option value="none"'+(w.type==='none'?' selected':'')+'>بدون</option><option value="text"'+(w.type==='text'?' selected':'')+'>نص</option><option value="logo"'+(w.type==='logo'?' selected':'')+'>شعار (صورة)</option></select></label><label class="wmText"'+(w.type==='text'?'':' hidden')+'>نص العلامة<input id="lecWmText" value="'+safe(w.text||editorLecture.teacher||'')+'" placeholder="مثل: الأستاذ فائز الحمداني"></label><div class="wmLogoRow"'+(w.type==='logo'?'':' hidden')+'><label class="wmPick">'+(w.img?'تغيير الشعار':'اختيار شعار')+'<input id="lecWmFile" type="file" accept="image/*" hidden></label>'+(w.img?'<img class="wmThumb" src="'+w.img+'" alt="الشعار">':'<span class="wmNone">لم يُختر شعار بعد (PNG بخلفية شفافة أفضل)</span>')+'</div><label class="wmOp"'+(w.type==='none'?' hidden':'')+'>الشفافية <span id="lecWmOpV">'+Math.round(w.opacity*100)+'%</span><input id="lecWmOpacity" type="range" min="3" max="25" step="1" value="'+Math.round(w.opacity*100)+'"></label></div>'}
 function lectureTheme(l){return (l&&l.colorTheme==='classic')?'classic':'royal'}
-function lectureSizeStyle(l){return ' style="--lec-fs:'+lectureTextSize(l)+'pt" data-theme="'+lectureTheme(l)+'"'}
+function lectureSizeStyle(l){return brandStyleAttr()+'--lec-fs:'+lectureTextSize(l)+'pt" data-theme="'+lectureTheme(l)+'"'}
 function blockFontScale(d){const v=Number(d&&d.fontSize);if(!v||v===13.5)return 1;if(v>3)return Math.round(v/13.5*100)/100;return v}
 // v2.10.1: رأس وتذييل بهوية ملزمة: شريط الأستاذ (الاسم بخط كبير + رقم الهاتف)، ورأس جارٍ مختصر في الصفحات التالية.
 const DEFAULT_TEACHER_PHONE='07810295140';
-function lecturePhone(l){return l&&typeof l.phone==='string'?l.phone.trim():DEFAULT_TEACHER_PHONE}
+// v2.10.2: هوية الرأس والتذييل — إعداد واحد لكل المحاضرات (المعلومات، الشكل، الألوان، ما يظهر، التذييل)
+const BRAND_KEY="masar-education-v1-print-brand";
+const BRAND_DEFAULT={name:null,phone:null,role:'',showRole:true,extra:'',logo:'',style:'band',main:'#14215A',accent:'#C29A35',showName:true,showTitle:true,showSubject:true,showGrade:true,showChapter:true,showNumber:true,showPhoneHead:true,order:'teacher',phonePos:'name',runHead:true,footName:true,footPhone:true,pageFmt:'full',footSide:'subject',footText:''};
+const BRAND_MAINS=[['#14215A','كحلي'],['#A11D21','أحمر'],['#14532D','أخضر'],['#4C1D95','بنفسجي'],['#0E5E6F','فيروزي'],['#5B3A1A','بني'],['#111827','أسود']];
+const BRAND_ACCENTS=[['#C29A35','ذهبي'],['#A11D21','أحمر'],['#2563EB','أزرق'],['#16A34A','أخضر'],['#EA580C','برتقالي'],['#94A3B8','رمادي']];
+const hexOk=v=>/^#[0-9a-f]{6}$/i.test(String(v||''));
+function loadBrand(){let b={};try{b=storageGet(BRAND_KEY,{})||{}}catch(_){b={}}const o=Object.assign({},BRAND_DEFAULT,b&&typeof b==='object'?b:{});if(!hexOk(o.main))o.main=BRAND_DEFAULT.main;if(!hexOk(o.accent))o.accent=BRAND_DEFAULT.accent;if(!['band','frame','line'].includes(o.style))o.style='band';if(!['full','slash','num'].includes(o.pageFmt))o.pageFmt='full';if(!['subject','custom','none'].includes(o.footSide))o.footSide='subject';if(!['teacher','title'].includes(o.order))o.order='teacher';if(!['name','side'].includes(o.phonePos))o.phonePos='name';if(b&&b.showKicker===false&&b.showSubject===undefined){o.showSubject=o.showGrade=o.showChapter=false}return o}
+function saveBrand(b){storageSet(BRAND_KEY,b)}
+function brandName(l,B){B=B||loadBrand();return String(B.name!=null?B.name:(l&&l.teacher)||'').trim()}
+function lecturePhone(l,B){B=B||loadBrand();if(B.phone!=null)return String(B.phone).trim();return l&&typeof l.phone==='string'?l.phone.trim():DEFAULT_TEACHER_PHONE}
+function brandOn(hex){const n=parseInt(hex.slice(1),16),r=(n>>16)&255,g=(n>>8)&255,b=n&255;const L=c=>{c/=255;return c<=.03928?c/12.92:Math.pow((c+.055)/1.055,2.4)};return (.2126*L(r)+.7152*L(g)+.0722*L(b))>.45?'#111827':'#FFFFFF'}
+function brandStyleAttr(B){B=B||loadBrand();return ' data-hstyle="'+B.style+'" style="--hb-main:'+B.main+';--hb-accent:'+B.accent+';--hb-on:'+brandOn(B.main)+';'}
 const PHONE_IC='<svg class="lecPhIc" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M6.6 10.8a15.1 15.1 0 0 0 6.6 6.6l2.2-2.2a1 1 0 0 1 1-.25c1.1.37 2.3.57 3.6.57a1 1 0 0 1 1 1V20a1 1 0 0 1-1 1A17 17 0 0 1 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.25.2 2.45.57 3.6a1 1 0 0 1-.25 1z"/></svg>';
-function teacherRole(l){const t=String(l.teacher||'');if(!l.subject)return '';return (/^(الست|المدرسة|الأستاذة|المدرّسة)/.test(t)?'مدرّسة':'مدرّس')+' مادة '+safe(l.subject)}
+function teacherRole(l,B){B=B||loadBrand();if(!B.showRole)return '';if(String(B.role||'').trim())return mixText(B.role.trim());const t=brandName(l,B);if(!l.subject)return '';return (/^(الست|المدرسة|الأستاذة|المدرّسة)/.test(t)?'مدرّسة':'مدرّس')+' مادة '+safe(l.subject)}
+function mixText(t){return String(t||'').split(/([@#+]?[A-Za-z0-9][A-Za-z0-9_.\-\/@:]*)/).map((p,i)=>i%2?'<bdi dir="ltr">'+safe(p)+'</bdi>':safe(p)).join('')}
 function phoneHTML(ph,cls){return ph?'<span class="'+cls+'" dir="ltr">'+PHONE_IC+'<bdi>'+safe(ph)+'</bdi></span>':''}
-function teacherBandHTML(l){const t=String(l.teacher||'').trim(),ph=lecturePhone(l);if(!t&&!ph)return '';const role=teacherRole(l);return '<div class="lecBand"><div class="lecBandWho">'+(t?'<b class="lecTeacher">'+safe(t)+'</b>':'')+(t&&role?'<small class="lecRole">'+role+'</small>':'')+'</div>'+phoneHTML(ph,'lecPhone')+'</div>'}
-function lectureHeaderHTML(l,compact=false){const kick=[l.subject,l.grade,l.chapter].filter(Boolean).map(safe).join(' <i>·</i> ');
- if(compact)return '<header class="lectureDocHead lectureDocHeadCompact lecRun"><span class="lecRunWho">'+safe(l.teacher||'')+'</span><span class="lecRunTitle">'+safe(l.title||'')+'</span><span class="lectureNumber lecRunNo">المحاضرة <b>'+safe(l.lectureNo||"—")+'</b></span></header>';
- return teacherBandHTML(l)+'<header class="lectureDocHead lecHeadMain"><div class="lecHeadTxt">'+(kick?'<span class="lecKicker">'+kick+'</span>':'')+'<h1>'+safe(l.title)+'</h1></div><div class="lectureNumber">المحاضرة<br><b>'+safe(l.lectureNo||"—")+'</b></div></header>'}
-function lectureFootSide(l){return [l.subject,l.grade].filter(Boolean).map(safe).join(' — ')}
-function lectureFooterHTML(l,page,total){return '<footer class="lectureDocFoot lecFoot"><span class="lecFootWho"><b>'+safe(l.teacher||'')+'</b>'+phoneHTML(lecturePhone(l),'lecFootPh')+'</span><span class="lecturePageNumber">صفحة '+page+' من '+total+'</span><span class="lecFootSide">'+lectureFootSide(l)+'</span></footer>'}
+// v2.10.3: رأس الصفحة الأولى سطر واحد: [الشعار] [الأستاذ] | [المحاضرة] [التواصل] — كل عنصر قابل للإخفاء
+function lectureHeaderHTML(l,compact=false){const B=loadBrand();
+ if(compact){if(!B.runHead)return '';return '<header class="lectureDocHead lectureDocHeadCompact lecRun'+(B.showNumber?'':' noNum')+'"><span class="lecRunWho">'+(B.showName?safe(brandName(l,B)):'')+'</span><span class="lecRunTitle">'+safe(l.title||'')+'</span>'+(B.showNumber?'<span class="lectureNumber lecRunNo">المحاضرة <b>'+safe(l.lectureNo||"—")+'</b></span>':'<span></span>')+'</header>'}
+ const t=B.showName?brandName(l,B):'',role=t?teacherRole(l,B):'',ph=B.showPhoneHead?lecturePhone(l,B):'',ex=String(B.extra||'').trim();
+ const phName=B.phonePos==='name'?ph:'',phSide=B.phonePos==='name'?'':ph;
+ const who=(t||role||phName)?'<div class="lecBandWho">'+(t?'<b class="lecTeacher">'+safe(t)+'</b>':'')+(role?'<small class="lecRole">'+role+'</small>':'')+phoneHTML(phName,'lecPhone lecPhoneIn')+'</div>':'';
+ const kick=[B.showSubject&&l.subject,B.showGrade&&l.grade,B.showChapter&&l.chapter].filter(Boolean).map(safe).join(' <i>·</i> ');
+ const num=B.showNumber?'<span class="lectureNumber lecNoPill">المحاضرة <b>'+safe(l.lectureNo||"—")+'</b></span>':'';
+ const lec=(B.showTitle&&l.title)||num||kick?'<div class="lecBandLec">'+((num||kick)?'<span class="lecKicker">'+num+kick+'</span>':'')+(B.showTitle&&l.title?'<h1>'+safe(l.title)+'</h1>':'')+'</div>':'';
+ const side=(phSide||ex)?'<div class="lecBandSide">'+phoneHTML(phSide,'lecPhone')+(ex?'<small class="lecExtra">'+mixText(ex)+'</small>':'')+'</div>':'';
+ const logo=B.logo?'<img class="lecLogo" src="'+B.logo+'" alt="">':'';
+ const mid=B.order==='title'?[lec,who]:[who,lec];const parts=mid.filter(Boolean);
+ if(!logo&&!parts.length&&!side)return '';
+ return '<header class="lectureDocHead lecBand'+(parts.length===2?' hasBoth':'')+'">'+logo+parts.join('<span class="lecBandSep"></span>')+side+'</header>'}
+function lectureFootSide(l,B){B=B||loadBrand();if(B.footSide==='none')return '';if(B.footSide==='custom')return mixText(String(B.footText||'').trim());return [l.subject,l.grade].filter(Boolean).map(safe).join(' — ')}
+function footWhoHTML(l,B){const n=B.footName?brandName(l,B):'',ph=B.footPhone?lecturePhone(l,B):'';return '<span class="lecFootWho">'+(n?'<b>'+safe(n)+'</b>':'')+phoneHTML(ph,'lecFootPh')+'</span>'}
+function pageLabel(B,page,total){return B.pageFmt==='num'?String(page):B.pageFmt==='slash'?page+' / '+total:'صفحة '+page+' من '+total}
+function lectureFooterHTML(l,page,total){const B=loadBrand();return '<footer class="lectureDocFoot lecFoot">'+footWhoHTML(l,B)+'<span class="lecturePageNumber">'+pageLabel(B,page,total)+'</span><span class="lecFootSide">'+lectureFootSide(l,B)+'</span></footer>'}
+function lectureFlowFootHTML(l){const B=loadBrand();return '<footer class="lectureFlowFoot lecFoot">'+footWhoHTML(l,B)+'<span class="lecFootSide">'+lectureFootSide(l,B)+'</span></footer>'}
+// ورقة التخصيص مع معاينة حيّة
+function brandSheetBody(B){const chk=(k,t)=>'<label class="hbChk"><input type="checkbox" data-hb="'+k+'"'+(B[k]?' checked':'')+'><span>'+t+'</span></label>';
+ const sw=(k,list)=>'<div class="hbSwatches" data-hb-sw="'+k+'">'+list.map(([c,n])=>'<button type="button" class="hbSw'+(B[k].toLowerCase()===c.toLowerCase()?' on':'')+'" data-color="'+c+'" title="'+n+'" style="background:'+c+'"></button>').join('')+'<label class="hbSw hbCustom'+(list.some(([c])=>c.toLowerCase()===B[k].toLowerCase())?'':' on')+'" title="لون آخر"><input type="color" data-hb="'+k+'" value="'+B[k]+'"><span>＋</span></label></div>';
+ return '<div class="hbPreview" id="hbPreview"></div>'+
+ '<p class="hbNote">يُطبَّق على كل المحاضرات، في المعاينة والطباعة وPDF.</p>'+
+ '<details class="hbSec" open><summary>المعلومات</summary><div class="hbGrid">'+
+  '<label>اسم الأستاذ<input data-hb="name" value="'+safe(B.name??'')+'"></label>'+
+  '<label>رقم الهاتف<input data-hb="phone" type="tel" dir="ltr" inputmode="tel" value="'+safe(B.phone??'')+'" placeholder="07xxxxxxxxx"></label>'+
+  '<label class="hbWide">السطر تحت الاسم<input data-hb="role" value="'+safe(B.role||'')+'" placeholder="تلقائي: مدرّس مادة …"></label>'+
+  '<label class="hbWide">سطر إضافي (اختياري)<input data-hb="extra" value="'+safe(B.extra||'')+'" placeholder="مثل: تيليكرام @… أو اسم المعهد أو العنوان"></label>'+
+  '<div class="hbWide hbLogoRow"><span>الشعار</span>'+(B.logo?'<img class="hbLogoThumb" src="'+B.logo+'" alt="">':'<small>بدون شعار</small>')+'<label class="eduGhost hbPick">'+(B.logo?'تغيير':'اختيار صورة')+'<input type="file" accept="image/*" id="hbLogoFile" hidden></label>'+(B.logo?'<button type="button" class="eduGhost" id="hbLogoDel">إزالة</button>':'')+'</div>'+
+ '</div></details>'+
+ '<details class="hbSec" open><summary>شكل الرأس والألوان</summary>'+
+  '<div class="hbStyles">'+[['band','شريط ملوّن'],['frame','إطار'],['line','خط بسيط']].map(([v,t])=>'<button type="button" class="hbStyle'+(B.style===v?' on':'')+'" data-style="'+v+'"><i class="hbSt-'+v+'"></i><span>'+t+'</span></button>').join('')+'</div>'+
+  '<div class="hbColorRow"><b>اللون الأساسي</b>'+sw('main',BRAND_MAINS)+'</div>'+
+  '<div class="hbColorRow"><b>لون التمييز</b>'+sw('accent',BRAND_ACCENTS)+'</div>'+
+  '<p class="hbHint">مع «ألوان المستند: أسود (للاستنساخ)» يُطبع الرأس بالأسود تلقائيًا.</p>'+
+ '</details>'+
+ '<details class="hbSec" open><summary>محتويات سطر الرأس</summary><div class="hbChecks">'+chk('showName','اسم الأستاذ')+chk('showRole','السطر تحت الاسم')+chk('showTitle','عنوان المحاضرة')+chk('showNumber','رقم المحاضرة')+chk('showSubject','المادة')+chk('showGrade','الصف')+chk('showChapter','الفصل / الوحدة')+chk('showPhoneHead','رقم الهاتف')+'</div>'+
+  '<div class="hbGrid"><label class="hbWide">الترتيب من اليمين<select data-hb="order"><option value="teacher"'+(B.order!=='title'?' selected':'')+'>الأستاذ ثم المحاضرة</option><option value="title"'+(B.order==='title'?' selected':'')+'>المحاضرة ثم الأستاذ</option></select></label><label class="hbWide">مكان رقم الهاتف<select data-hb="phonePos"><option value="name"'+(B.phonePos!=='side'?' selected':'')+'>تحت اسم الأستاذ</option><option value="side"'+(B.phonePos==='side'?' selected':'')+'>في طرف السطر</option></select></label></div>'+
+  '<div class="hbChecks">'+chk('runHead','رأس مختصر في الصفحات التالية')+'</div><p class="hbHint">السطر الإضافي والشعار يظهران إذا كتبتهما في «المعلومات».</p></details>'+
+ '<details class="hbSec"><summary>التذييل</summary><div class="hbChecks">'+chk('footName','اسم الأستاذ')+chk('footPhone','رقم الهاتف')+'</div><div class="hbGrid">'+
+  '<label>ترقيم الصفحات<select data-hb="pageFmt"><option value="full"'+(B.pageFmt==='full'?' selected':'')+'>صفحة 1 من 3</option><option value="slash"'+(B.pageFmt==='slash'?' selected':'')+'>1 / 3</option><option value="num"'+(B.pageFmt==='num'?' selected':'')+'>1</option></select></label>'+
+  '<label>الجهة اليسرى<select data-hb="footSide"><option value="subject"'+(B.footSide==='subject'?' selected':'')+'>المادة — الصف</option><option value="custom"'+(B.footSide==='custom'?' selected':'')+'>نص أكتبه</option><option value="none"'+(B.footSide==='none'?' selected':'')+'>لا شيء</option></select></label>'+
+  '<label class="hbWide hbFootText"'+(B.footSide==='custom'?'':' hidden')+'>نص التذييل<input data-hb="footText" value="'+safe(B.footText||'')+'" placeholder="مثل: بالتوفيق لطلبتنا الأعزاء"></label>'+
+ '</div></details>'}
+function renderBrandPreview(B){const box=document.getElementById('hbPreview');if(!box)return;const l=Object.assign({title:'عنوان المحاضرة',subject:'الرياضيات',grade:'السادس العلمي',chapter:'الفصل الأول',lectureNo:'1'},editorLecture||{});
+ const body='<div class="lectureDocBody"><div class="hbBodyPh"><i></i><i style="width:70%"></i></div></div>';
+ box.innerHTML='<div class="hbCap">الصفحة الأولى</div><div class="hbPaperWrap"><div class="lecturePaper lecturePagedPaper hbMini"'+lectureSizeStyle(l)+'>'+lectureHeaderHTML(l,false)+body+lectureFooterHTML(l,1,3)+'</div></div>'+
+  '<div class="hbCap">الصفحات التالية</div><div class="hbPaperWrap"><div class="lecturePaper lecturePagedPaper hbMini"'+lectureSizeStyle(l)+'>'+lectureHeaderHTML(l,true)+body+lectureFooterHTML(l,2,3)+'</div></div>';
+ const z=Math.min(1,Math.max(.25,(box.clientWidth||360)/794));box.querySelectorAll('.hbMini').forEach(p=>p.style.zoom=String(z))}
+function openBrandSheet(onDone){const modal=document.getElementById('modal');if(!modal)return;const B=loadBrand();
+ if(B.name==null)B.name=brandName(editorLecture||{},B);if(B.phone==null)B.phone=lecturePhone(editorLecture||{},B);
+ const draw=()=>{const openS=[...modal.querySelectorAll('.hbSheet .hbSec')].map(d=>d.open),sc=modal.querySelector('.hbSheet .form')?.scrollTop||0;modal.innerHTML='<div class="overlay"><div class="sheet hbSheet"><div class="sheetHead"><h3>تخصيص الرأس والتذييل</h3><button class="x" id="hbX">✕</button></div><div class="form">'+brandSheetBody(B)+'</div><div class="sheetFoot"><button class="btn ghost" id="hbReset">استعادة الافتراضي</button><button class="btn" id="hbDone">تم</button></div></div></div>';if(openS.length)modal.querySelectorAll('.hbSec').forEach((d,i)=>{if(i<openS.length)d.open=openS[i]});const fm=modal.querySelector('.hbSheet .form');if(fm)fm.scrollTop=sc;bind();renderBrandPreview(B)};
+ const commit=()=>{saveBrand(B);if(editorLecture){editorLecture.teacher=B.name;if(typeof B.phone==='string')editorLecture.phone=B.phone;try{scheduleDraft()}catch(_){}}renderBrandPreview(B)};
+ const close=()=>{modal.innerHTML='';if(typeof onDone==='function')onDone()};
+ function bind(){
+  modal.querySelectorAll('[data-hb]').forEach(el=>{const k=el.dataset.hb;const ev=el.type==='checkbox'||el.tagName==='SELECT'?'change':'input';el.addEventListener(ev,()=>{
+   if(el.type==='checkbox')B[k]=el.checked;else if(el.type==='color'){B[k]=el.value;el.closest('.hbSwatches').querySelectorAll('.hbSw').forEach(s=>s.classList.toggle('on',s.classList.contains('hbCustom')))}else B[k]=el.value;
+   if(k==='footSide'){const t=modal.querySelector('.hbFootText');if(t)t.hidden=B.footSide!=='custom'}commit()})});
+  modal.querySelectorAll('.hbSwatches .hbSw[data-color]').forEach(s=>s.onclick=()=>{const g=s.closest('.hbSwatches'),k=g.dataset.hbSw;B[k]=s.dataset.color;g.querySelectorAll('.hbSw').forEach(x=>x.classList.toggle('on',x===s));const ci=g.querySelector('input[type=color]');if(ci)ci.value=s.dataset.color;commit()});
+  modal.querySelectorAll('.hbStyle').forEach(s=>s.onclick=()=>{B.style=s.dataset.style;modal.querySelectorAll('.hbStyle').forEach(x=>x.classList.toggle('on',x===s));commit()});
+  const f=document.getElementById('hbLogoFile');if(f)f.onchange=async()=>{const file=f.files&&f.files[0];if(!file)return;try{B.logo=await watermarkImageFile(file);commit();draw()}catch(err){console.warn('logo',err);(typeof toast==='function'?toast('تعذّر قراءة الصورة — جرّب PNG أو JPG'):0)}};
+  const del=document.getElementById('hbLogoDel');if(del)del.onclick=()=>{B.logo='';commit();draw()};
+  document.getElementById('hbReset').onclick=()=>{if(!confirm('استعادة التصميم الافتراضي؟ (يبقى الاسم والهاتف)'))return;const keep={name:B.name,phone:B.phone};Object.keys(B).forEach(k=>delete B[k]);Object.assign(B,BRAND_DEFAULT,keep);commit();draw()};
+  document.getElementById('hbX').onclick=close;document.getElementById('hbDone').onclick=close}
+ draw()}
 function previewFallbackBlockHTML(b,i,err){
  const type=String(b?.type||'text'),label=BLOCK_TYPES[type]?.label||'عنصر',title=String(b?.title||label),plain=String(b?.content||b?.latex||'').trim();
  console.warn('تعذر عرض عنصر المحاضرة رقم '+(i+1),{type,error:err});
@@ -691,7 +764,7 @@ function lectureBlockHTML(l,b,i){
 // v2.9.3: نسخة الطباعة متدفقة — المتصفح يقسّم الصفحات حسب مساحته الفعلية (Safari على الآيباد يفرض هوامشه ورأسه وتذييله).
 // الصفحات الثابتة بارتفاع 297mm كانت تفيض فتنتج صفحة فارغة بعد كل صفحة.
 function lectureFlowHTML(l){const lecture=(l&&typeof l==='object')?l:{};const blocks=Array.isArray(lecture.blocks)?lecture.blocks:[];let head='';try{head=lectureHeaderHTML(lecture,false)}catch(_){head='<header class="lectureDocHead"><div><h1>'+safe(lecture.title||'محاضرة')+'</h1></div></header>'}
- return '<article class="lectureFlowDoc"'+lectureSizeStyle(lecture)+'>'+watermarkHTML(lecture)+head+'<div class="lectureDocBody">'+blocks.map((b,i)=>lectureBlockHTML(lecture,b,i)).join('')+'</div><footer class="lectureFlowFoot lecFoot"><span class="lecFootWho"><b>'+safe(lecture.teacher||'')+'</b>'+phoneHTML(lecturePhone(lecture),'lecFootPh')+'</span><span class="lecFootSide">'+lectureFootSide(lecture)+'</span></footer></article>'}
+ return '<article class="lectureFlowDoc"'+lectureSizeStyle(lecture)+'>'+watermarkHTML(lecture)+head+'<div class="lectureDocBody">'+blocks.map((b,i)=>lectureBlockHTML(lecture,b,i)).join('')+'</div>'+lectureFlowFootHTML(lecture)+'</article>'}
 function lectureDocumentHTML(l){
  const lecture=(l&&typeof l==='object')?l:{};
  const blocks=Array.isArray(lecture.blocks)?lecture.blocks:[];
@@ -772,12 +845,15 @@ async function paginateLectureHTML(l){
   const paperH=rawPaperH-(parseFloat(cs.paddingTop)||0)-(parseFloat(cs.paddingBottom)||0);
   if(!Number.isFinite(paperH)||paperH<300)return lectureDocumentHTML(lecture);
   const h=n=>{try{const v=n?.getBoundingClientRect?.().height;return Number.isFinite(v)?v:0}catch(_){return 0}};
-  const footH=h(foot),bodyCS=getComputedStyle(body),gap=parseFloat(bodyCS.rowGap||bodyCS.gap)||10;
+  const footH=h(foot),bodyCS=getComputedStyle(body);
+  // v2.10.3: هامش الكتلة السفلي يُضاف للفاصل (كان يُهمل فتفيض الصفحة الممتلئة)
+  const blkCS=body.firstElementChild?getComputedStyle(body.firstElementChild):null,blkM=blkCS?(parseFloat(blkCS.marginTop)||0)+(parseFloat(blkCS.marginBottom)||0):0;
+  const gap=(parseFloat(bodyCS.rowGap||bodyCS.gap)||0)+blkM||10;
   // v2.10.1: ارتفاع منطقة الرأس = من أعلى محتوى الورقة إلى بداية الجسم (يشمل شريط الأستاذ والهوامش)
   const zone=(pp,bd)=>{try{const r=pp.getBoundingClientRect(),c=getComputedStyle(pp);return Math.max(0,bd.getBoundingClientRect().top-r.top-(parseFloat(c.paddingTop)||0))}catch(_){return 0}};
-  const capacity=Math.max(300,paperH-zone(paper,body)-footH-10);
+  const capacity=Math.max(300,paperH-zone(paper,body)-footH-10-blkM);
   const pN=measure.querySelector('.lecMeasureN'),bN=pN?.querySelector('.lectureDocBody');
-  const capN=pN&&bN?Math.max(capacity,Math.min(paperH-60,paperH-zone(pN,bN)-footH-10)):capacity;
+  const capN=pN&&bN?Math.max(capacity,Math.min(paperH-60,paperH-zone(pN,bN)-footH-10-blkM)):capacity;
   const nodes=[...body.children],heights=sourceBlocks.map((_,i)=>Math.max(1,h(nodes[i])));let used=0;
   // v2.8.12: عناصر الصفحات. الجدول الأطول من صفحة يُقسَّم إلى أجزاء مع تكرار صف العناوين.
   const items=[];let breakNext=false;
@@ -843,12 +919,13 @@ async function renderLecturePreview(){
   try{ syncMeta(); }catch(err){ console.warn('تعذر مزامنة بيانات المحاضرة قبل المعاينة.',err); }
 
   const lecture=normalizeLecture(clone(editorLecture||{}));
-  setContent('<section class="previewShell"><div class="previewToolbar"><button class="eduGhost" id="backEditor">‹ رجوع للتحرير</button><div><b>معاينة A4</b><span id="lecturePreviewStatus">تم فتح المعاينة الآمنة — جارِ تحسين توزيع الصفحات…</span></div><div class="previewActs"><button class="eduSecondary" id="printLecture">طباعة</button><button class="eduPrimary" id="pdfLecture">'+(window.ICON?ICON('exam'):'')+'<span>حفظ PDF</span></button></div></div><div id="lecturePreviewArea"></div></section>');
+  setContent('<section class="previewShell"><div class="previewToolbar"><button class="eduGhost" id="backEditor">‹ رجوع للتحرير</button><div><b>معاينة A4</b><span id="lecturePreviewStatus">تم فتح المعاينة الآمنة — جارِ تحسين توزيع الصفحات…</span></div><div class="previewActs"><button class="eduGhost" id="brandFromPreview">الرأس والتذييل</button><button class="eduSecondary" id="printLecture">طباعة</button><button class="eduPrimary" id="pdfLecture">'+(window.ICON?ICON('exam'):'')+'<span>حفظ PDF</span></button></div></div><div id="lecturePreviewArea"></div></section>');
 
   const back=document.getElementById('backEditor');
   if(back)back.onclick=renderLectureEditor;
   const area=document.getElementById('lecturePreviewArea');
   const status=document.getElementById('lecturePreviewStatus');
+  {const bb=document.getElementById('brandFromPreview');if(bb)bb.onclick=()=>openBrandSheet(()=>renderLecturePreview())}
   const btn=document.getElementById('printLecture');
   if(!area)return;
 
