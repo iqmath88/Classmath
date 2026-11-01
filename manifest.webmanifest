@@ -1,7 +1,7 @@
 {
   "name": "نيبور كلاس — منصة المعلم",
   "short_name": "نيبور كلاس",
-  "description": "نيبور كلاس v2.9.9 — تصميم المحاضرات وإدارة الطلبة والاختبارات",
+  "description": "نيبور كلاس v2.10.0 — تصميم المحاضرات وإدارة الطلبة والاختبارات",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
@@ -27,6 +27,6 @@
       "purpose": "any maskable"
     }
   ],
-  "version": "2.9.9",
+  "version": "2.10.0",
   "id": "masar-education-v1"
 }

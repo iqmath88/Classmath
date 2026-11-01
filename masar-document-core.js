@@ -129,7 +129,8 @@ class CommandHistory{
  ['table','جدول ذكي',{title:'جدول',keepTogether:true,table:{rows:3,cols:3,header:true,cells:[['العنوان 1','العنوان 2','العنوان 3'],['','',''],['','','']]}}],
  ['matrix','مصفوفة',{title:'مصفوفة',keepTogether:true,matrix:{rows:2,cols:2,brackets:'round',cells:[['a','b'],['c','d']]}}],
  ['illustration','رسم توضيحي',{title:'رسم توضيحي',keepTogether:true,illustration:{width:720,height:360,grid:true,items:[]}}],
- ['summary','خلاصة',{title:'خلاصة',content:'',keepTogether:true}]
+ ['summary','خلاصة',{title:'خلاصة',content:'',keepTogether:true}],
+ ['pagebreak','فاصل صفحة',{title:'فاصل صفحة',content:'',keepTogether:true,pageMode:'break',paper:'blank',caption:''}]
 ].forEach(([type,label,defaults])=>registerBlock(type,{label,defaults}));
 
 window.MasarDocumentCore={SCHEMA_VERSION,makeId,clone,on,emit,registerBlock,getBlock,createBlock,migrateLecture,normalizeBlock,validateLecture,serialize,deserialize,CommandHistory,registry};

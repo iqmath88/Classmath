@@ -1,4 +1,4 @@
-const CACHE = "masar-education-2-9-9-color-theme";
+const CACHE = "masar-education-2-10-0-layout-boxes";
 const ASSETS = [
   "./",
   "./index.html",

@@ -635,3 +635,112 @@ html #pdfLecture,html #pdfLecture span{color:#fff!important}
 [data-theme] .smartTablePrint th{background:var(--lec-tint)!important;color:var(--lec-title)!important}
 [data-theme] .smartTablePrint td{color:var(--lec-text)}
 @media print{[data-theme] .lectureBlockTitle,[data-theme] .smartTablePrint th,[data-theme] .lectureSolution{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
+
+/* ---------- v2.10.0: فاصل صفحة / صفحة فارغة ---------- */
+.pageBreakEditor{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;align-items:end}
+.pageBreakEditor label{display:flex;flex-direction:column;gap:4px;font-size:12.5px;color:var(--text-secondary)}
+.pageBreakEditor label[hidden]{display:none}
+.pageBreakEditor .pbLine{grid-column:1/-1;position:relative;text-align:center;border-top:2px dashed var(--brand-line);margin-top:6px}
+.pageBreakEditor .pbLine span{position:relative;top:-11px;background:var(--surface,#fff);padding:0 10px;font-size:12px;font-weight:700;color:var(--brand)}
+.lecturePageBreak{height:0;margin:0;padding:0;border:0}
+.lectureBlankPage{display:flex;flex-direction:column;gap:8px;flex:1 1 auto;min-height:0}
+.lectureBlankPage .blankCaption{margin:0;font-size:calc(var(--lec-fs,13pt) + 1.5pt);color:var(--lec-head,#0f172a);font-weight:800}
+.lectureBlankPage .blankArea{flex:1 1 auto;min-height:200px;border:1px solid var(--lec-line,#d8dee8);border-radius:10px}
+.lectureBlankPage.paper-blank .blankArea{border-style:dashed}
+.lectureBlankPage .blankArea{position:relative;overflow:hidden}
+.lectureBlankPage .blankPattern{position:absolute;inset:0;width:100%;height:100%;display:block}
+.lecturePagedPaper .lectureDocBody:has(> .lectureBlankPage){display:flex;flex-direction:column}
+@media print{
+  body.printFlow .lectureFlowDoc .lecturePageBreak{break-after:page;page-break-after:always;display:block}
+  body.printFlow .lectureFlowDoc .lectureBlankPage{break-before:page;break-after:page;height:232mm;display:flex}
+  .lectureBlankPage .blankArea{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+}
+/* ---------- v2.10.0: كتلة مقسومة بين صفحتين ---------- */
+.lectureBlock.splitStart{border-bottom-style:dashed!important;border-bottom-left-radius:0!important;border-bottom-right-radius:0!important;position:relative}
+.lectureBlock.splitStart::after{content:"يتبع في الصفحة التالية ←";display:block;text-align:left;font-size:8.5pt;font-weight:700;color:var(--lec-muted,#64748b);padding:0 12px 6px}
+.lectureBlock.splitCont{border-top-style:dashed!important;border-top-left-radius:0!important;border-top-right-radius:0!important}
+.lectureSolution.solCont>b:first-child{color:var(--lec-head,#0f172a)}
+@media print{
+  body.printFlow .lectureFlowDoc .lectureBlock.type-example,body.printFlow .lectureFlowDoc .lectureBlock.type-text,body.printFlow .lectureFlowDoc .lectureBlock.type-proof,body.printFlow .lectureFlowDoc .lectureBlock.type-summary{break-inside:auto!important;page-break-inside:auto!important}
+  body.printFlow .lectureFlowDoc .lectureBlockContent>*{orphans:2;widows:2}
+}
+
+/* ---------- v2.10.0: هوية مميزة لكل صندوق ----------
+   الألوان من هوية المستند: كحلي (التعاريف والخلاصة)، ذهبي (القواعد والنظريات والملاحظات)، أحمر (الأمثلة والتمارين والواجب والوزاري).
+   في هوية «أسود» تتحول كلها إلى درجات رمادية مع بقاء الشكل المميز لكل صندوق. */
+[data-theme="royal"]{--c-navy:#14215A;--c-red:#A11D21;--c-gold:#A8801F;--c-goldline:#C9A146;--t-navy:#EEF2FB;--t-red:#FCF1F1;--t-gold:#FBF5E4;--t-paper:#FFFDF7}
+[data-theme="classic"]{--c-navy:#111827;--c-red:#111827;--c-gold:#374151;--c-goldline:#6B7280;--t-navy:#F3F4F6;--t-red:#F3F4F6;--t-gold:#F3F4F6;--t-paper:#FFFFFF}
+[data-theme] .lectureBlock{border-radius:12px!important}
+[data-theme] .lectureBlockTitle{gap:8px}
+/* تعريف: إطار كحلي متصل وشريط عنوان كحلي فاتح */
+[data-theme] .lectureBlock.type-definition{border:1.5px solid var(--c-navy)!important}
+[data-theme] .lectureBlock.type-definition .lectureBlockTitle{background:var(--t-navy)!important;border-right-color:var(--c-navy)!important}
+[data-theme] .lectureBlock.type-definition .lectureBlockTitle h2,[data-theme] .lectureBlock.type-definition .lbIc{color:var(--c-navy)!important}
+/* قاعدة ونظرية: إطار ذهبي مزدوج وخلفية ورقية دافئة */
+[data-theme] .lectureBlock.type-rule,[data-theme] .lectureBlock.type-theorem{border:3px double var(--c-goldline)!important;background:var(--t-paper)!important}
+[data-theme] .lectureBlock.type-rule .lectureBlockTitle,[data-theme] .lectureBlock.type-theorem .lectureBlockTitle{background:var(--t-gold)!important;border-right-color:var(--c-gold)!important}
+[data-theme] .lectureBlock.type-rule .lectureBlockTitle h2,[data-theme] .lectureBlock.type-theorem .lectureBlockTitle h2,[data-theme] .lectureBlock.type-rule .lbIc,[data-theme] .lectureBlock.type-theorem .lbIc{color:var(--c-gold)!important}
+/* مثال محلول: شريط أحمر وعنوان أحمر على خلفية وردية خفيفة؛ الحل في صندوقه الذهبي */
+[data-theme] .lectureBlock.type-example .lectureBlockTitle{background:var(--t-red)!important;border-right-color:var(--c-red)!important}
+/* تمرين ونشاط وتحقق: إطار متقطع (مساحة عمل الطالب) */
+[data-theme] .lectureBlock.type-exercise,[data-theme] .lectureBlock.type-activity,[data-theme] .lectureBlock.type-check{border:1.5px dashed var(--c-navy)!important}
+[data-theme] .lectureBlock.type-exercise .lectureBlockTitle,[data-theme] .lectureBlock.type-activity .lectureBlockTitle,[data-theme] .lectureBlock.type-check .lectureBlockTitle{background:#fff!important;border-bottom:1px dashed var(--lec-line,#D5DDF0)}
+/* واجب بيتي: شريط عنوان أحمر ممتلئ بنص أبيض */
+[data-theme] .lectureBlock.type-homework{border:1.5px solid var(--c-red)!important}
+[data-theme] .lectureBlock.type-homework .lectureBlockTitle{background:var(--c-red)!important;border-right-color:var(--c-red)!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+[data-theme] .lectureBlock.type-homework .lectureBlockTitle h2,[data-theme] .lectureBlock.type-homework .lbIc{color:#fff!important}
+/* سؤال وزاري: إطار أحمر وختم «وزاري» */
+[data-theme] .lectureBlock.type-ministerial{border:1.5px solid var(--c-red)!important}
+[data-theme] .lectureBlock.type-ministerial .lectureBlockTitle{background:var(--t-red)!important;position:relative}
+[data-theme] .lectureBlock.type-ministerial .lectureBlockTitle::after{content:"وزاري";margin-inline-start:auto;border:1.5px solid var(--c-red);color:var(--c-red);border-radius:6px;padding:0 8px;font-size:9pt;font-weight:800;line-height:1.7;transform:rotate(-4deg)}
+/* ملاحظة: بلا إطار، شريط ذهبي جانبي وخلفية دافئة */
+[data-theme] .lectureBlock.type-note{border:0!important;border-right:4px solid var(--c-goldline)!important;border-radius:4px!important;background:var(--t-gold)!important}
+[data-theme] .lectureBlock.type-note .lectureBlockTitle{background:transparent!important;border-right:0!important;padding-bottom:0}
+[data-theme] .lectureBlock.type-note .lectureBlockTitle h2,[data-theme] .lectureBlock.type-note .lbIc{color:var(--c-gold)!important;font-size:calc(var(--lec-fs) + .5pt)}
+/* خلاصة: شريط عنوان كحلي ممتلئ */
+[data-theme] .lectureBlock.type-summary{border:1.5px solid var(--c-navy)!important}
+[data-theme] .lectureBlock.type-summary .lectureBlockTitle{background:var(--c-navy)!important;border-right-color:var(--c-navy)!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+[data-theme] .lectureBlock.type-summary .lectureBlockTitle h2,[data-theme] .lectureBlock.type-summary .lbIc{color:#fff!important}
+/* برهان: هادئ وينتهي بعلامة ∎ */
+[data-theme] .lectureBlock.type-proof .lectureBlockTitle{background:#fff!important;border-right-color:var(--c-navy)!important}
+[data-theme] .lectureBlock.type-proof .lectureBlockTitle h2,[data-theme] .lectureBlock.type-proof .lbIc{color:var(--c-navy)!important}
+[data-theme] .lectureBlock.type-proof:not(.splitStart) .lectureBlockContent::after{content:"∎";display:block;text-align:left;font-size:1.1em;color:var(--c-navy);line-height:1}
+/* أهداف المحاضرة: خلفية كحلية فاتحة بلا إطار */
+[data-theme] .lectureBlock.type-objectives{border:0!important;background:var(--t-navy)!important}
+[data-theme] .lectureBlock.type-objectives .lectureBlockTitle{background:transparent!important;border-right-color:var(--c-navy)!important}
+[data-theme] .lectureBlock.type-objectives .lectureBlockTitle h2,[data-theme] .lectureBlock.type-objectives .lbIc{color:var(--c-navy)!important}
+/* لون مخصص من خصائص العنصر يبقى له الأولوية */
+[data-theme] .lectureBlock[data-accent] .lectureBlockTitle{border-right-color:var(--print-accent)!important}
+@media print{[data-theme] .lectureBlock{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
+/* v2.10.0: إصلاح رمز الجذر والأسهم والأقواس العريضة في المعادلات — قاعدة svg{height:auto} العامة كانت تجعل ارتفاعها صفرًا */
+.katex svg{height:inherit!important;max-width:none!important}
+/* عنوان فرعي: عنوان قسم بلا صندوق، بخط سفلي */
+[data-theme] .lectureBlock.type-heading{border:0!important;background:transparent!important}
+[data-theme] .lectureBlock.type-heading .lectureBlockTitle{background:transparent!important;border-right:0!important;border-bottom:2px solid var(--c-red);padding:4px 2px 6px!important;border-radius:0}
+[data-theme] .lectureBlock.type-heading .lectureBlockTitle h2{font-size:calc(var(--lec-fs) + 3pt)!important}
+[data-theme] .lectureBlock.type-heading .lectureBlockContent{padding-inline:2px!important}
+
+/* ---------- v2.10.0: العلامة المائية ---------- */
+.lecturePaper{position:relative}
+.lecWatermark{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;z-index:5;overflow:hidden}
+.lecWatermark.wmText span{transform:rotate(-32deg);font-size:46pt;font-weight:800;color:var(--c-navy,#14215A);white-space:nowrap;max-width:none;letter-spacing:0}
+.lecWatermark.wmLogo img{width:58%;max-height:58%;object-fit:contain;transform:none}
+.lectureFlowDoc .lecWatermark{display:none}
+@media print{
+  body.printFlow .lectureFlowDoc .lecWatermark{display:flex;position:fixed;inset:0}
+  .lecWatermark{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+}
+.wmPanel{grid-column:1/-1;display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;align-items:end;padding:10px;border:1px dashed var(--glass-line);border-radius:var(--radius-md)}
+.wmPanel label[hidden],.wmPanel .wmLogoRow[hidden]{display:none!important}
+.wmPanel .wmLogoRow{display:flex;align-items:center;gap:10px}
+.wmPanel .wmPick{display:inline-flex;align-items:center;justify-content:center;padding:9px 14px;border-radius:12px;border:1px solid var(--brand-line);background:var(--brand-soft);color:var(--brand);font-weight:700;cursor:pointer;white-space:nowrap}
+.wmPanel .wmThumb{height:44px;max-width:120px;object-fit:contain;border:1px solid var(--glass-line);border-radius:8px;background:repeating-conic-gradient(#eef1f7 0 25%,#fff 0 50%) 0 0/12px 12px}
+.wmPanel .wmNone{font-size:12px;color:var(--text-secondary)}
+.wmPanel input[type=range]{width:100%}
+.lectureInfoPanel select{display:block;width:100%;margin-top:5px;border:1px solid #d7dee9;border-radius:10px;padding:10px;font:inherit;font-size:13px;color:#0f172a;background:#f8fafc;min-height:42px}
+html.dark .lectureInfoPanel select{background:var(--control-bg);color:var(--text-primary);border-color:var(--control-border)}
+.lectureInfoPanel .wmPanel label{font-size:11px;color:#64748b;font-weight:700}
+.lectureInfoPanel .wmOp span{color:var(--brand);margin-inline-start:4px}
+.lectureInfoPanel label:has(#lecColorTheme),.lectureInfoPanel label:has(#lecTextSize){grid-column:span 2}
+.pageBreakEditor select,.pageBreakEditor input{display:block;width:100%;border:1px solid #d7dee9;border-radius:10px;padding:9px 10px;font:inherit;font-size:13px;color:#0f172a;background:#f8fafc;min-height:40px}html.dark .pageBreakEditor select,html.dark .pageBreakEditor input{background:var(--control-bg);color:var(--text-primary);border-color:var(--control-border)}
+html .lectureEditor .pageBreakEditor select,html .lectureEditor .pageBreakEditor input{display:block!important;width:100%!important;border:1px solid #d7dee9!important;border-radius:10px!important;padding:9px 10px!important;font-size:13px!important;min-height:42px!important;background:#f8fafc!important;color:#0f172a!important;margin-top:4px}
