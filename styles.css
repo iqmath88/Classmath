@@ -2160,7 +2160,7 @@ input:focus,select:focus,textarea:focus,.richContent:focus{
 .richContent p,.richContent li,.richContent td,.richContent th,
 .blockContentInput,.lectureBlockContent{color:var(--text-primary)!important}
 .richContent h2,.richContent h3{color:#075985!important}
-.dark .richContent h2,.dark .richContent h3{color:#7DD3FC!important}
+.dark .richContent:not(.pvPaper *) h2,.dark .richContent:not(.pvPaper *) h3{color:#7DD3FC!important}
 .richEquation{color:var(--text-primary)!important;background:var(--surface-soft)!important;border-color:var(--control-border)!important}
 
 /* لوحة العناصر وأزرارها */
@@ -2182,13 +2182,13 @@ input:focus,select:focus,textarea:focus,.richContent:focus{
 
 /* الوضع الداكن: إزالة النصوص البيضاء فوق الأسطح البيضاء الموروثة */
 .dark .editorTopbar,.dark .lectureInfoPanel,.dark .blockPalette,.dark .propertiesPanel,
-.dark .blockEditor,.dark .compoundEditor,.dark .workspaceHeader,.dark .projectCard,
+.dark .blockEditor:not(.pvPaper *),.dark .compoundEditor:not(.pvPaper *),.dark .workspaceHeader,.dark .projectCard,
 .dark .chapterRow,.dark .chapterOpen{background:var(--surface)!important}
-.dark .blockEditorHead{background:#0D3B45!important;color:#F8FAFC!important}
-.dark .blockEditorBody{background:#0A3038!important;color:#F8FAFC!important}
-.dark .richContent{background:#0B313A!important;color:#F8FAFC!important}
+.dark .blockEditorHead:not(.pvPaper *){background:#0D3B45!important;color:#F8FAFC!important}
+.dark .blockEditorBody:not(.pvPaper *){background:#0A3038!important;color:#F8FAFC!important}
+.dark .richContent:not(.pvPaper *){background:#0B313A!important;color:#F8FAFC!important}
 .dark .smartInspector,.dark .mathInspector,.dark .eqHistory{background:#0D3942!important}
-.dark .smartPrintMeta span{background:#103F49!important;color:#D7E3EA!important}
+.dark .smartPrintMeta span:not(.pvPaper *){background:#103F49!important;color:#D7E3EA!important}
 
 /* الحالات المعطلة يجب أن تبقى مقروءة */
 button:disabled,input:disabled,select:disabled,textarea:disabled{
@@ -2515,3 +2515,4 @@ textarea[data-auto-direction]{
 #printArea .pBandOfficial .pHeaderOrnament{opacity:.28!important}
 #printArea .pBandOfficial .pOffCol span,#printArea .pBandOfficial .pOffCol b{text-shadow:0 1px 2px rgba(0,0,0,.35)}
 #printArea .pBandOfficial.pBandMono .pOffCol span,#printArea .pBandOfficial.pBandMono .pOffCol b{text-shadow:none}
+.dark .blockEditorHead .dragHandle:not(.pvPaper *){color:#A8B6CC!important}
