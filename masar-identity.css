@@ -1161,3 +1161,18 @@ html .tplChips .chipTool:hover{background:var(--brand-soft,#EEF2FB)!important}
 .actMenuList{position:absolute;top:calc(100% + 6px);right:0;z-index:30;min-width:240px;display:flex;flex-direction:column;gap:4px;padding:6px;background:var(--card,#fff);border:1px solid var(--glass-line,#e2e8f0);border-radius:14px;box-shadow:0 12px 30px rgba(15,23,42,.18)}
 html .actMenuList .btn{width:100%!important;justify-content:flex-start!important;margin:0!important;text-align:start}
 @media (max-width:599px){.actMenuList{position:fixed;top:auto;bottom:90px;right:12px;left:12px;min-width:0}}
+
+/* ---------- v2.15.0: نسخة الطالب / نسخة الأستاذ ---------- */
+.edSwitch{display:inline-flex;padding:3px;border-radius:12px;background:var(--surface-soft,#F1F5F9);border:1px solid var(--glass-line,#e2e8f0);gap:2px}
+.edSwitch button{border:0;background:transparent;border-radius:9px;padding:8px 12px;font:inherit;font-size:13px;font-weight:700;color:var(--text-secondary,#475569);cursor:pointer;min-height:38px}
+.edSwitch button.on{background:var(--card,#fff);color:var(--brand,#14215A);box-shadow:0 1px 4px rgba(15,23,42,.12)}
+.edExamples{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:600;color:var(--text-secondary,#475569)}
+.edExamples[hidden]{display:none!important}
+.edExamples input{width:18px;height:18px}
+.bookSheet .bkEd{display:flex;width:100%}.bookSheet .bkEd button{flex:1}
+html .lectureDocHead.lecBand .lecEdPill{display:inline-flex;align-items:center;border-radius:99px;padding:.4mm 2.6mm;font-size:8.5pt;font-weight:800;background:var(--hb-accent,#C29A35);color:#fff;margin-inline-start:1mm;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+[data-hstyle="frame"] .lectureDocHead.lecBand .lecEdPill,[data-hstyle="line"] .lectureDocHead.lecBand .lecEdPill,[data-theme="classic"] .lectureDocHead.lecBand .lecEdPill{background:#fff;color:var(--hb-main,#14215A);border:1pt solid var(--hb-main,#14215A)}
+.bookCover .bcEdition{font-size:14pt;font-weight:800;color:#fff;background:var(--hb-accent,#C29A35);border-radius:99px;padding:1.6mm 7mm;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+.bookCover .bcEdition.bcTeacher{background:var(--hb-main,#14215A)}
+[data-theme="classic"].bookCover .bcEdition{background:#fff;color:#111827;border:1.4pt solid #111827}
+html .previewActs{flex-wrap:wrap;align-items:center}

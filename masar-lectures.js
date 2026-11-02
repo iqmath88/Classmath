@@ -49,7 +49,7 @@ function parsePagePlan(html){const box=document.createElement('div');box.innerHT
 async function runPagePlan(){if(!document.querySelector('.lectureEditor.pageView'))return;if(pvPlanBusy){schedulePagePlan(400);return}if(Date.now()-lastViewportChange<1200){schedulePagePlan(1300);return}
  const tok=++pvPlanToken;pvPlanBusy=true;const t0=performance.now();let html='';
  try{syncMeta()}catch(_){}
- try{html=await paginateLectureHTML(normalizeLecture(clone(editorLecture)))}catch(err){console.warn('page plan',err);pvPlanBusy=false;return}
+ try{html=await withEdition({student:false},()=>paginateLectureHTML(normalizeLecture(clone(editorLecture))))}catch(err){console.warn('page plan',err);pvPlanBusy=false;return}
  pvPlanBusy=false;if(tok!==pvPlanToken)return;
  const plan=parsePagePlan(html);pvPlan=plan;pvPlanStats.runs++;pvPlanStats.lastMs=Math.round(performance.now()-t0);if(pvPlanStats.runs%5===1)crumb('plan '+plan.length+'p '+pvPlanStats.lastMs+'ms');
  try{applyPagePlan(plan)}catch(err){console.warn('apply page plan',err)}}
@@ -777,6 +777,16 @@ function lectureOrient(l){return l&&l.orientation==='landscape'?'landscape':'por
 function lectureMarginsKey(l){return l&&PAGE_MARGINS[l.margins]?l.margins:'normal'}
 function pageGeom(l,forcePortrait){const o=forcePortrait?'portrait':lectureOrient(l),m=PAGE_MARGINS[lectureMarginsKey(l)];return {o,w:o==='landscape'?297:210,h:o==='landscape'?210:297,pt:m[0],ps:m[1],pb:m[2]}}
 function pageVars(l,forcePortrait){const g=pageGeom(l,forcePortrait);return '--pg-w:'+g.w+'mm;--pg-h:'+g.h+'mm;--pg-pt:'+g.pt+'mm;--pg-ps:'+g.ps+'mm;--pg-pb:'+g.pb+'mm;'}
+// v2.15.0: نسخة الطالب / نسخة الأستاذ — خيار طباعة لا يغيّر المحاضرة المحفوظة
+const EDITION_KEY='nibor-print-edition';
+const STUDENT_HIDE_TYPES=new Set(['exercise','activity','check','homework','ministerial']);
+let printEdition=(()=>{try{const v=JSON.parse(localStorage.getItem(EDITION_KEY)||'{}');return {student:!!v.student,examples:!!v.examples}}catch(_){return {student:false,examples:false}}})();
+function setPrintEdition(e){printEdition={student:!!(e&&e.student),examples:!!(e&&e.examples)};try{localStorage.setItem(EDITION_KEY,JSON.stringify(printEdition))}catch(_){}}
+async function withEdition(ed,fn){const keep=printEdition;printEdition={student:!!(ed&&ed.student),examples:!!(ed&&ed.examples)};try{return await fn()}finally{printEdition=keep}}
+function hidesSolution(b){if(!printEdition.student||!b)return false;if(STUDENT_HIDE_TYPES.has(b.type))return true;return !!(printEdition.examples&&b.type==='example')}
+// سطور الإجابة مكان الحل المخفي: بطول يقارب طول الحل (3 إلى 10 أسطر)
+function autoAnswerLines(b){const t=(String(b.solution||'')+' '+String(b.solutionHtml||'').replace(/<[^>]+>/g,' ')).replace(/\s+/g,' ').trim();const eq=(t.match(/\$|katex|richEquation|data-latex/g)||[]).length;return Math.max(3,Math.min(10,Math.ceil((t.length+eq*25)/55)+1))}
+function editionSuffix(){return printEdition.student?' — نسخة الطالب':''}
 function lectureSizeStyle(l,forcePortrait){return brandStyleAttr()+pageVars(l,forcePortrait)+'--lec-fs:'+lectureTextSize(l)+'pt" data-theme="'+lectureTheme(l)+'" data-orient="'+pageGeom(l,forcePortrait).o+'"'}
 function blockFontScale(d){const v=Number(d&&d.fontSize);if(!v||v===13.5)return 1;if(v>3)return Math.round(v/13.5*100)/100;return v}
 // v2.10.1: رأس وتذييل بهوية ملزمة: شريط الأستاذ (الاسم بخط كبير + رقم الهاتف)، ورأس جارٍ مختصر في الصفحات التالية.
@@ -804,7 +814,7 @@ function lectureHeaderHTML(l,compact=false){const B=loadBrand();
  const phName=B.phonePos==='name'?ph:'',phSide=B.phonePos==='name'?'':ph;
  const who=(t||role||phName)?'<div class="lecBandWho">'+(t?'<b class="lecTeacher">'+safe(t)+'</b>':'')+(role?'<small class="lecRole">'+role+'</small>':'')+phoneHTML(phName,'lecPhone lecPhoneIn')+'</div>':'';
  const kick=[B.showSubject&&l.subject,B.showGrade&&l.grade,B.showChapter&&l.chapter].filter(Boolean).map(safe).join(' <i>·</i> ');
- const num=B.showNumber?'<span class="lectureNumber lecNoPill">المحاضرة <b>'+safe(l.lectureNo||"—")+'</b></span>':'';
+ const num=(B.showNumber?'<span class="lectureNumber lecNoPill">المحاضرة <b>'+safe(l.lectureNo||"—")+'</b></span>':'')+(printEdition.student?'<span class="lecEdPill">نسخة الطالب</span>':'');
  const lec=(B.showTitle&&l.title)||num||kick?'<div class="lecBandLec">'+((num||kick)?'<span class="lecKicker">'+num+kick+'</span>':'')+(B.showTitle&&l.title?'<h1>'+safe(l.title)+'</h1>':'')+'</div>':'';
  const side=(phSide||ex)?'<div class="lecBandSide">'+phoneHTML(phSide,'lecPhone')+(ex?'<small class="lecExtra">'+mixText(ex)+'</small>':'')+'</div>':'';
  const logo=B.logo?'<img class="lecLogo" src="'+B.logo+'" alt="">':'';
@@ -887,10 +897,11 @@ function lectureBlockHTMLUnsafe(l,b,i){
  }
  const type=String(b.type||'text'),smart=SMART_TYPES.has(type),label=BLOCK_TYPES[type]?.label||'عنصر';
  const numbered=smart&&ensureSmart(b).autoNumber!==false,ownTitle=String(b.title||'').trim();const title=numbered?(ownTitle&&ownTitle!==label?smartLabel(l,b,i)+' — '+ownTitle:smartLabel(l,b,i)):(ownTitle||label);// v2.8.17: لا تكرار «تعريف 1 — تعريف»
- const solution=((b.solutionHtml||b.solution)&&(!smart||ensureSmart(b).showSolution!==false))?'<div class="lectureSolution"><b>الحل:</b> '+richPreview(b,'solution')+'</div>':'';
- const lines=smart?ensureSmart(b).answerLines:0;
+ const hasSol=!!(b.solutionHtml||b.solution),hideSol=hidesSolution(b);
+ const solution=(hasSol&&!hideSol&&(!smart||ensureSmart(b).showSolution!==false))?'<div class="lectureSolution"><b>الحل:</b> '+richPreview(b,'solution')+'</div>':'';
+ let lines=smart?ensureSmart(b).answerLines:0;if(hideSol&&(hasSol||STUDENT_HIDE_TYPES.has(b.type)))lines=Math.max(lines,hasSol?autoAnswerLines(b):3);
  const customAccent=d.accent&&String(d.accent).toLowerCase()!=='#0f172a';
- return '<section data-lecture-block="'+i+'"'+(customAccent?' data-accent="1"':'')+' style="'+style+'" class="lectureBlock type-'+safe(type)+(b.pageBreakBefore?' forcePageBreak':'')+(b.keepTogether!==false?' keepTogether':'')+(d.hideTitle?' hideBlockTitle':'')+'"><div class="lectureBlockTitle"><span class="lbIc">'+blockIcon(type)+'</span><h2>'+safe(title)+'</h2></div>'+(smart?smartPrintMetaHTML(b):'')+'<div class="lectureBlockContent">'+content+solution+(smart&&lines>0?'<div class="answerLines">'+Array.from({length:lines},()=>'<span></span>').join('')+'</div>':'')+'</div></section>';
+ return '<section data-lecture-block="'+i+'"'+(customAccent?' data-accent="1"':'')+' style="'+style+'" class="lectureBlock type-'+safe(type)+(b.pageBreakBefore?' forcePageBreak':'')+(b.keepTogether!==false?' keepTogether':'')+(d.hideTitle?' hideBlockTitle':'')+'"><div class="lectureBlockTitle"><span class="lbIc">'+blockIcon(type)+'</span><h2>'+safe(title)+'</h2></div>'+(smart?smartPrintMetaHTML(b):'')+'<div class="lectureBlockContent">'+content+solution+(lines>0?'<div class="answerLines">'+Array.from({length:lines},()=>'<span></span>').join('')+'</div>':'')+'</div></section>';
 }
 function lectureBlockHTML(l,b,i){
  try{return lectureBlockHTMLUnsafe(l,b,i)}catch(err){return previewFallbackBlockHTML(b,i,err)}
@@ -1047,11 +1058,11 @@ function showPdfReady(res,forPrint){
 // v2.11.0: تصدير الفصل ملزمة واحدة — غلاف بهوية الأستاذ، فهرس، ترقيم متصل، ملف PDF واحد
 function academicYear(){const d=new Date(),y=d.getFullYear();return d.getMonth()>=7?y+' – '+(y+1):(y-1)+' – '+y}
 function bookletLectures(projectId,chapterId){return loadLectures().filter(l=>l.projectId===projectId&&l.chapterId===chapterId).map(l=>normalizeLecture(clone(l))).sort((a,b)=>{const na=parseFloat(a.lectureNo),nb=parseFloat(b.lectureNo);if(Number.isFinite(na)&&Number.isFinite(nb)&&na!==nb)return na-nb;return String(a.createdAt||'').localeCompare(String(b.createdAt||''))})}
-function bookletDefaults(p,c){const s=Object.assign({},c&&c.booklet||{});return {title:s.title||c?.title||'',kicker:s.kicker!=null?s.kicker:('ملزمة مادة '+(p?.subject||'')).trim(),grade:s.grade!=null?s.grade:(p?.grade||''),year:s.year!=null?s.year:academicYear(),note:s.note||'',cover:s.cover!==false,toc:s.toc!==false,skip:Array.isArray(s.skip)?s.skip:[]}}
+function bookletDefaults(p,c){const s=Object.assign({},c&&c.booklet||{});return {title:s.title||c?.title||'',kicker:s.kicker!=null?s.kicker:('ملزمة مادة '+(p?.subject||'')).trim(),grade:s.grade!=null?s.grade:(p?.grade||''),year:s.year!=null?s.year:academicYear(),note:s.note||'',cover:s.cover!==false,toc:s.toc!==false,skip:Array.isArray(s.skip)?s.skip:[],student:!!s.student,examples:!!s.examples}}
 function bookletCoverHTML(o,lectures,styleAttr){const B=loadBrand(),l0=lectures[0]||{};const t=brandName(l0,B),ph=lecturePhone(l0,B),role=teacherRole(l0,B),ex=String(B.extra||'').trim();
  return '<div class="lecturePaper lecturePagedPaper bookCover"'+styleAttr+'>'+
   '<div class="bcTop">'+(B.logo?'<img class="bcLogo" src="'+B.logo+'" alt="">':'')+'<div class="bcWho">'+(t?'<b class="bcName">'+safe(t)+'</b>':'')+(role?'<small class="bcRole">'+role+'</small>':'')+'</div>'+(ph?'<span class="bcPhone" dir="ltr">'+PHONE_IC+'<bdi>'+safe(ph)+'</bdi></span>':'')+'</div>'+
-  '<div class="bcMid">'+(o.kicker?'<span class="bcKicker">'+mixText(o.kicker)+'</span>':'')+'<h1 class="bcTitle">'+safe(o.title)+'</h1><i class="bcRule"></i>'+(o.grade?'<span class="bcGrade">'+safe(o.grade)+'</span>':'')+'<span class="bcCount">'+lectures.length+' '+(lectures.length===1?'محاضرة':(lectures.length===2?'محاضرتان':(lectures.length<=10?'محاضرات':'محاضرة')))+'</span>'+(o.note?'<p class="bcNote">'+mixText(o.note)+'</p>':'')+'</div>'+
+  '<div class="bcMid">'+(o.kicker?'<span class="bcKicker">'+mixText(o.kicker)+'</span>':'')+'<h1 class="bcTitle">'+safe(o.title)+'</h1><i class="bcRule"></i>'+(o.student?'<span class="bcEdition">نسخة الطالب</span>':'<span class="bcEdition bcTeacher">نسخة الأستاذ — مع الحلول</span>')+(o.grade?'<span class="bcGrade">'+safe(o.grade)+'</span>':'')+'<span class="bcCount">'+lectures.length+' '+(lectures.length===1?'محاضرة':(lectures.length===2?'محاضرتان':(lectures.length<=10?'محاضرات':'محاضرة')))+'</span>'+(o.note?'<p class="bcNote">'+mixText(o.note)+'</p>':'')+'</div>'+
   '<div class="bcBottom">'+(o.year?'<span class="bcYear"><small>العام الدراسي</small> '+safe(o.year)+'</span>':'<span></span>')+(ex?'<span class="bcExtra">'+mixText(ex)+'</span>':'<span></span>')+'</div></div>'}
 function bookletTocHTML(rows,styleAttr){const per=22,pages=[];for(let i=0;i<rows.length;i+=per)pages.push(rows.slice(i,i+per));
  return pages.map((rs,k)=>'<div class="lecturePaper lecturePagedPaper bookToc"'+styleAttr+'><h2 class="tocHead">'+(k?'الفهرس (تابع)':'الفهرس')+'</h2><ol class="tocList">'+rs.map(r=>'<li><span class="tocNo">'+safe(r.no)+'</span><span class="tocTitle">'+safe(r.title)+'</span><i class="tocDots"></i><b class="tocPage">'+r.page+'</b></li>').join('')+'</ol></div>').join('')}
@@ -1062,23 +1073,25 @@ async function bookletHTML(lectures,o,say){const B=loadBrand();const holder=docu
  const all=[...holder.querySelectorAll('.lecturePaper')];all.forEach((p,k)=>{const num=p.querySelector('.lecturePageNumber');if(num)num.textContent=pageLabel(B,k+1,all.length);p.dataset.page=String(k+1)});
  const styleAttr=lectureSizeStyle(lectures[0]||{},true);
  return {html:(o.cover?bookletCoverHTML(o,lectures,styleAttr):'')+(o.toc&&rows.length>1?bookletTocHTML(rows,styleAttr):'')+holder.innerHTML,pages:all.length,rows}}
-function saveBookletPrefs(projectId,chapterId,o){const list=loadProjects(),p=list.find(x=>x.id===projectId),c=p&&chapterById(p,chapterId);if(!c)return;c.booklet={title:o.title,kicker:o.kicker,grade:o.grade,year:o.year,note:o.note,cover:o.cover,toc:o.toc,skip:o.skip};saveProjects(list)}
+function saveBookletPrefs(projectId,chapterId,o){const list=loadProjects(),p=list.find(x=>x.id===projectId),c=p&&chapterById(p,chapterId);if(!c)return;c.booklet={title:o.title,kicker:o.kicker,grade:o.grade,year:o.year,note:o.note,cover:o.cover,toc:o.toc,skip:o.skip,student:!!o.student,examples:!!o.examples};saveProjects(list)}
 function openBookletSheet(projectId,chapterId){const modal=document.getElementById('modal');if(!modal)return;const p=projectById(projectId),c=chapterById(p,chapterId);const all=bookletLectures(projectId,chapterId);
  if(!all.length){(typeof toast==='function'?toast('لا توجد محاضرات محفوظة في هذا الفصل'):alert('لا توجد محاضرات محفوظة في هذا الفصل'));return}
  const o=bookletDefaults(p,c);const I=n=>(window.ICON?ICON(n):'');
  modal.innerHTML='<div class="overlay"><div class="sheet bookSheet"><div class="sheetHead"><h3>ملزمة '+safe(c.title)+'</h3><button class="x" id="bkX">✕</button></div><div class="form">'+
   '<p class="hbNote">تُجمع المحاضرات المختارة في ملف PDF واحد بترقيم صفحات متصل، مع غلاف بهويتك وفهرس.</p>'+
   '<div class="hbGrid"><label class="hbWide">عنوان الملزمة<input id="bkTitle" value="'+safe(o.title)+'"></label><label>السطر فوق العنوان<input id="bkKicker" value="'+safe(o.kicker)+'"></label><label>الصف<input id="bkGrade" value="'+safe(o.grade)+'"></label><label>العام الدراسي<input id="bkYear" value="'+safe(o.year)+'"></label><label>ملاحظة على الغلاف (اختياري)<input id="bkNote" value="'+safe(o.note)+'" placeholder="مثل: شرح مفصل مع الأسئلة الوزارية"></label></div>'+
-  '<div class="hbChecks"><label class="hbChk"><input type="checkbox" id="bkCover"'+(o.cover?' checked':'')+'><span>صفحة غلاف</span></label><label class="hbChk"><input type="checkbox" id="bkToc"'+(o.toc?' checked':'')+'><span>فهرس</span></label></div>'+
+  '<div class="edSwitch bkEd" role="radiogroup" aria-label="النسخة"><button type="button" data-bk-ed="teacher" class="'+(o.student?'':'on')+'">نسخة الأستاذ — مع الحلول</button><button type="button" data-bk-ed="student" class="'+(o.student?'on':'')+'">نسخة الطالب — بلا حلول</button></div>'+
+  '<div class="hbChecks"><label class="hbChk"><input type="checkbox" id="bkCover"'+(o.cover?' checked':'')+'><span>صفحة غلاف</span></label><label class="hbChk"><input type="checkbox" id="bkToc"'+(o.toc?' checked':'')+'><span>فهرس</span></label><label class="hbChk" id="bkExWrap"'+(o.student?'':' hidden')+'><input type="checkbox" id="bkExamples"'+(o.examples?' checked':'')+'><span>إخفاء حلول الأمثلة أيضًا</span></label></div>'+
   '<div class="bkLecs"><b>المحاضرات ('+all.length+')</b>'+all.map(l=>'<label class="hbChk"><input type="checkbox" data-bk-lec="'+safe(l.id)+'"'+(o.skip.includes(l.id)?'':' checked')+'><span><em>المحاضرة '+safe(l.lectureNo||'—')+'</em> '+safe(l.title||'محاضرة')+(l.blocks&&l.blocks.length?'':' <small>(فارغة)</small>')+'</span></label>').join('')+'</div>'+
   '<p class="bkStatus" id="bkStatus" hidden></p></div><div class="sheetFoot"><button class="btn ghost" id="bkCancel">إلغاء</button><button class="btn" id="bkGo">'+I('exam')+'<span>إنشاء الملزمة PDF</span></button></div></div></div>';
  const $=id=>document.getElementById(id);let busy=false;
- const read=()=>({title:$('bkTitle').value.trim()||c.title,kicker:$('bkKicker').value.trim(),grade:$('bkGrade').value.trim(),year:$('bkYear').value.trim(),note:$('bkNote').value.trim(),cover:$('bkCover').checked,toc:$('bkToc').checked,skip:[...modal.querySelectorAll('[data-bk-lec]')].filter(x=>!x.checked).map(x=>x.dataset.bkLec)});
+ const read=()=>({title:$('bkTitle').value.trim()||c.title,kicker:$('bkKicker').value.trim(),grade:$('bkGrade').value.trim(),year:$('bkYear').value.trim(),note:$('bkNote').value.trim(),cover:$('bkCover').checked,toc:$('bkToc').checked,student:!!modal.querySelector('[data-bk-ed="student"].on'),examples:$('bkExamples').checked,skip:[...modal.querySelectorAll('[data-bk-lec]')].filter(x=>!x.checked).map(x=>x.dataset.bkLec)});
  const close=()=>{if(busy)return;modal.innerHTML=''};$('bkX').onclick=close;$('bkCancel').onclick=close;
+ modal.querySelectorAll('[data-bk-ed]').forEach(b=>b.onclick=()=>{modal.querySelectorAll('[data-bk-ed]').forEach(x=>x.classList.toggle('on',x===b));$('bkExWrap').hidden=b.dataset.bkEd!=='student'});
  $('bkGo').onclick=async()=>{if(busy)return;const opt=read();const lecs=all.filter(l=>!opt.skip.includes(l.id)&&l.blocks&&l.blocks.length);
   if(!lecs.length){(typeof toast==='function'?toast('اختر محاضرة واحدة على الأقل فيها محتوى'):0);return}
   saveBookletPrefs(projectId,chapterId,opt);busy=true;const st=$('bkStatus'),go=$('bkGo');st.hidden=false;go.disabled=true;const say=t=>{st.textContent=t};
-  try{let built=null;const res=await window.NiborPDF.exportLecture({title:'ملزمة '+opt.title,teacher:brandName(lecs[0])},{paginate:async()=>{built=await bookletHTML(lecs,opt,say);return built.html},waitAssets:waitLectureAssets,onProgress:say,maxScale:2});
+  try{let built=null;const res=await window.NiborPDF.exportLecture({title:'ملزمة '+opt.title+(opt.student?' — نسخة الطالب':''),teacher:brandName(lecs[0])},{paginate:async()=>{built=await withEdition({student:opt.student,examples:opt.examples},()=>bookletHTML(lecs,opt,say));return built.html},waitAssets:waitLectureAssets,onProgress:say,maxScale:2});
    busy=false;showPdfReady(res,false)}
   catch(err){console.warn('booklet',err);busy=false;go.disabled=false;say('تعذّر إنشاء الملزمة: '+(err&&err.message||err)+' — جرّب عددًا أقل من المحاضرات.')}}}
 // v2.9.7: المعاينة بعرض A4 الحقيقي دائمًا (كالقياس وPDF) وتُصغَّر بصريًا على الشاشات الضيقة
@@ -1090,13 +1103,15 @@ async function renderLecturePreview(){
   try{ syncMeta(); }catch(err){ console.warn('تعذر مزامنة بيانات المحاضرة قبل المعاينة.',err); }
 
   const lecture=normalizeLecture(clone(editorLecture||{}));
-  setContent('<section class="previewShell"><div class="previewToolbar"><button class="eduGhost" id="backEditor">‹ رجوع للتحرير</button><div><b>معاينة A4</b><span id="lecturePreviewStatus">تم فتح المعاينة الآمنة — جارِ تحسين توزيع الصفحات…</span></div><div class="previewActs"><button class="eduGhost" id="brandFromPreview">الرأس والتذييل</button><button class="eduSecondary" id="printLecture">طباعة</button><button class="eduPrimary" id="pdfLecture">'+(window.ICON?ICON('exam'):'')+'<span>حفظ PDF</span></button></div></div><div id="lecturePreviewArea"></div></section>');
+  setContent('<section class="previewShell"><div class="previewToolbar"><button class="eduGhost" id="backEditor">‹ رجوع للتحرير</button><div><b>معاينة A4</b><span id="lecturePreviewStatus">تم فتح المعاينة الآمنة — جارِ تحسين توزيع الصفحات…</span></div><div class="previewActs"><div class="edSwitch" role="radiogroup" aria-label="النسخة"><button type="button" data-edition="teacher" class="'+(printEdition.student?'':'on')+'">نسخة الأستاذ</button><button type="button" data-edition="student" class="'+(printEdition.student?'on':'')+'">نسخة الطالب</button></div><label class="edExamples"'+(printEdition.student?'':' hidden')+'><input type="checkbox" id="edExamples"'+(printEdition.examples?' checked':'')+'> إخفاء حلول الأمثلة أيضًا</label><button class="eduGhost" id="brandFromPreview">الرأس والتذييل</button><button class="eduSecondary" id="printLecture">طباعة</button><button class="eduPrimary" id="pdfLecture">'+(window.ICON?ICON('exam'):'')+'<span>حفظ PDF</span></button></div></div><div id="lecturePreviewArea"></div></section>');
 
   const back=document.getElementById('backEditor');
   if(back)back.onclick=renderLectureEditor;
   const area=document.getElementById('lecturePreviewArea');
   const status=document.getElementById('lecturePreviewStatus');
   {const bb=document.getElementById('brandFromPreview');if(bb)bb.onclick=()=>openBrandSheet(()=>renderLecturePreview())}
+  document.querySelectorAll('[data-edition]').forEach(b=>b.onclick=()=>{const st=b.dataset.edition==='student';if(st===printEdition.student)return;setPrintEdition({student:st,examples:printEdition.examples});renderLecturePreview()});
+  {const ex=document.getElementById('edExamples');if(ex)ex.onchange=()=>{setPrintEdition({student:true,examples:ex.checked});renderLecturePreview()}}
   const btn=document.getElementById('printLecture');
   if(!area)return;
 
@@ -1118,7 +1133,7 @@ async function renderLecturePreview(){
         area.innerHTML=paged;fitPreviewPapers(area);
         await waitLectureAssets(area);
         const count=Math.max(1,area.querySelectorAll('.lecturePaper').length);
-        if(status)status.textContent='تم إنشاء المعاينة — '+count+' صفحة';
+        if(status)status.textContent='تم إنشاء المعاينة — '+count+' صفحة'+(printEdition.student?' · نسخة الطالب':'');
       }
     }catch(err){
       console.warn('تعذر التقسيم الذكي؛ بقيت المعاينة الآمنة ظاهرة.',err);
@@ -1135,7 +1150,7 @@ async function renderLecturePreview(){
     const say=t=>{if(label)label.textContent=t;if(status)status.textContent=t};
     try{
       if(!window.NiborPDF)throw new Error('PDF_MODULE_MISSING');
-      const res=await window.NiborPDF.exportLecture(lecture,{paginate:paginateLectureHTML,waitAssets:waitLectureAssets,onProgress:say});
+      const res=await window.NiborPDF.exportLecture(Object.assign({},lecture,{title:(lecture.title||'محاضرة')+editionSuffix()}),{paginate:()=>paginateLectureHTML(lecture),waitAssets:waitLectureAssets,onProgress:say});
       if(status)status.textContent='ملف PDF جاهز — '+res.pages+' صفحة';
       showPdfReady(res,forPrint);
     }catch(err){
