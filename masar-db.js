@@ -16,6 +16,9 @@ const KEEP_SNAPSHOTS=7;
 const cache=new Map();                               // key → JSON string
 const pending=new Map();                             // key → string | null (حذف)
 let db=null,mode="memory",flushTimer=null,lastError=null,persisted=null,migratedInfo=null;
+// v2.17.0: كتابات تصل قبل فتح IndexedDB كانت تبقى في الذاكرة فقط ثم يمحوها التحميل من القاعدة — تُحفظ هنا وتُطبَّق بعد الفتح
+let booting=true;const early=new Map();
+let retryTimer=null,retryDelay=500,inflight=0;const flushWaiters=[];
 const listeners={error:[],saved:[]};
 // تزامن بين التبويبات: كل تبويب يحمل نسخة في الذاكرة، فنبث التغييرات حتى لا يكتب تبويب قديم فوق الجديد
 let bc=null;try{bc=new BroadcastChannel("nibor-class-db");bc.onmessage=e=>{const m=e.data||{};if(!m.k||!MANAGED.test(m.k))return;if(m.v===null)cache.delete(m.k);else cache.set(m.k,m.v);try{global.dispatchEvent(new CustomEvent("masar:storage-remote",{detail:{key:m.k}}))}catch(_){}}}catch(_){bc=null}
@@ -72,19 +75,26 @@ async function migrateFromLocalStorage(){
 }
 
 /* ---------- الكتابة: دفعات صغيرة في معاملة واحدة ---------- */
-function scheduleFlush(){if(flushTimer)return;flushTimer=setTimeout(()=>{flushTimer=null;flush()},0)}
+function scheduleFlush(){if(flushTimer)return;emit("pending",{count:pending.size});flushTimer=setTimeout(()=>{flushTimer=null;flush()},0)}
+function settleWaiters(){if(pending.size||inflight)return;while(flushWaiters.length)try{flushWaiters.shift()(true)}catch(_){}}
 async function flush(){
-  if(mode!=="idb"||!pending.size)return true;
-  const batch=new Map(pending);pending.clear();
+  if(mode!=="idb"||!pending.size){settleWaiters();return true}
+  const batch=new Map(pending);pending.clear();inflight++;
   try{
+    // «تم الحفظ» لا يُعلن إلا بعد oncomplete للمعاملة، أي بعد الكتابة الدائمة فعلًا
     await tx([KV],"readwrite",t=>{const st=t.objectStore(KV);batch.forEach((v,k)=>{if(v===null)st.delete(k);else st.put(v,k)})});
+    inflight--;
     if(lastError){lastError=null}
-    emit("saved",{keys:[...batch.keys()]});
+    retryDelay=500;
+    emit("saved",{keys:[...batch.keys()],pending:pending.size});
+    if(pending.size)scheduleFlush();else settleWaiters();
     return true;
   }catch(err){
-    // أعد الدفعة للانتظار حتى لا تضيع، وأبلغ الواجهة
+    inflight--;
+    // أعد الدفعة للانتظار حتى لا تضيع، وأبلغ الواجهة، وأعد المحاولة تلقائيًا بمهلة متزايدة
     batch.forEach((v,k)=>{if(!pending.has(k))pending.set(k,v)});
     lastError=err;emit("error",err);
+    clearTimeout(retryTimer);retryTimer=setTimeout(()=>{retryTimer=null;flush()},retryDelay);retryDelay=Math.min(retryDelay*2,30000);
     return false;
   }
 }
@@ -100,8 +110,11 @@ const api={
   getItem(k){if(mode==="local"){try{return localStorage.getItem(k)}catch(_){return null}}return cache.has(k)?cache.get(k):null},
   setItem(k,v){v=String(v);
     if(mode==="local"){localStorage.setItem(k,v);return}               // يرمي عند الامتلاء كما كان
-    cache.set(k,v);if(mode==="idb"){pending.set(k,v);scheduleFlush();broadcast(k,v)}},
-  removeItem(k){if(mode==="local"){try{localStorage.removeItem(k)}catch(_){}return}cache.delete(k);if(mode==="idb"){pending.set(k,null);scheduleFlush();broadcast(k,null)}},
+    cache.set(k,v);if(mode==="idb"){pending.set(k,v);scheduleFlush();broadcast(k,v)}else if(booting)early.set(k,v)},
+  removeItem(k){if(mode==="local"){try{localStorage.removeItem(k)}catch(_){}return}cache.delete(k);if(mode==="idb"){pending.set(k,null);scheduleFlush();broadcast(k,null)}else if(booting)early.set(k,null)},
+  get pendingCount(){return pending.size+inflight},
+  // يحل حين تُكتب كل التغييرات المعلقة كتابة دائمة (أو فورًا إن لم يكن هناك ما يُكتب)
+  whenFlushed(){if(mode!=="idb")return Promise.resolve(true);if(!pending.size&&!inflight)return Promise.resolve(true);return new Promise(r=>{flushWaiters.push(r);scheduleFlush()})},
   keys(prefix){if(mode==="local"){const o=[];try{for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k&&(!prefix||k.startsWith(prefix)))o.push(k)}}catch(_){}return o.sort()}
     return [...cache.keys()].filter(k=>!prefix||k.startsWith(prefix)).sort()},
   flush,
@@ -136,7 +149,9 @@ api.ready=(async()=>{
   try{
     db=await openDB();
     const all=await loadAllKV();all.forEach((v,k)=>cache.set(k,v));
-    mode="idb";
+    mode="idb";booting=false;
+    // ما كُتب أثناء الفتح يغلب ما في القاعدة (لأنه أحدث)، ثم يُحفظ
+    if(early.size){early.forEach((v,k)=>{if(v===null){cache.delete(k);pending.set(k,null)}else{cache.set(k,v);pending.set(k,v)}});early.clear();scheduleFlush()}
     try{await migrateFromLocalStorage()}catch(err){
       // فشل الترحيل: لا نحذف شيئًا من localStorage، ونقرأ منه ما لم يُنسخ
       console.error("ترحيل التخزين لم يكتمل — البيانات باقية في localStorage",err);
@@ -146,7 +161,9 @@ api.ready=(async()=>{
     setTimeout(()=>{api.dailySnapshot().catch(e=>console.warn("لقطة يومية",e))},4000);
   }catch(err){
     console.warn("IndexedDB غير متاح — العمل على localStorage كما في الإصدارات السابقة",err);
-    db=null;mode=lsAvailable()?"local":"memory";
+    db=null;mode=lsAvailable()?"local":"memory";booting=false;
+    // الكتابات المبكرة تنتقل إلى localStorage حتى لا تضيع
+    if(mode==="local")early.forEach((v,k)=>{try{if(v===null)localStorage.removeItem(k);else localStorage.setItem(k,v)}catch(_){}});early.clear();
   }
   return mode;
 })();
