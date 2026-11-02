@@ -468,18 +468,25 @@ async function syncPush(){
       if(g.ok){const rows=await g.json();if(rows[0]&&rows[0].ls)window.NiborLectureSync.mergeFromSync(rows[0].ls)}
     }
   }catch(e){console.warn("lecture pre-merge",e)}
+  let pushed=null;
   try{
     const r=await fetch(syncBase(),{method:"POST",
       headers:Object.assign(syncHeaders(),{Prefer:"resolution=merge-duplicates"}),
-      body:JSON.stringify([{id:syncRowId(),payload:syncPayload(),updated_at:now}])});
+      body:JSON.stringify([{id:syncRowId(),payload:(pushed=syncPayload()),updated_at:now}])});
     if(r.ok){
+      try{if(window.NiborLectureSync&&pushed&&pushed.lectureSync)window.NiborLectureSync.commitPushed(pushed.lectureSync)}catch(_){}
       S.settings.syncStamp=now;S.settings.lastSyncAt=now;delete S.settings.syncDirtyAt;
       await saveKey("settings",S.settings);
+      syncRetryDelay=5000;
       return true;
     }
   }catch(e){console.error("sync push",e)}
+  // v2.17.0: فشل الرفع (انقطاع) — إعادة محاولة تلقائية بمهلة متزايدة، وفورًا عند عودة الاتصال
+  clearTimeout(syncRetryTimer);syncRetryTimer=setTimeout(()=>{if(syncOn()&&S.settings.syncDirtyAt)syncPush()},syncRetryDelay);syncRetryDelay=Math.min(syncRetryDelay*2,300000);
   return false;
 }
+let syncRetryTimer=null,syncRetryDelay=5000;
+window.addEventListener("online",()=>{if(typeof syncOn==="function"&&syncOn()&&S.settings.syncDirtyAt){clearTimeout(syncRetryTimer);syncPush()}});
 async function syncPull(silent){
   if(!syncOn())return false;
   await ensureFreshToken();
@@ -502,6 +509,9 @@ async function syncPull(silent){
     if(row.updated_at!==S.settings.syncStamp){
       const localDirty=S.settings.syncDirtyAt&&(!S.settings.syncStamp||S.settings.syncDirtyAt>S.settings.syncStamp);
       if(localDirty){
+        // v2.17.0: نسخة أمان من بيانات السحابة قبل أن يرفع هذا الجهاز تعديلاته (التي كُتبت دون اتصال)
+        try{await saveRaw("safety:cloudBeforeLocalPush",{createdAt:new Date().toISOString(),updated_at:row.updated_at,payload:row.payload})}catch(_){}
+        scheduleSync();
         if(!silent)toast("⚠️ يوجد تعارض: تغييرات محلية وسحابية. لم تُستبدل بياناتك تلقائياً");
         return false;
       }

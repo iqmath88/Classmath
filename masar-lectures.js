@@ -148,7 +148,7 @@ const SYNC_META_KEY="masar-education-v1-sync-meta";
 const SYNC_ITEM_KEYS=["masar-education-v1-lectures","masar-education-v1-projects"];
 const SYNC_WHOLE_KEYS=["masar-education-v1-block-library","masar-education-v1-print-brand"];
 let syncMerging=false;
-function syncMetaGet(){const m=storageGet(SYNC_META_KEY,null);const o=(m&&typeof m==='object')?m:{};o.keys=o.keys&&typeof o.keys==='object'?o.keys:{};o.del=o.del&&typeof o.del==='object'?o.del:{};return o}
+function syncMetaGet(){const m=storageGet(SYNC_META_KEY,null);const o=(m&&typeof m==='object')?m:{};o.keys=o.keys&&typeof o.keys==='object'?o.keys:{};o.del=o.del&&typeof o.del==='object'?o.del:{};o.base=o.base&&typeof o.base==='object'?o.base:{};return o}
 function idsOf(key,list){const out=new Set();(Array.isArray(list)?list:[]).forEach(x=>{if(!x||!x.id)return;out.add(x.id);if(key==="masar-education-v1-projects")(x.chapters||[]).forEach(c=>c&&c.id&&out.add(x.id+'/'+c.id))});return out}
 function noteSyncChange(key,prev,next){
   if(syncMerging)return;
@@ -161,43 +161,95 @@ function noteSyncChange(key,prev,next){
 }
 function storageSet(key,value){const watch=!syncMerging&&(SYNC_ITEM_KEYS.includes(key)||SYNC_WHOLE_KEYS.includes(key));const prev=watch&&SYNC_ITEM_KEYS.includes(key)?storageGet(key,[]):null;const r=storageSetRaw(key,value);if(watch)noteSyncChange(key,prev,value);return r}
 function stampOf(x){if(x&&x.auto&&x.updatedAt===x.createdAt)return '';return String((x&&(x.updatedAt||x.createdAt))||'')} // المشروع الافتراضي التلقائي لا يغلب تعديلًا حقيقيًا من جهاز آخر
-function mergeById(local,remote,del,prefix){
-  const L=new Map(),out=[];(local||[]).forEach(x=>x&&x.id&&L.set(x.id,x));const R=new Map();(remote||[]).forEach(x=>x&&x.id&&R.set(x.id,x));
+/* v2.17.0: كشف التعارض لا يعتمد على ساعة الجهاز.
+   لكل عنصر «بصمة» محتواه عند آخر مزامنة ناجحة (meta.base). التغيّر = اختلاف البصمة عنها:
+   • تغيّر على جهاز واحد فقط ← يؤخذ دون أي اعتبار للوقت.
+   • تغيّر على الجهازين ← تعارض: تبقى النسختان (المحاضرة الأخرى تُحفظ نسخةً مستقلة) مع إشعار.
+   • حُذف هنا وعُدّل هناك (أو العكس) ← لا يُحذف، ويُبلَّغ المستخدم. */
+const SYNC_CONFLICTS_KEY="masar-education-v1-sync-conflicts";
+function stableStr(v){if(v===null||typeof v!=='object')return JSON.stringify(v);if(Array.isArray(v))return '['+v.map(stableStr).join(',')+']';return '{'+Object.keys(v).filter(k=>v[k]!==undefined).sort().map(k=>JSON.stringify(k)+':'+stableStr(v[k])).join(',')+'}'}
+function fp(x){const t=stableStr(x);let h=0x811c9dc5;for(let i=0;i<t.length;i++){h^=t.charCodeAt(i);h=Math.imul(h,0x01000193)>>>0}return h.toString(36)+':'+t.length}
+function itemsOnly(p){if(!p||typeof p!=='object')return p;const q=Object.assign({},p);delete q.chapters;return q}
+function mergeList(local,remote,o){
+  // o: {base, del, prefix, fpOf, onBoth(l,r)->{keep, copy}, isOpen(id)}
+  const L=new Map(),R=new Map();(local||[]).forEach(x=>x&&x.id&&L.set(x.id,x));(remote||[]).forEach(x=>x&&x.id&&R.set(x.id,x));
   const order=[...L.keys()];R.forEach((_,id)=>{if(!L.has(id))order.push(id)});
-  let changed=false;
-  order.forEach(id=>{const key=(prefix||'')+id,l=L.get(id),r=R.get(id);const pick=!l?r:!r?l:(stampOf(r)>stampOf(l)?r:l);const d=del[key];
-    if(d&&d>=stampOf(pick)){if(l)changed=true;return}
-    if(pick!==l)changed=true;out.push(pick)});
-  return {list:out,changed};
+  const out=[],events=[];let changed=false;const F=o.fpOf||fp;
+  order.forEach(id=>{const key=(o.prefix||'')+id,l=L.get(id),r=R.get(id),b=o.base[key],tomb=o.del[key];
+    if(l&&r){const hl=F(l),hr=F(r);if(hl===hr){out.push(l);return}
+      const lc=b===undefined||hl!==b,rc=b===undefined||hr!==b;
+      if(lc&&!rc){out.push(l);return}
+      if(rc&&!lc&&!(o.isOpen&&o.isOpen(id))){out.push(r);changed=true;return}
+      // تعارض حقيقي (أو المحاضرة مفتوحة الآن في المحرر)
+      const res=o.onBoth(l,r,!!(o.isOpen&&o.isOpen(id)));out.push(res.keep);if(res.keep!==l)changed=true;
+      if(res.copy){out.push(res.copy);changed=true}
+      events.push({type:'conflict',id,key,copyId:res.copy&&res.copy.id,title:(res.keep&&res.keep.title)||'',open:!!(o.isOpen&&o.isOpen(id))});
+      if(res.copy)o.base[(o.prefix||'')+res.copy.id]=undefined;
+      return}
+    if(l&&!r){if(tomb){const editedHere=b!==undefined&&F(l)!==b;if(editedHere){out.push(l);delete o.del[key];events.push({type:'kept-local',id,key,title:l.title||''});return}
+        changed=true;events.push({type:'deleted',id,key,title:l.title||''});return}
+      out.push(l);return}
+    if(r&&!l){if(tomb){const editedThere=b!==undefined&&F(r)!==b;if(editedThere){out.push(r);delete o.del[key];changed=true;events.push({type:'kept-remote',id,key,title:r.title||''});return}
+        return}
+      out.push(r);changed=true;return}
+  });
+  return {list:out,changed,events};
 }
-function mergeProjects(local,remote,del){
-  const top=mergeById(local,remote,del,'');let changed=top.changed;
+function conflictCopy(x,label){const c=clone(x);c.id='lec_'+Date.now().toString(36)+Math.random().toString(36).slice(2,7);c.title=(x.title||'محاضرة')+' — '+label;c.conflictOf=x.id;c.updatedAt=new Date().toISOString();return c}
+function lectureOnBoth(l,r,open){
+  // المفتوحة في المحرر تبقى كما هي دائمًا، ونسخة الجهاز الآخر تُحفظ بجانبها
+  if(open)return {keep:l,copy:conflictCopy(r,'نسخة من جهاز آخر')};
+  const remoteNewer=stampOf(r)>stampOf(l);
+  return remoteNewer?{keep:r,copy:conflictCopy(l,'نسخة هذا الجهاز')}:{keep:l,copy:conflictCopy(r,'نسخة من جهاز آخر')};
+}
+function mergeProjectsSafe(local,remote,o){
+  const top=mergeList(local,remote,Object.assign({},o,{fpOf:x=>fp(itemsOnly(x)),onBoth:(l,r)=>({keep:stampOf(r)>stampOf(l)?r:l,copy:null})}));
+  let changed=top.changed;const events=top.events.filter(e=>e.type!=='conflict');
   const L=new Map((local||[]).filter(x=>x&&x.id).map(x=>[x.id,x])),R=new Map((remote||[]).filter(x=>x&&x.id).map(x=>[x.id,x]));
-  top.list=top.list.map(p=>{const l=L.get(p.id),r=R.get(p.id);if(!l||!r)return p;const ch=mergeById(l.chapters,r.chapters,del,p.id+'/');if(JSON.stringify(ch.list)!==JSON.stringify(l.chapters||[]))changed=true;return Object.assign({},p,{chapters:ch.list})});
-  return {list:top.list,changed};
+  top.list=top.list.map(p=>{const l=L.get(p.id),r=R.get(p.id);if(!l||!r)return p;
+    const ch=mergeList(l.chapters,r.chapters,Object.assign({},o,{prefix:p.id+'/',onBoth:(a,c)=>({keep:stampOf(c)>stampOf(a)?c:a,copy:null})}));
+    events.push(...ch.events.filter(e=>e.type!=='conflict'));
+    if(fp(ch.list)!==fp(l.chapters||[]))changed=true;return Object.assign({},p,{chapters:ch.list})});
+  return {list:top.list,changed,events};
 }
-function exportForSync(){const data={};[...SYNC_ITEM_KEYS,...SYNC_WHOLE_KEYS].forEach(k=>{const v=storageGet(k,null);if(v!==null)data[k]=v});return {v:1,meta:syncMetaGet(),data}}
+function baseFrom(lectures,projects){const b={};(lectures||[]).forEach(x=>{if(x&&x.id)b[x.id]=fp(x)});(projects||[]).forEach(p=>{if(!p||!p.id)return;b[p.id]=fp(itemsOnly(p));(p.chapters||[]).forEach(c=>{if(c&&c.id)b[p.id+'/'+c.id]=fp(c)})});return b}
+function exportForSync(){const data={};[...SYNC_ITEM_KEYS,...SYNC_WHOLE_KEYS].forEach(k=>{const v=storageGet(k,null);if(v!==null)data[k]=v});const m=syncMetaGet();return {v:1,meta:{keys:m.keys,del:m.del},data}}
+function loadConflicts(){const a=storageGet(SYNC_CONFLICTS_KEY,[]);return Array.isArray(a)?a:[]}
 function mergeFromSync(remote){
-  if(!remote||remote.v!==1||!remote.data||typeof remote.data!=='object')return {changed:false,localNewer:false};
+  if(!remote||remote.v!==1||!remote.data||typeof remote.data!=='object')return {changed:false,localNewer:false,events:[]};
   const m=syncMetaGet(),rm=remote.meta&&typeof remote.meta==='object'?remote.meta:{keys:{},del:{}};
+  m.base=m.base&&typeof m.base==='object'?m.base:{};
   const del=Object.assign({},m.del);Object.entries(rm.del||{}).forEach(([id,t])=>{if(!del[id]||String(t)>del[id])del[id]=String(t)});
-  let changed=false;const res={};
+  const openId=(document.body.classList.contains('inLectureEditor')&&editorLecture&&editorLecture.id)||null;
+  const remLecs=Array.isArray(remote.data["masar-education-v1-lectures"])?remote.data["masar-education-v1-lectures"]:[];
+  const remPrj=Array.isArray(remote.data["masar-education-v1-projects"])?remote.data["masar-education-v1-projects"]:[];
+  let changed=false;const events=[];
   syncMerging=true;
   try{
-    const lec=mergeById(loadLectures(),Array.isArray(remote.data["masar-education-v1-lectures"])?remote.data["masar-education-v1-lectures"]:[],del,'');
-    if(lec.changed){storageSetRaw("masar-education-v1-lectures",lec.list);changed=true;res.lectures=true}
-    const prj=mergeProjects(storageGet("masar-education-v1-projects",[]),Array.isArray(remote.data["masar-education-v1-projects"])?remote.data["masar-education-v1-projects"]:[],del);
-    if(prj.changed){storageSetRaw("masar-education-v1-projects",prj.list);changed=true;res.projects=true}
+    const lec=mergeList(loadLectures(),remLecs,{base:m.base,del,prefix:'',onBoth:lectureOnBoth,isOpen:id=>id===openId});
+    if(lec.changed){storageSetRaw("masar-education-v1-lectures",lec.list);changed=true}
+    events.push(...lec.events);
+    const prj=mergeProjectsSafe(storageGet("masar-education-v1-projects",[]),remPrj,{base:m.base,del});
+    if(prj.changed){storageSetRaw("masar-education-v1-projects",prj.list);changed=true}
+    events.push(...prj.events);
     SYNC_WHOLE_KEYS.forEach(k=>{const rt=String((rm.keys||{})[k]||''),lt=String(m.keys[k]||'');if(remote.data[k]!==undefined&&rt>lt){storageSetRaw(k,remote.data[k]);m.keys[k]=rt;changed=true}});
     SYNC_ITEM_KEYS.forEach(k=>{const rt=String((rm.keys||{})[k]||'');if(rt>String(m.keys[k]||''))m.keys[k]=rt});
+    // البصمة الأساسية تُحدَّث فقط للعناصر المطابقة الآن لما في السحابة؛ المختلفة تبقى «غير مُزامَنة» حتى ينجح الرفع
+    const cloudBase=baseFrom(remLecs,remPrj),mine=baseFrom(loadLectures(),storageGet("masar-education-v1-projects",[]));
+    Object.keys(cloudBase).forEach(k=>{if(mine[k]===cloudBase[k])m.base[k]=cloudBase[k]});
     m.del=del;storageSetRaw(SYNC_META_KEY,m);
+    const conf=events.filter(e=>e.type!=='deleted');
+    if(conf.length){const list=loadConflicts();conf.forEach(e=>list.unshift(Object.assign({at:new Date().toISOString(),seen:false},e)));storageSetRaw(SYNC_CONFLICTS_KEY,list.slice(0,50))}
   }finally{syncMerging=false}
-  // هل لدى هذا الجهاز ما ليس في السحابة؟ (يُرفع بعدها)
-  const mine=exportForSync();const localNewer=JSON.stringify(mine.data["masar-education-v1-lectures"]||[])!==JSON.stringify(remote.data["masar-education-v1-lectures"]||[])||JSON.stringify(mine.data["masar-education-v1-projects"]||[])!==JSON.stringify(remote.data["masar-education-v1-projects"]||[])||SYNC_WHOLE_KEYS.some(k=>JSON.stringify(mine.data[k]??null)!==JSON.stringify(remote.data[k]??null));
+  const mineNow=exportForSync();const localNewer=JSON.stringify(mineNow.data["masar-education-v1-lectures"]||[])!==JSON.stringify(remote.data["masar-education-v1-lectures"]||[])||JSON.stringify(mineNow.data["masar-education-v1-projects"]||[])!==JSON.stringify(remote.data["masar-education-v1-projects"]||[])||SYNC_WHOLE_KEYS.some(k=>JSON.stringify(mineNow.data[k]??null)!==JSON.stringify(remote.data[k]??null));
+  const notable=events.filter(e=>e.type!=='deleted');
+  if(notable.length&&typeof toast==='function'){const n=notable.filter(e=>e.type==='conflict').length;toast(n?('⚠️ تعارض مزامنة في '+n+' محاضرة — حُفظت النسختان، راجعها في «المحاضرات»'):'استُبقيت محاضرة عُدّلت بعد حذفها على جهاز آخر')}
   if(changed&&!document.body.classList.contains('inLectureEditor')&&typeof S!=='undefined'&&S.tab==='lectures'){try{renderProjectsDashboard()}catch(_){}}
-  return {changed,localNewer,res};
+  return {changed,localNewer,events};
 }
-window.NiborLectureSync=Object.freeze({exportForSync,mergeFromSync,get meta(){return syncMetaGet()}});
+// بعد رفع ناجح: ما رُفع صار هو الأساس المشترك بين الأجهزة
+function commitPushed(exported){try{if(!exported||!exported.data)return;const m=syncMetaGet();m.base=Object.assign(m.base||{},baseFrom(exported.data["masar-education-v1-lectures"],exported.data["masar-education-v1-projects"]));syncMerging=true;try{storageSetRaw(SYNC_META_KEY,m)}finally{syncMerging=false}}catch(e){console.warn('commitPushed',e)}}
+window.NiborLectureSync=Object.freeze({exportForSync,mergeFromSync,commitPushed,conflicts:()=>loadConflicts(),markConflictsSeen(){const l=loadConflicts();l.forEach(x=>x.seen=true);storageSetRaw(SYNC_CONFLICTS_KEY,l)},get meta(){return syncMetaGet()},_fp:fp});
 function storageRemove(key){return window.MasarStorage?window.MasarStorage.remove(key):localStorage.removeItem(key)}
 function loadLectures(){const list=storageGet(LECTURE_KEY,[]);return Array.isArray(list)?list:[]}
 function saveLectures(list){storageSet(LECTURE_KEY,list)}
@@ -296,15 +348,25 @@ async function shrinkLectureImages(lec,minBytes){if(!lec||!Array.isArray(lec.blo
 function scheduleDraft(){scheduleHistoryCommit();if(typeof schedulePagePlan==='function')schedulePagePlan();const s=document.getElementById("lectureSaveState");if(s)s.textContent="جارِ الحفظ…";clearTimeout(scheduleDraft.t);scheduleDraft.t=setTimeout(draftSave,350)}
 
 window.renderLectures=function(){renderProjectsDashboard()};
+function conflictBannerHTML(lectures){
+  const L=new Map((lectures||[]).map(l=>[l.id,l]));const list=(window.NiborLectureSync?window.NiborLectureSync.conflicts():[]).filter(c=>!c.seen);if(!list.length)return '';
+  const row=c=>{const a=L.get(c.id),b=c.copyId&&L.get(c.copyId);const what=c.type==='conflict'?(c.open?'عُدّلت هنا (وكانت مفتوحة) وعلى جهاز آخر':'عُدّلت على جهازين'):c.type==='kept-local'?'حُذفت على جهاز آخر لكنها عُدّلت هنا، فاستُبقيت':'حُذفت هنا لكنها عُدّلت على جهاز آخر، فاستُبقيت';
+    return '<li><b>'+safe((a&&a.title)||c.title||'محاضرة')+'</b><small>'+what+'</small><span class="confActs">'+(a?'<button class="eduGhost" data-conf-open="'+safe(a.id)+'">فتح</button>':'')+(b?'<button class="eduGhost" data-conf-open="'+safe(b.id)+'">فتح النسخة الأخرى</button>':'')+'</span></li>'};
+  return '<div class="syncConflicts" role="alert"><div class="scHead"><b>⚠️ تعارض في المزامنة</b><small>لم يُحذف شيء: حين تُعدَّل المحاضرة نفسها على جهازين تُحفظ النسختان. قارن بينهما واحذف ما لا تحتاجه.</small></div><ul>'+list.slice(0,8).map(row).join('')+'</ul><button class="eduPrimary" id="confDone">فهمت</button></div>';
+}
+function bindConflictBanner(){
+  document.querySelectorAll('[data-conf-open]').forEach(b=>b.onclick=()=>{const l=loadLectures().find(x=>x.id===b.dataset.confOpen);if(!l)return;navigation={projectId:l.projectId||null,chapterId:l.chapterId||null};editorLecture=normalizeLecture(clone(l));history.reset(editorLecture);renderLectureEditor()});
+  const d=document.getElementById('confDone');if(d)d.onclick=()=>{window.NiborLectureSync.markConflictsSeen();renderProjectsDashboard()};
+}
 function renderProjectsDashboard(){
   navigation={projectId:null,chapterId:null};
   const projects=loadProjects(),lectures=loadLectures();
-  setContent('<section class="eduPage projectWorkspace"><div class="eduHero"><div><span class="eduEyebrow">نيبور كلاس</span><h2>مشاريع التأليف</h2><p>نظّم الملازم إلى مشاريع وفصول ومحاضرات، ثم افتح المحرر مباشرة.</p></div><div class="eduHeroActions"><button class="eduGhost" id="backupLecturesBtn">⬇ نسخة احتياطية</button><button class="eduGhost" id="restoreLecturesBtn">⬆ استعادة</button><button class="eduPrimary" id="newProjectBtn">＋ مشروع جديد</button></div></div><div class="eduStats"><div><b>'+projects.length+'</b><span>مشروع</span></div><div><b>'+projects.reduce((n,p)=>n+(p.chapters?.length||0),0)+'</b><span>فصل</span></div><div><b>'+lectures.length+'</b><span>محاضرة</span></div></div>'+(projects.length?'<div class="projectGrid">'+projects.map(p=>{const count=lectures.filter(l=>l.projectId===p.id).length;return '<article class="projectCard"><div class="projectIcon">📘</div><div class="projectCardBody"><span>'+safe(p.subject||"الرياضيات")+'</span><h3>'+safe(p.title)+'</h3><p>'+safe(p.grade||"")+'</p><div class="projectMeta"><span>'+(p.chapters?.length||0)+' فصول</span><span>'+count+' محاضرات</span></div></div><div class="projectActions"><button class="eduSecondary openProject" data-id="'+safe(p.id)+'">فتح المشروع</button><button class="projectMore" data-delete-project="'+safe(p.id)+'" title="حذف">⋯</button></div></article>'}).join('')+'</div>':'<div class="eduEmpty"><div>📚</div><h3>أنشئ مشروعك الأول</h3><p>مثال: ملزمة الرياضيات للسادس العلمي.</p><button class="eduPrimary" id="emptyNewProject">إنشاء مشروع</button></div>')+'</section>');
+  setContent('<section class="eduPage projectWorkspace"><div class="eduHero"><div><span class="eduEyebrow">نيبور كلاس</span><h2>مشاريع التأليف</h2><p>نظّم الملازم إلى مشاريع وفصول ومحاضرات، ثم افتح المحرر مباشرة.</p></div><div class="eduHeroActions"><button class="eduGhost" id="backupLecturesBtn">⬇ نسخة احتياطية</button><button class="eduGhost" id="restoreLecturesBtn">⬆ استعادة</button><button class="eduPrimary" id="newProjectBtn">＋ مشروع جديد</button></div></div>'+conflictBannerHTML(lectures)+'<div class="eduStats"><div><b>'+projects.length+'</b><span>مشروع</span></div><div><b>'+projects.reduce((n,p)=>n+(p.chapters?.length||0),0)+'</b><span>فصل</span></div><div><b>'+lectures.length+'</b><span>محاضرة</span></div></div>'+(projects.length?'<div class="projectGrid">'+projects.map(p=>{const count=lectures.filter(l=>l.projectId===p.id).length;return '<article class="projectCard"><div class="projectIcon">📘</div><div class="projectCardBody"><span>'+safe(p.subject||"الرياضيات")+'</span><h3>'+safe(p.title)+'</h3><p>'+safe(p.grade||"")+'</p><div class="projectMeta"><span>'+(p.chapters?.length||0)+' فصول</span><span>'+count+' محاضرات</span></div></div><div class="projectActions"><button class="eduSecondary openProject" data-id="'+safe(p.id)+'">فتح المشروع</button><button class="projectMore" data-delete-project="'+safe(p.id)+'" title="حذف">⋯</button></div></article>'}).join('')+'</div>':'<div class="eduEmpty"><div>📚</div><h3>أنشئ مشروعك الأول</h3><p>مثال: ملزمة الرياضيات للسادس العلمي.</p><button class="eduPrimary" id="emptyNewProject">إنشاء مشروع</button></div>')+'</section>');
   const create=()=>createProject();document.getElementById('newProjectBtn').onclick=create;document.getElementById('emptyNewProject')&&(document.getElementById('emptyNewProject').onclick=create);
   document.querySelectorAll('.openProject').forEach(b=>b.onclick=()=>renderProject(b.dataset.id));
   document.querySelectorAll('[data-delete-project]').forEach(b=>b.onclick=()=>deleteProject(b.dataset.deleteProject));
   document.getElementById('backupLecturesBtn').onclick=()=>window.MasarStorage?.downloadBackup();document.getElementById('restoreLecturesBtn').onclick=restoreEducationBackup;
-}
+;bindConflictBanner()}
 function createProject(){const title=prompt('اسم المشروع','ملزمة السادس العلمي');if(!title?.trim())return;const grade=prompt('الصف الدراسي','السادس العلمي')||'';const subject=prompt('المادة','الرياضيات')||'';const now=new Date().toISOString(),p={id:'prj_'+uid(),title:title.trim(),grade:grade.trim(),subject:subject.trim(),createdAt:now,updatedAt:now,chapters:[]};const list=loadProjects();list.unshift(p);saveProjects(list);renderProject(p.id)}
 function deleteProject(id){const p=projectById(id);if(!p)return;const count=loadLectures().filter(l=>l.projectId===id).length;if(!confirm('حذف مشروع «'+p.title+'»'+(count?' وجميع محاضراته ('+count+')':'')+'؟'))return;saveProjects(loadProjects().filter(x=>x.id!==id));saveLectures(loadLectures().filter(l=>l.projectId!==id));renderProjectsDashboard()}
 function breadcrumb(items){return '<nav class="eduBreadcrumb">'+items.map((x,i)=>'<button '+(x.action?'data-nav="'+x.action+'"':'disabled')+'>'+safe(x.label)+'</button>'+(i<items.length-1?'<span>‹</span>':'')).join('')+'</nav>'}
@@ -797,7 +859,12 @@ function handleSmartPaste(e,index,field,area){
   showPasteNotice(html?"تم لصق المحتوى وتنظيف تنسيق Word ✓":"تم لصق النص ✓");
 }
 function moveBlock(i,d){const j=i+d;if(j<0||j>=editorLecture.blocks.length)return;[editorLecture.blocks[i],editorLecture.blocks[j]]=[editorLecture.blocks[j],editorLecture.blocks[i]];renderLectureEditor()}
-function saveCurrentLecture(){syncMeta();editorLecture=normalizeLecture(editorLecture);const validation=window.MasarDocumentCore?.validateLecture(editorLecture);if(validation&&!validation.ok){alert("تعذر الحفظ:\n"+validation.errors.join("\n"));return}const ids=new Set(editorLecture.blocks.map(x=>x.id));const broken=editorLecture.blocks.flatMap((x,i)=>ensureSmart(x).dependencies.filter(id=>!ids.has(id)).map(()=>"العنصر "+(i+1)+" يحتوي مرجعًا مفقودًا"));if(broken.length){alert("تعذر الحفظ:\n"+broken.join("\n"));return}if(!editorLecture.title){alert("اكتب عنوان المحاضرة أولًا");return}editorLecture.updatedAt=new Date().toISOString();const list=loadLectures(),i=list.findIndex(x=>x.id===editorLecture.id);if(i>=0)list[i]=clone(editorLecture);else list.unshift(clone(editorLecture));try{saveLectures(list)}catch(err){storageFull(err);alert('تعذر حفظ المحاضرة: '+(isQuotaError(err)?'مساحة التخزين ممتلئة. اضغط «تصغير صور المحاضرة» ثم احفظ مجددًا.':String(err&&err.message||err)));return}storageRemove(DRAFT_KEY);const s=document.getElementById("lectureSaveState");if(s)s.textContent="محفوظة";if(typeof toast==="function")toast("تم حفظ المحاضرة ✓")}
+function saveCurrentLecture(){syncMeta();editorLecture=normalizeLecture(editorLecture);const validation=window.MasarDocumentCore?.validateLecture(editorLecture);if(validation&&!validation.ok){alert("تعذر الحفظ:\n"+validation.errors.join("\n"));return}const ids=new Set(editorLecture.blocks.map(x=>x.id));const broken=editorLecture.blocks.flatMap((x,i)=>ensureSmart(x).dependencies.filter(id=>!ids.has(id)).map(()=>"العنصر "+(i+1)+" يحتوي مرجعًا مفقودًا"));if(broken.length){alert("تعذر الحفظ:\n"+broken.join("\n"));return}if(!editorLecture.title){alert("اكتب عنوان المحاضرة أولًا");return}editorLecture.updatedAt=new Date().toISOString();const list=loadLectures(),i=list.findIndex(x=>x.id===editorLecture.id);if(i>=0)list[i]=clone(editorLecture);else list.unshift(clone(editorLecture));try{saveLectures(list)}catch(err){storageFull(err);alert('تعذر حفظ المحاضرة: '+(isQuotaError(err)?'مساحة التخزين ممتلئة. اضغط «تصغير صور المحاضرة» ثم احفظ مجددًا.':String(err&&err.message||err)));return}storageRemove(DRAFT_KEY);const s=document.getElementById("lectureSaveState");if(s)s.textContent="جارِ الحفظ…";
+  // v2.17.0: «تم الحفظ» لا يظهر إلا بعد اكتمال الكتابة الدائمة في IndexedDB
+  const done=ok=>{const t=document.getElementById("lectureSaveState");if(ok){if(t)t.textContent="محفوظة ✓";if(typeof toast==="function")toast("تم حفظ المحاضرة ✓")}else{if(t)t.textContent="⚠️ فشل الحفظ — ستُعاد المحاولة";if(typeof toast==="function")toast("⚠️ فشل حفظ المحاضرة — لا تغلق التطبيق، ستُعاد المحاولة تلقائيًا")}};
+  const DB=window.MasarDB;if(!DB||!DB.whenFlushed||DB.mode!=="idb"){done(true);return}
+  let settled=false;const onErr=()=>{if(!settled){settled=true;done(false)}};window.addEventListener("masar:storage-error",onErr,{once:true});
+  DB.whenFlushed().then(()=>{window.removeEventListener("masar:storage-error",onErr);if(!settled){settled=true;done(true)}else{const t=document.getElementById("lectureSaveState");if(t)t.textContent="محفوظة ✓ (بعد إعادة المحاولة)"}})}
 function mathHTML(text){
   let out=safe(text||"");
   out=out.replace(/\$\$([\s\S]+?)\$\$/g,(_,lx)=>'<span class="eduMath eduMathDisplay" data-display="true" data-latex="'+safe(lx.trim())+'">'+safe(lx.trim())+'</span>');
