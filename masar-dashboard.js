@@ -45,6 +45,7 @@ function noStudentsPage(title,note){
   const t=document.querySelector("header.top");if(t&&window.ResizeObserver)new ResizeObserver(set).observe(t,{box:"border-box"});set();setTimeout(set,1200)})();
 /* v2.16.0: رقم الإصدار ظاهر في الشريط العلوي، ونافذة «عن التطبيق» بما الجديد */
 const RELEASE_NOTES=[
+  ["2.17.1",["إصلاح PDF الأفقي: كان يُقطَّع ويزيد عدد صفحاته عن المعاينة","بنك الأسئلة: بحث نصي، وعرض نص السؤال لا رموز HTML، ومنع التكرار، وحفظ الفروع والحل النموذجي مع السؤال","حماية المحاضرة المفتوحة في نافذتين، وحماية الحفظ عند إغلاق التطبيق فجأة","استعادة نسخة احتياطية قديمة لم تعد تُلغى بصمت عند المزامنة"]],
   ["2.17.0",["مؤشر حفظ في الشريط العلوي: «جارِ الحفظ» / «تم الحفظ» / «فشل الحفظ» بعد الكتابة الدائمة فعلًا","تعارض المزامنة: حين تُعدَّل المحاضرة نفسها على جهازين تُحفظ النسختان مع إشعار، ولا يعتمد ذلك على ساعة الجهاز","إعادة محاولة الرفع تلقائيًا بعد انقطاع الإنترنت","تبويبان مفتوحان لا يكتب أحدهما فوق الآخر","مسودة الامتحان تُحفظ فورًا عند الإغلاق"]],
   ["2.16.2",["فتح أسرع: الملفات تُقرأ من الجهاز، وعلى الإنترنت البطيء يفتح التطبيق من النسخة المخزّنة خلال ثانيتين ونصف"]],
   ["2.16.1",["القائمة الجانبية لا تغطي الشريط العلوي على الآيباد، وصارت أضيق ليتسع المحتوى","شريط علوي أقصر وتنبيه واحد فقط في الرئيسية","صفحة واضحة «لا يوجد طلبة بعد» في الحضور والأقساط"]],
@@ -1220,7 +1221,7 @@ el("importFile").onchange=e=>{
       try{d=JSON.parse(await decryptBackupObj(d,pass))}
       catch(err){toast("كلمة المرور غير صحيحة أو الملف تالف");return}
     }
-    if(d&&d.schema==="nibor-class-full-backup"){if(!window.MasarDB){toast("هذا الإصدار لا يدعم النسخ الكاملة");return}if(!confirm("استيراد نسخة كاملة يستبدل كل البيانات والمحاضرات الحالية (تُحفظ لقطة قبلها تلقائيًا). متابعة؟"))return;const n=await window.MasarDB.importAll(d);toast("تم استيراد "+n+" عنصرًا — جارِ إعادة التحميل…");setTimeout(()=>location.reload(),900);return}
+    if(d&&d.schema==="nibor-class-full-backup"){if(!window.MasarDB){toast("هذا الإصدار لا يدعم النسخ الكاملة");return}if(!confirm("استيراد نسخة كاملة يستبدل كل البيانات والمحاضرات الحالية (تُحفظ لقطة قبلها تلقائيًا). متابعة؟"))return;const n=await window.MasarDB.importAll(d);try{window.NiborLectureSync&&window.NiborLectureSync.markRestored();await window.MasarDB.whenFlushed()}catch(_){}toast("تم استيراد "+n+" عنصرًا — جارِ إعادة التحميل…");setTimeout(()=>location.reload(),900);return}
     const lectureStore=(d&&d.masarBackup&&d.lectureStore)||null;
     d=unwrapBackup(d);
     const schemaErr=validateBackupSchema(d);
@@ -1234,7 +1235,7 @@ el("importFile").onchange=e=>{
     S.students=d.students||[];S.grades=d.grades||{};S.attendance=d.attendance||{};
     S.payments=d.payments||{};S.behavior=d.behavior||{};S.homework=d.homework||[];S.timetable=d.timetable||[];S.dailyPlans=d.dailyPlans||[];S.exams=d.exams||[];S.messages=d.messages||{};S.events=d.events||[];S.qbank=d.qbank||[];S.examTemplates=d.examTemplates||[];S.settings=d.settings||S.settings;
     save.students();save.grades();save.attendance();save.payments();save.behavior();save.homework();save.timetable();save.dailyPlans&&save.dailyPlans();save.exams();save.messages();save.events();save.qbank();save.examTemplates();save.settings();
-    let lecMsg="";if(lectureStore&&window.MasarStorage){try{window.MasarStorage.importBackup(lectureStore,{replace:true});lecMsg=" مع المحاضرات"}catch(err){console.error("lectures import",err);lecMsg=" (تعذر استيراد المحاضرات)"}}
+    let lecMsg="";if(lectureStore&&window.MasarStorage){try{window.MasarStorage.importBackup(lectureStore,{replace:true});try{window.NiborLectureSync&&window.NiborLectureSync.markRestored()}catch(_){}lecMsg=" مع المحاضرات"}catch(err){console.error("lectures import",err);lecMsg=" (تعذر استيراد المحاضرات)"}}
     el("schoolName").value=S.settings.school;render();toast("تم استيراد البيانات"+lecMsg+" ✓");
   }catch(err){toast("ملف غير صالح")}};
   r.readAsText(f);e.target.value="";

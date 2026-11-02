@@ -177,6 +177,11 @@ function mergeList(local,remote,o){
   const out=[],events=[];let changed=false;const F=o.fpOf||fp;
   order.forEach(id=>{const key=(o.prefix||'')+id,l=L.get(id),r=R.get(id),b=o.base[key],tomb=o.del[key];
     if(l&&r){const hl=F(l),hr=F(r);if(hl===hr){out.push(l);return}
+      if(b===undefined&&o.onUnknown){
+        // v2.17.1: لا بصمة سابقة (أول مزامنة بعد الترقية من إصدار أقدم): الأحدث يبقى، والآخر يُحفظ في الأرشيف بلا نسخة ظاهرة مكررة
+        const res=o.onUnknown(l,r);out.push(res.keep);if(res.keep!==l)changed=true;
+        if(res.archive)events.push({type:'archived',id,key,title:(res.archive.title||''),item:res.archive});
+        return}
       const lc=b===undefined||hl!==b,rc=b===undefined||hr!==b;
       if(lc&&!rc){out.push(l);return}
       if(rc&&!lc&&!(o.isOpen&&o.isOpen(id))){out.push(r);changed=true;return}
@@ -195,12 +200,13 @@ function mergeList(local,remote,o){
   });
   return {list:out,changed,events};
 }
-function conflictCopy(x,label){const c=clone(x);c.id='lec_'+Date.now().toString(36)+Math.random().toString(36).slice(2,7);c.title=(x.title||'محاضرة')+' — '+label;c.conflictOf=x.id;c.updatedAt=new Date().toISOString();return c}
+function lectureOnUnknown(l,r){const remoteNewer=stampOf(r)>stampOf(l);return remoteNewer?{keep:r,archive:l}:{keep:l,archive:r}}
+function conflictCopy(x,label){const c=clone(x);c.id='lec_'+Date.now().toString(36)+Math.random().toString(36).slice(2,7);let when='';try{when=new Date(x.updatedAt||Date.now()).toLocaleString('ar-IQ-u-nu-latn',{day:'numeric',month:'numeric',hour:'2-digit',minute:'2-digit'})}catch(_){}c.title=(x.title||'محاضرة')+' — '+label+(when?' ('+when+')':'');c.conflictOf=x.id;c.updatedAt=new Date().toISOString();return c}
 function lectureOnBoth(l,r,open){
   // المفتوحة في المحرر تبقى كما هي دائمًا، ونسخة الجهاز الآخر تُحفظ بجانبها
-  if(open)return {keep:l,copy:conflictCopy(r,'نسخة من جهاز آخر')};
+  if(open)return {keep:l,copy:conflictCopy(r,'نسخة متعارضة')};
   const remoteNewer=stampOf(r)>stampOf(l);
-  return remoteNewer?{keep:r,copy:conflictCopy(l,'نسخة هذا الجهاز')}:{keep:l,copy:conflictCopy(r,'نسخة من جهاز آخر')};
+  return remoteNewer?{keep:r,copy:conflictCopy(l,'نسخة متعارضة')}:{keep:l,copy:conflictCopy(r,'نسخة متعارضة')};
 }
 function mergeProjectsSafe(local,remote,o){
   const top=mergeList(local,remote,Object.assign({},o,{fpOf:x=>fp(itemsOnly(x)),onBoth:(l,r)=>({keep:stampOf(r)>stampOf(l)?r:l,copy:null})}));
@@ -226,7 +232,7 @@ function mergeFromSync(remote){
   let changed=false;const events=[];
   syncMerging=true;
   try{
-    const lec=mergeList(loadLectures(),remLecs,{base:m.base,del,prefix:'',onBoth:lectureOnBoth,isOpen:id=>id===openId});
+    const lec=mergeList(loadLectures(),remLecs,{base:m.base,del,prefix:'',onBoth:lectureOnBoth,onUnknown:(l,r)=>(l.id===openId?{keep:l,archive:r}:lectureOnUnknown(l,r)),isOpen:id=>id===openId});
     if(lec.changed){storageSetRaw("masar-education-v1-lectures",lec.list);changed=true}
     events.push(...lec.events);
     const prj=mergeProjectsSafe(storageGet("masar-education-v1-projects",[]),remPrj,{base:m.base,del});
@@ -239,17 +245,22 @@ function mergeFromSync(remote){
     Object.keys(cloudBase).forEach(k=>{if(mine[k]===cloudBase[k])m.base[k]=cloudBase[k]});
     m.del=del;storageSetRaw(SYNC_META_KEY,m);
     const conf=events.filter(e=>e.type!=='deleted');
-    if(conf.length){const list=loadConflicts();conf.forEach(e=>list.unshift(Object.assign({at:new Date().toISOString(),seen:false},e)));storageSetRaw(SYNC_CONFLICTS_KEY,list.slice(0,50))}
+    if(conf.length){const list=loadConflicts();conf.forEach(e=>list.unshift(Object.assign({at:new Date().toISOString(),seen:false},e)));
+      // الأرشيف يحمل محتوى كاملًا: نُبقي آخر 20 منه فقط
+      let kept=0;const trimmed=list.filter(x=>x.type!=='archived'||(++kept<=20));storageSetRaw(SYNC_CONFLICTS_KEY,trimmed.slice(0,60))}
   }finally{syncMerging=false}
   const mineNow=exportForSync();const localNewer=JSON.stringify(mineNow.data["masar-education-v1-lectures"]||[])!==JSON.stringify(remote.data["masar-education-v1-lectures"]||[])||JSON.stringify(mineNow.data["masar-education-v1-projects"]||[])!==JSON.stringify(remote.data["masar-education-v1-projects"]||[])||SYNC_WHOLE_KEYS.some(k=>JSON.stringify(mineNow.data[k]??null)!==JSON.stringify(remote.data[k]??null));
-  const notable=events.filter(e=>e.type!=='deleted');
+  const notable=events.filter(e=>e.type!=='deleted'&&e.type!=='archived');
   if(notable.length&&typeof toast==='function'){const n=notable.filter(e=>e.type==='conflict').length;toast(n?('⚠️ تعارض مزامنة في '+n+' محاضرة — حُفظت النسختان، راجعها في «المحاضرات»'):'استُبقيت محاضرة عُدّلت بعد حذفها على جهاز آخر')}
   if(changed&&!document.body.classList.contains('inLectureEditor')&&typeof S!=='undefined'&&S.tab==='lectures'){try{renderProjectsDashboard()}catch(_){}}
   return {changed,localNewer,events};
 }
 // بعد رفع ناجح: ما رُفع صار هو الأساس المشترك بين الأجهزة
 function commitPushed(exported){try{if(!exported||!exported.data)return;const m=syncMetaGet();m.base=Object.assign(m.base||{},baseFrom(exported.data["masar-education-v1-lectures"],exported.data["masar-education-v1-projects"]));syncMerging=true;try{storageSetRaw(SYNC_META_KEY,m)}finally{syncMerging=false}}catch(e){console.warn('commitPushed',e)}}
-window.NiborLectureSync=Object.freeze({exportForSync,mergeFromSync,commitPushed,conflicts:()=>loadConflicts(),markConflictsSeen(){const l=loadConflicts();l.forEach(x=>x.seen=true);storageSetRaw(SYNC_CONFLICTS_KEY,l)},get meta(){return syncMetaGet()},_fp:fp});
+// v2.17.1: بعد استعادة نسخة احتياطية: ما استُعيد «تغيير محلي مقصود» — فالمزامنة التالية تُبقيه، وإن كان في السحابة أحدث منه تُحفظ النسختان
+function markRestored(){try{const m=syncMetaGet();m.base={};baseFromKeys(loadLectures(),storageGet("masar-education-v1-projects",[])).forEach(k=>{m.base[k]='restored'});const now=new Date().toISOString();SYNC_ITEM_KEYS.forEach(k=>m.keys[k]=now);syncMerging=true;try{storageSetRaw(SYNC_META_KEY,m)}finally{syncMerging=false}try{if(typeof window.scheduleSync==='function')window.scheduleSync()}catch(_){}}catch(e){console.warn('markRestored',e)}}
+function baseFromKeys(lectures,projects){return Object.keys(baseFrom(lectures,projects))}
+window.NiborLectureSync=Object.freeze({exportForSync,mergeFromSync,commitPushed,markRestored,conflicts:()=>loadConflicts(),markConflictsSeen(){const l=loadConflicts();l.forEach(x=>x.seen=true);storageSetRaw(SYNC_CONFLICTS_KEY,l)},get meta(){return syncMetaGet()},_fp:fp});
 function storageRemove(key){return window.MasarStorage?window.MasarStorage.remove(key):localStorage.removeItem(key)}
 function loadLectures(){const list=storageGet(LECTURE_KEY,[]);return Array.isArray(list)?list:[]}
 function saveLectures(list){storageSet(LECTURE_KEY,list)}
@@ -299,7 +310,7 @@ function renderKatex(root){
 function fmtDate(iso){try{return new Date(iso).toLocaleDateString("ar-IQ")}catch(_){return ""}}
 // v2.8.16: أثناء إعادة الرسم لا يُسمح لحدث blur بكتابة محتوى DOM القديم فوق البيانات الجديدة (كان يُفسد التراجع).
 let replacingContent=false;
-function setContent(html){const c=document.getElementById("content");if(!c)return;const a=document.activeElement;if(a&&a!==document.body&&c.contains(a)){replacingContent=true;try{a.blur()}catch(_){}finally{replacingContent=false}}c.innerHTML=html;const page=c.firstElementChild;const inEd=!!(page&&page.classList.contains('lectureEditor'));document.body.classList.toggle('inLectureEditor',inEd);document.body.classList.toggle('pvActive',!!(inEd&&page.classList.contains('pageView')));if(inEd){setTimeout(()=>{markEditing(true);crumb('editor '+(editorLecture?.blocks?.length||0)+' blocks')},0)}else if(document.body.dataset.wasEditing==='1'){markEditing(false)}document.body.dataset.wasEditing=inEd?'1':'0';if(!inEd)document.body.classList.remove('editorFocus');if(page&&page.classList.contains('eduPage'))showDraftBanner(page)}
+function setContent(html){const c=document.getElementById("content");if(!c)return;const a=document.activeElement;if(a&&a!==document.body&&c.contains(a)){replacingContent=true;try{a.blur()}catch(_){}finally{replacingContent=false}}c.innerHTML=html;const page=c.firstElementChild;const inEd=!!(page&&page.classList.contains('lectureEditor'));if(inEd)noteEditorOrigin();else if(!(page&&page.classList.contains('previewShell')))editorOrigin=null;document.body.classList.toggle('inLectureEditor',inEd);document.body.classList.toggle('pvActive',!!(inEd&&page.classList.contains('pageView')));if(inEd){setTimeout(()=>{markEditing(true);crumb('editor '+(editorLecture?.blocks?.length||0)+' blocks')},0)}else if(document.body.dataset.wasEditing==='1'){markEditing(false)}document.body.dataset.wasEditing=inEd?'1':'0';if(!inEd)document.body.classList.remove('editorFocus');if(page&&page.classList.contains('eduPage'))showDraftBanner(page)}
 // v2.8.16: استرجاع المسودة غير المحفوظة (كانت تُكتب ولا تُقرأ أبدًا).
 // v2.13.1: حماية العمل من الإغلاق المفاجئ (مثل انهيار الصفحة عند تبديل وضع لوحة المفاتيح على الآيباد)
 const EDIT_FLAG='nibor-editing';let lastViewportChange=0;
@@ -350,11 +361,12 @@ function scheduleDraft(){scheduleHistoryCommit();if(typeof schedulePagePlan==='f
 window.renderLectures=function(){renderProjectsDashboard()};
 function conflictBannerHTML(lectures){
   const L=new Map((lectures||[]).map(l=>[l.id,l]));const list=(window.NiborLectureSync?window.NiborLectureSync.conflicts():[]).filter(c=>!c.seen);if(!list.length)return '';
-  const row=c=>{const a=L.get(c.id),b=c.copyId&&L.get(c.copyId);const what=c.type==='conflict'?(c.open?'عُدّلت هنا (وكانت مفتوحة) وعلى جهاز آخر':'عُدّلت على جهازين'):c.type==='kept-local'?'حُذفت على جهاز آخر لكنها عُدّلت هنا، فاستُبقيت':'حُذفت هنا لكنها عُدّلت على جهاز آخر، فاستُبقيت';
-    return '<li><b>'+safe((a&&a.title)||c.title||'محاضرة')+'</b><small>'+what+'</small><span class="confActs">'+(a?'<button class="eduGhost" data-conf-open="'+safe(a.id)+'">فتح</button>':'')+(b?'<button class="eduGhost" data-conf-open="'+safe(b.id)+'">فتح النسخة الأخرى</button>':'')+'</span></li>'};
+  const row=c=>{const a=L.get(c.id),b=c.copyId&&L.get(c.copyId);const what=c.type==='archived'?'نسخة أخرى منها حُفظت في الأرشيف أثناء أول مزامنة بعد التحديث':c.type==='conflict'?(c.tab?'عُدّلت في نافذتين مفتوحتين':c.open?'عُدّلت هنا (وكانت مفتوحة) وعلى جهاز آخر':'عُدّلت على جهازين'):c.type==='kept-local'?'حُذفت على جهاز آخر لكنها عُدّلت هنا، فاستُبقيت':'حُذفت هنا لكنها عُدّلت على جهاز آخر، فاستُبقيت';
+    return '<li><b>'+safe((a&&a.title)||c.title||'محاضرة')+'</b><small>'+what+'</small><span class="confActs">'+(a?'<button class="eduGhost" data-conf-open="'+safe(a.id)+'">فتح</button>':'')+(b?'<button class="eduGhost" data-conf-open="'+safe(b.id)+'">فتح النسخة الأخرى</button>':'')+(c.type==='archived'&&c.item?'<button class="eduGhost" data-conf-restore="'+safe(c.at+'|'+c.id)+'">استعادة نسخة الأرشيف</button>':'')+'</span></li>'};
   return '<div class="syncConflicts" role="alert"><div class="scHead"><b>⚠️ تعارض في المزامنة</b><small>لم يُحذف شيء: حين تُعدَّل المحاضرة نفسها على جهازين تُحفظ النسختان. قارن بينهما واحذف ما لا تحتاجه.</small></div><ul>'+list.slice(0,8).map(row).join('')+'</ul><button class="eduPrimary" id="confDone">فهمت</button></div>';
 }
 function bindConflictBanner(){
+  document.querySelectorAll('[data-conf-restore]').forEach(b=>b.onclick=()=>{const [at,id]=b.dataset.confRestore.split('|');const e=loadConflicts().find(x=>x.at===at&&x.id===id&&x.item);if(!e)return;const c=conflictCopy(e.item,'نسخة مستعادة');const list=loadLectures();list.unshift(c);saveLectures(list);if(typeof toast==='function')toast('استُعيدت النسخة بجانب الحالية ✓');renderProjectsDashboard()});
   document.querySelectorAll('[data-conf-open]').forEach(b=>b.onclick=()=>{const l=loadLectures().find(x=>x.id===b.dataset.confOpen);if(!l)return;navigation={projectId:l.projectId||null,chapterId:l.chapterId||null};editorLecture=normalizeLecture(clone(l));history.reset(editorLecture);renderLectureEditor()});
   const d=document.getElementById('confDone');if(d)d.onclick=()=>{window.NiborLectureSync.markConflictsSeen();renderProjectsDashboard()};
 }
@@ -380,7 +392,7 @@ function renderChapter(projectId,chapterId){const p=projectById(projectId),c=cha
 function restoreEducationBackup(){
   if(!window.MasarStorage){alert("تعذر تشغيل الاستعادة.");return}
   const input=document.createElement("input");input.type="file";input.accept="application/json,.json";input.style.display="none";document.body.appendChild(input);
-  input.onchange=()=>{const file=input.files&&input.files[0];if(!file){input.remove();return}const reader=new FileReader();reader.onload=()=>{try{const payload=JSON.parse(String(reader.result||""));const check=window.MasarStorage.validateBackup(payload);if(!check.ok)throw new Error(check.error);if(!confirm("سيتم دمج بيانات النسخة الاحتياطية مع البيانات الحالية ثم إعادة تحميل التطبيق. هل تريد المتابعة؟"))return;window.MasarStorage.importBackup(payload,{replace:false});alert("تمت استعادة النسخة الاحتياطية بنجاح.");location.reload()}catch(err){alert(err&&err.message?err.message:"تعذر استعادة النسخة الاحتياطية.")}finally{input.remove()}};reader.onerror=()=>{alert("تعذر قراءة الملف.");input.remove()};reader.readAsText(file,"utf-8")};
+  input.onchange=()=>{const file=input.files&&input.files[0];if(!file){input.remove();return}const reader=new FileReader();reader.onload=()=>{try{const payload=JSON.parse(String(reader.result||""));const check=window.MasarStorage.validateBackup(payload);if(!check.ok)throw new Error(check.error);if(!confirm("سيتم دمج بيانات النسخة الاحتياطية مع البيانات الحالية ثم إعادة تحميل التطبيق. هل تريد المتابعة؟"))return;window.MasarStorage.importBackup(payload,{replace:false});markRestored();alert("تمت استعادة النسخة الاحتياطية بنجاح.");location.reload()}catch(err){alert(err&&err.message?err.message:"تعذر استعادة النسخة الاحتياطية.")}finally{input.remove()}};reader.onerror=()=>{alert("تعذر قراءة الملف.");input.remove()};reader.readAsText(file,"utf-8")};
   input.click();
 }
 
@@ -859,7 +871,10 @@ function handleSmartPaste(e,index,field,area){
   showPasteNotice(html?"تم لصق المحتوى وتنظيف تنسيق Word ✓":"تم لصق النص ✓");
 }
 function moveBlock(i,d){const j=i+d;if(j<0||j>=editorLecture.blocks.length)return;[editorLecture.blocks[i],editorLecture.blocks[j]]=[editorLecture.blocks[j],editorLecture.blocks[i]];renderLectureEditor()}
-function saveCurrentLecture(){syncMeta();editorLecture=normalizeLecture(editorLecture);const validation=window.MasarDocumentCore?.validateLecture(editorLecture);if(validation&&!validation.ok){alert("تعذر الحفظ:\n"+validation.errors.join("\n"));return}const ids=new Set(editorLecture.blocks.map(x=>x.id));const broken=editorLecture.blocks.flatMap((x,i)=>ensureSmart(x).dependencies.filter(id=>!ids.has(id)).map(()=>"العنصر "+(i+1)+" يحتوي مرجعًا مفقودًا"));if(broken.length){alert("تعذر الحفظ:\n"+broken.join("\n"));return}if(!editorLecture.title){alert("اكتب عنوان المحاضرة أولًا");return}editorLecture.updatedAt=new Date().toISOString();const list=loadLectures(),i=list.findIndex(x=>x.id===editorLecture.id);if(i>=0)list[i]=clone(editorLecture);else list.unshift(clone(editorLecture));try{saveLectures(list)}catch(err){storageFull(err);alert('تعذر حفظ المحاضرة: '+(isQuotaError(err)?'مساحة التخزين ممتلئة. اضغط «تصغير صور المحاضرة» ثم احفظ مجددًا.':String(err&&err.message||err)));return}storageRemove(DRAFT_KEY);const s=document.getElementById("lectureSaveState");if(s)s.textContent="جارِ الحفظ…";
+/* v2.17.1: بصمة المحاضرة لحظة فتحها في المحرر — إن تغيّرت في التخزين قبل الحفظ (تبويب آخر) تُحفظ تلك النسخة بجانبها */
+let editorOrigin=null;
+function noteEditorOrigin(){if(!editorLecture)return;if(editorOrigin&&editorOrigin.id===editorLecture.id)return;const st=loadLectures().find(x=>x.id===editorLecture.id);editorOrigin={id:editorLecture.id,fp:st?fp(st):null}}
+function saveCurrentLecture(){syncMeta();editorLecture=normalizeLecture(editorLecture);const validation=window.MasarDocumentCore?.validateLecture(editorLecture);if(validation&&!validation.ok){alert("تعذر الحفظ:\n"+validation.errors.join("\n"));return}const ids=new Set(editorLecture.blocks.map(x=>x.id));const broken=editorLecture.blocks.flatMap((x,i)=>ensureSmart(x).dependencies.filter(id=>!ids.has(id)).map(()=>"العنصر "+(i+1)+" يحتوي مرجعًا مفقودًا"));if(broken.length){alert("تعذر الحفظ:\n"+broken.join("\n"));return}if(!editorLecture.title){alert("اكتب عنوان المحاضرة أولًا");return}editorLecture.updatedAt=new Date().toISOString();const list=loadLectures(),i=list.findIndex(x=>x.id===editorLecture.id);let tabConflict=null;if(i>=0&&editorOrigin&&editorOrigin.id===editorLecture.id&&editorOrigin.fp&&fp(list[i])!==editorOrigin.fp){tabConflict=conflictCopy(list[i],'نسخة متعارضة');list.splice(i+1,0,tabConflict)}if(i>=0)list[i]=clone(editorLecture);else list.unshift(clone(editorLecture));try{saveLectures(list)}catch(err){storageFull(err);alert('تعذر حفظ المحاضرة: '+(isQuotaError(err)?'مساحة التخزين ممتلئة. اضغط «تصغير صور المحاضرة» ثم احفظ مجددًا.':String(err&&err.message||err)));return}storageRemove(DRAFT_KEY);editorOrigin={id:editorLecture.id,fp:fp(list.find(x=>x.id===editorLecture.id))};if(tabConflict){try{const cl=loadConflicts();cl.unshift({at:new Date().toISOString(),seen:false,type:'conflict',id:editorLecture.id,copyId:tabConflict.id,title:editorLecture.title,tab:true});storageSetRaw(SYNC_CONFLICTS_KEY,cl.slice(0,60))}catch(_){}if(typeof toast==='function')setTimeout(()=>toast('⚠️ عُدّلت هذه المحاضرة في نافذة أخرى قبل حفظك — حُفظت النسختان'),1600)}const s=document.getElementById("lectureSaveState");if(s)s.textContent="جارِ الحفظ…";
   // v2.17.0: «تم الحفظ» لا يظهر إلا بعد اكتمال الكتابة الدائمة في IndexedDB
   const done=ok=>{const t=document.getElementById("lectureSaveState");if(ok){if(t)t.textContent="محفوظة ✓";if(typeof toast==="function")toast("تم حفظ المحاضرة ✓")}else{if(t)t.textContent="⚠️ فشل الحفظ — ستُعاد المحاولة";if(typeof toast==="function")toast("⚠️ فشل حفظ المحاضرة — لا تغلق التطبيق، ستُعاد المحاولة تلقائيًا")}};
   const DB=window.MasarDB;if(!DB||!DB.whenFlushed||DB.mode!=="idb"){done(true);return}
