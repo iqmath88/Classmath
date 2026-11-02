@@ -222,9 +222,17 @@ async function printHTML(title,body,withParent,instOverride,examMode,examMeta,pa
         (resolvedNote?'<div class="pExamNote">'+esc(resolvedNote)+'</div>':'')+
       '</div>'+
     '</div>';
-  // v2.18.1: النموذج الوزاري برأس رسمي واحد (داخل الورقة) — بلا الشريط الزخرفي حتى لا يظهر رأسان
-  const headerHTML=examMode?(em.officialHeader?'':examBandHTML):normalBandHTML;
-  const footerHTML=(examMode&&em.officialHeader)?'<div class="pPageFootWrap pOfficialFoot"></div>':examMode?
+  // v2.18.2: النموذج الوزاري — رأس واحد ملوّن مزخرف بهوية التطبيق، وبداخله المعلومات الرسمية (لا رأسان)
+  const off=em.officialHeader&&typeof em.officialHeader==="object"?em.officialHeader:null;
+  const officialBandHTML=off?
+    '<div class="pBand pBandExam pBandOfficial pHeaderStyle-'+esc(designStyle)+' pOrnament-'+esc(designOrnament)+(isMono?' pBandMono':'')+'"'+headerVars+'>'+
+      ornamentSVG+'<div class="pHeaderWave" aria-hidden="true"></div>'+
+      '<div class="pOffCol pOffRight"><b>اللجنة الدائمة للامتحانات العامة</b><span>الدراسة : '+esc(off.stream||"")+'</span><span>المادة : '+esc(off.subject||"")+'</span></div>'+
+      '<div class="pOffCenter">'+(logo?'<span class="pOffLogo"><img src="'+logo+'" alt=""></span>':'')+'<div class="pExamTitle" style="font-size:'+fHeadCenter+'px">'+esc(resolvedTitle)+'</div><div class="pTitleDivider"><span></span><b>◆</b><span></span></div><div class="pExamYear">'+esc(resolvedRight)+'</div></div>'+
+      '<div class="pOffCol pOffLeft"><b>جمهورية العراق - وزارة التربية</b><span>'+esc(off.session||"")+' ( '+esc(off.year||"")+' )</span><span>الوقت : '+esc(off.duration||"")+'</span></div>'+
+    '</div>':'';
+  const headerHTML=examMode?(off?officialBandHTML:examBandHTML):normalBandHTML;
+  const footerHTML=examMode?
     '<div class="pPageFootWrap pExamFootWrap" style="--printPrimary:'+esc(designPrimary)+';--printAccent:'+esc(designAccent)+'">'+
       '<div class="pExamFoot">'+
         '<div class="pExamFootTeacher"><strong>'+esc(resolvedFooterRight)+'</strong></div>'+

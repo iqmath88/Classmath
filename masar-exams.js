@@ -212,7 +212,7 @@ function blankParts(n){return Array.from({length:n},()=>({id:uid(),text:""}))}
 function exQ(text,marks,parts){return {id:uid(),text:text||"",marks:String(marks),answer:"",parts:blankParts(parts)}}
 const EXAM_BUILTINS=[
   {key:"ministerial",name:"نموذج وزاري (السادس العلمي)",desc:"6 أسئلة — أجب عن خمسة، لكل سؤال 20 درجة، فروع A/B/C، رأس اللجنة الدائمة للامتحانات العامة",
-   make:()=>({title:"الرياضيات",format:"ministerial",mono:true,stream:"الإعدادية / العلمي",session:"الدور الأول",duration:"ثلاث ساعات",answerCount:5,partStyle:"latin",
+   make:()=>({title:"نموذج امتحان وزاري",format:"ministerial",mono:false,stream:"الإعدادية / العلمي",session:"الدور الأول",duration:"ثلاث ساعات",answerCount:5,partStyle:"latin",
      notes:"<b>ملاحظة :</b> الإجابة عن خمسة أسئلة فقط ، ولكل سؤال ( 20 ) درجة .",
      questions:[exQ("",20,2),exQ("",20,2),exQ("",20,2),exQ("أجب عن فرعين ممّا يأتي :",20,3),exQ("أجب عن فرعين ممّا يأتي :",20,3),exQ("أجب عن فرعين ممّا يأتي :",20,3)]})},
   {key:"midyear",name:"امتحان نصف السنة",desc:"6 أسئلة — أجب عن خمسة، لكل سؤال 20 درجة",
@@ -238,8 +238,8 @@ function examInfoHTML(data,forKey){
   const inst=S.curInst||INSTS()[0];
   const line=n=>'<span class="eiLine">'+'.'.repeat(n)+'</span>';
   if(data.format==="ministerial"){
-    return '<div class="examOfficial"><div class="eoCol"><b>اللجنة الدائمة للامتحانات العامة</b><span>الدراسة : '+esc(data.stream||"الإعدادية / العلمي")+'</span><span><b>المادة :</b> '+esc(MYSUB())+'</span>'+(forKey?'<span><b>نموذج الإجابة</b></span>':'<span>إسم الطالب : '+line(40)+'</span>')+'</div>'+
-      '<div class="eoCol eoLeft"><b>جمهورية العراق - وزارة التربية</b><span>'+esc(data.session||"الدور الأول")+' ( '+esc(academicYearStr().replace(/\s*[-–]\s*/," / "))+' )</span><span><b>الوقت : '+esc(data.duration||"ثلاث ساعات")+'</b></span>'+(forKey?'':'<span>الرقم الامتحاني : '+line(22)+'</span>')+'</div></div>';
+    // المعلومات الرسمية داخل الرأس الملوّن؛ هنا سطر الطالب فقط
+    return forKey?'<div class="examInfo examInfoOff"><div class="eiRow"><span><b>نموذج الإجابة</b> — للاستخدام الخاص بالمدرس</span></div></div>':'<div class="examInfo examInfoOff"><div class="eiRow"><span>إسم الطالب : '+line(46)+'</span><span>الرقم الامتحاني : '+line(22)+'</span></div></div>';
   }
   const bits=["الصف: "+esc(data.grade)+" — "+secTerm(inst)+" "+esc(data.section),"المادة: "+esc(MYSUB())];
   if(data.duration)bits.push("الوقت: "+esc(data.duration));
@@ -295,6 +295,8 @@ function openExamBuilder(){
       if(age<1000*60*60*24*14&&confirm("توجد مسودة امتحان غير مكتملة محفوظة تلقائياً. هل تريد استعادتها؟")) data=sanitizeImportedData(saved.data);
     }
   }catch(_){/* تجاهل المسودة التالفة */}
+  // v2.18.2: النموذج الوزاري في v2.18.1 كان يُنشأ بالأسود والأبيض تلقائيًا — يعود ملوّنًا ما لم يختره المدرس بنفسه
+  if(data&&data.format==="ministerial"&&data.mono===true&&!data.monoChosen)data.mono=false;
   let loadedTemplateId=null; // النموذج المفتوح حالياً (إن وُجد) — لحفظ التعديلات عليه مباشرة بدل إنشاء نموذج جديد كل مرة
   let toolbar=null,draftTimer=null;
   const writeDraft=()=>{
@@ -374,7 +376,7 @@ function openExamBuilder(){
         saveDraft();
       };
     });
-    el("ebMono").onchange=e=>{data.mono=e.target.checked;saveDraft();draw()};
+    el("ebMono").onchange=e=>{data.mono=e.target.checked;data.monoChosen=true;saveDraft();draw()};
     toolbar=createMathToolbar();
     el("ebToolbarHost").appendChild(toolbar.bar);
     el("ebToolbarHost").appendChild(toolbar.tplMenu);
@@ -436,6 +438,7 @@ function openExamBuilder(){
       if(tpl.builtin&&hasContent&&!confirm("سيستبدل القالب الأسئلة الحالية. متابعة؟ (المسودة الحالية محفوظة في «نماذجي» إن حفظتها)"))return draw();
       ["format","stream","session","answerCount","partStyle"].forEach(k=>delete data[k]);
       Object.assign(data,JSON.parse(JSON.stringify(tpl.data)));
+      if(data.format==="ministerial"&&data.mono===true&&!data.monoChosen)data.mono=false;
       loadedTemplateId=tpl.id;
       saveDraft();
       draw();
@@ -542,7 +545,7 @@ function printExamPaper(data){
     duration:data.duration?"الوقت: "+esc(data.duration):"",
     headerColor:data.mono?"#ffffff":data.headerColor,
     mono:data.mono,
-    officialHeader:data.format==="ministerial"
+    officialHeader:data.format==="ministerial"?{stream:data.stream||"الإعدادية / العلمي",session:data.session||"الدور الأول",duration:data.duration||"ثلاث ساعات",subject:MYSUB(),year:academicYearStr().replace(/\s*[-–]\s*/," / ")}:null
   },blocks);
 }
 function printAnswerKey(data){
@@ -564,7 +567,7 @@ function printAnswerKey(data){
     duration:"",
     headerColor:data.mono?"#ffffff":data.headerColor,
     mono:data.mono,
-    officialHeader:data.format==="ministerial"
+    officialHeader:data.format==="ministerial"?{stream:data.stream||"الإعدادية / العلمي",session:data.session||"الدور الأول",duration:data.duration||"ثلاث ساعات",subject:MYSUB(),year:academicYearStr().replace(/\s*[-–]\s*/," / ")}:null
   },blocks);
 }
 const MATH_SYMBOLS=["√","∛","π","×","÷","±","∓","≤","≥","≠","≈","≡","∞","°","½","⅓","¼","¾","⅔","²","³","ⁿ","∑","∏","∫","∬","∆","∇","θ","α","β","γ","δ","λ","μ","Ω","∈","∉","∪","∩","⊂","⊆","→","⇒","⇔","∴","∵","∠","⊥","∥","%","‰","√( )","( )²","( )/( )"];

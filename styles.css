@@ -2494,3 +2494,24 @@ textarea[data-auto-direction]{
   text-align:left!important;
   unicode-bidi:plaintext!important;
 }
+
+/* ===== v2.18.2 — الرأس الوزاري: ملوّن مزخرف بهوية التطبيق ومعلومات رسمية في ثلاثة أعمدة ===== */
+#printArea .pBandExam.pBandOfficial{
+  display:grid!important;direction:rtl!important;
+  grid-template-columns:minmax(0,1fr) auto minmax(0,1fr)!important;grid-template-areas:"right center left"!important;
+  min-height:27mm!important;max-height:none!important;height:auto!important;padding:8px 16px!important;gap:12px!important;align-items:center!important;color:#fff
+}
+#printArea .pBandOfficial .pOffCol{position:relative;z-index:1;display:flex;flex-direction:column;gap:1px;font-size:10.5px;line-height:1.55;font-weight:600;min-width:0}
+#printArea .pBandOfficial .pOffCol b{font-size:12px;font-weight:900;color:var(--printAccent,#D4AF37)}
+#printArea .pBandOfficial .pOffRight{grid-area:right;text-align:right;align-items:flex-start}
+#printArea .pBandOfficial .pOffLeft{grid-area:left;text-align:left;align-items:flex-end}
+#printArea .pBandOfficial .pOffCenter{grid-area:center;position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;text-align:center;min-width:0}
+#printArea .pBandOfficial .pOffLogo img{width:30px;height:30px;object-fit:contain;border-radius:8px;background:#fff;padding:2px;margin-bottom:2px}
+#printArea .pBandOfficial .pExamTitle{font-size:16px!important;white-space:nowrap!important}
+#printArea .pBandOfficial .pExamYear{font-size:9.5px!important;opacity:.92}
+#printArea .pBandOfficial.pBandMono .pOffCol,#printArea .pBandOfficial.pBandMono .pOffCol b{color:#0F172A!important}
+@media print{#printArea .pBandExam.pBandOfficial{min-height:27mm!important;max-height:none!important}}
+.examInfoOff{border-radius:0 0 10px 10px;margin-top:-2px}
+#printArea .pBandOfficial .pHeaderOrnament{opacity:.28!important}
+#printArea .pBandOfficial .pOffCol span,#printArea .pBandOfficial .pOffCol b{text-shadow:0 1px 2px rgba(0,0,0,.35)}
+#printArea .pBandOfficial.pBandMono .pOffCol span,#printArea .pBandOfficial.pBandMono .pOffCol b{text-shadow:none}
