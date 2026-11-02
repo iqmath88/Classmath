@@ -15,7 +15,7 @@ async function mockCloud(ctx){await ctx.route('https://sync.test/**',async route
 async function device(b,base,w,h){const ctx=await b.newContext({viewport:{width:w||1180,height:h||820}});await mockCloud(ctx);const p=await ctx.newPage();p.errs=[];p.on('pageerror',e=>p.errs.push(e.message));p.on('dialog',d=>d.accept());
  await p.goto(base+'/index.html');await p.waitForTimeout(1400);if(await p.$('#swSkip'))await p.click('#swSkip');return p}
 const goChapter=async p=>{await p.evaluate(()=>{document.getElementById('modal').innerHTML='';goToTab('lectures')});await p.waitForTimeout(400);await p.click('.openProject');await p.waitForTimeout(300);await p.click('.chapterOpen');await p.waitForTimeout(400)};
-async function newLecture(p,title){await goChapter(p);await p.click(await p.$('#emptyNewLecture')?'#emptyNewLecture':'#newLectureBtn');await p.waitForTimeout(700);
+async function newLecture(p,title){await goChapter(p);await p.click(await p.$('#emptyNewLecture')?'#emptyNewLecture':'#newLectureBtn');await p.waitForTimeout(250);if(await p.$('[data-ltpl]'))await p.click('[data-ltpl="sample"]');await p.waitForTimeout(700);
  await p.evaluate(t=>{document.querySelector('.lectureInfoDetails').open=true;const e=document.getElementById('lecTitle');e.value=t;e.dispatchEvent(new Event('input'))},title);
  await p.click('#saveLecture');await p.waitForTimeout(500);await p.evaluate(()=>{document.getElementById('modal').innerHTML='';goToTab('lectures')});await p.waitForTimeout(300)}
 const titles=p=>p.evaluate(()=>window.MasarStorage.get('masar-education-v1-lectures',[]).map(l=>l.title).sort());
@@ -44,7 +44,7 @@ try{
  await p.click('#tabs [data-group="students"]');await p.waitForTimeout(300);await p.click('#tabs [data-group="teaching"]');await p.waitForTimeout(400);
  ok('كل مجموعة تتذكر آخر قسم فُتح فيها',await p.evaluate(()=>S.tab==='teaching'));
  await p.evaluate(()=>goToTab('lectures'));await p.waitForTimeout(300);await p.click('.openProject');await p.waitForTimeout(300);await p.click('.chapterOpen');await p.waitForTimeout(300);
- await p.click(await p.$('#emptyNewLecture')?'#emptyNewLecture':'#newLectureBtn');await p.waitForTimeout(800);
+ await p.click(await p.$('#emptyNewLecture')?'#emptyNewLecture':'#newLectureBtn');await p.waitForTimeout(250);if(await p.$('[data-ltpl]'))await p.click('[data-ltpl="sample"]');await p.waitForTimeout(800);
  ok('لا شريط أقسام داخل المحرر',!(await p.$('#content > .secNav'))&&!!(await p.$('.lectureEditor')));
  await p.click('#previewLecture');await p.waitForTimeout(1200);ok('ولا داخل المعاينة',!(await p.$('#content > .secNav')));
  // ---------- رقم الإصدار ----------

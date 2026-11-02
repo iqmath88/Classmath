@@ -17,7 +17,7 @@ async function device(b,base,name,opts={}){const ctx=await b.newContext({viewpor
 const enableSync=p=>p.evaluate(()=>{S.settings.sync={url:'https://sync.test',key:'anon',code:'room-p0'};saveKey('settings',S.settings)});
 const goChapter=async p=>{await p.evaluate(()=>{document.getElementById('modal').innerHTML='';goToTab('lectures')});await p.waitForTimeout(400);await p.click('.openProject');await p.waitForTimeout(300);await p.click('.chapterOpen');await p.waitForTimeout(400)};
 const lecs=p=>p.evaluate(()=>window.MasarStorage.get('masar-education-v1-lectures',[]).map(l=>({id:l.id,title:l.title,body:JSON.stringify(l.blocks||[])})));
-async function newLecture(p,title){await goChapter(p);await p.click(await p.$('#emptyNewLecture')?'#emptyNewLecture':'#newLectureBtn');await p.waitForTimeout(700);await setTitle(p,title);await p.click('#saveLecture');await p.waitForTimeout(600);await p.evaluate(()=>{document.getElementById('modal').innerHTML='';goToTab('lectures')});await p.waitForTimeout(300)}
+async function newLecture(p,title){await goChapter(p);await p.click(await p.$('#emptyNewLecture')?'#emptyNewLecture':'#newLectureBtn');await p.waitForTimeout(250);if(await p.$('[data-ltpl]'))await p.click('[data-ltpl="sample"]');await p.waitForTimeout(700);await setTitle(p,title);await p.click('#saveLecture');await p.waitForTimeout(600);await p.evaluate(()=>{document.getElementById('modal').innerHTML='';goToTab('lectures')});await p.waitForTimeout(300)}
 async function setTitle(p,t){await p.evaluate(t=>{document.querySelector('.lectureInfoDetails').open=true;const e=document.getElementById('lecTitle');e.value=t;e.dispatchEvent(new Event('input'))},t)}
 async function openLecture(p,title){await goChapter(p);const id=await p.evaluate(t=>window.MasarStorage.get('masar-education-v1-lectures',[]).find(l=>l.title===t).id,title);await p.click('.openLecture[data-id="'+id+'"]');await p.waitForTimeout(800);return id}
 async function editAndSave(p,title,newTitle){await openLecture(p,title);await setTitle(p,newTitle);await p.click('#saveLecture');await p.waitForTimeout(600);await p.evaluate(()=>{document.getElementById('modal').innerHTML='';goToTab('lectures')});await p.waitForTimeout(300)}
@@ -33,7 +33,7 @@ try{
   ok('كتابة تمت قبل اكتمال فتح IndexedDB لا تضيع بعد إعادة التحميل',await p.evaluate(()=>window.MasarDB.getItem('masar-education-v1-early-test'))==='"كُتب قبل فتح القاعدة"');
   await ctx.close()}
  {const p=await device(b,base,'S1');
-  await goChapter(p);await p.click(await p.$('#emptyNewLecture')?'#emptyNewLecture':'#newLectureBtn');await p.waitForTimeout(700);await setTitle(p,'اختبار الحفظ الدائم');
+  await goChapter(p);await p.click(await p.$('#emptyNewLecture')?'#emptyNewLecture':'#newLectureBtn');await p.waitForTimeout(250);if(await p.$('[data-ltpl]'))await p.click('[data-ltpl="sample"]');await p.waitForTimeout(700);await setTitle(p,'اختبار الحفظ الدائم');
   // كل كتابة تفشل مؤقتًا (امتلاء المساحة)
   await p.evaluate(()=>{const put=IDBObjectStore.prototype.put;window.__failPut=true;IDBObjectStore.prototype.put=function(...a){if(window.__failPut){const e=new DOMException('full','QuotaExceededError');throw e}return put.apply(this,a)}});
   await p.click('#saveLecture');await p.waitForTimeout(700);

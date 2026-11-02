@@ -8,7 +8,7 @@ let pass=0,fail=0;const ok=(n,c,i)=>{if(c){pass++;console.log('PASS',n)}else{fai
 try{const p=await b.newPage({viewport:{width:1180,height:820},acceptDownloads:true});const errs=[];p.on('pageerror',e=>errs.push(e.message));p.on('dialog',d=>d.accept());
  await p.goto(base+'/index.html');await p.waitForTimeout(1400);if(await p.$('#swSkip'))await p.click('#swSkip');
  await p.evaluate(()=>{document.getElementById('modal').innerHTML='';goToTab('lectures')});await p.waitForTimeout(400);await p.click('.openProject');await p.waitForTimeout(300);await p.click('.chapterOpen');await p.waitForTimeout(400);
- await p.click(await p.$('#emptyNewLecture')?'#emptyNewLecture':'#newLectureBtn');await p.waitForTimeout(800);
+ await p.click(await p.$('#emptyNewLecture')?'#emptyNewLecture':'#newLectureBtn');await p.waitForTimeout(250);if(await p.$('[data-ltpl]'))await p.click('[data-ltpl="sample"]');await p.waitForTimeout(800);
  await p.evaluate(()=>{const L=window.NiborEditorDebug.lecture;L.title='اتجاه الصفحة';L.blocks=L.blocks.slice(0,3);for(let i=0;i<14;i++)L.blocks.push({id:'b'+i,type:i%2?'example':'definition',title:'تعريف المشتقة '+i,content:'المشتقة الأولى للدالة $f(x)=x^3+2x$ هي $f\'(x)=3x^2+2$ والنهاية $$\\lim_{h\\to0}\\frac{f(x+h)-f(x)}{h}$$',solution:i%2?'الحل: $3(2)^2+2=14$':'',keepTogether:true});window.NiborEditorDebug.render()});
  await p.waitForTimeout(800);
  await p.evaluate(()=>{const o=window.NiborPDF.exportLecture;window.NiborPDF.exportLecture=async(l,opts)=>{const pg=opts.paginate;opts.paginate=async x=>{const h=await pg(x);const d=document.createElement('div');d.innerHTML=h;window.__exp=[...d.querySelectorAll('.lecturePaper')].map(x=>x.querySelectorAll('.lectureBlock').length).join(',');return h};return o(l,opts)}});

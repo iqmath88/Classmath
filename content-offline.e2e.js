@@ -15,7 +15,7 @@ try{
  const ctx=await b.newContext({viewport:{width:1180,height:820}});const p=await ctx.newPage();const errs=[];p.on('pageerror',e=>errs.push(e.message));p.on('dialog',d=>d.accept());
  await p.goto(base+'/index.html');await p.waitForTimeout(1400);if(await p.$('#swSkip'))await p.click('#swSkip');
  // ===== المعادلات: حفظ وإعادة فتح =====
- await goChapter(p);await p.click(await p.$('#emptyNewLecture')?'#emptyNewLecture':'#newLectureBtn');await p.waitForTimeout(800);
+ await goChapter(p);await p.click(await p.$('#emptyNewLecture')?'#emptyNewLecture':'#newLectureBtn');await p.waitForTimeout(250);if(await p.$('[data-ltpl]'))await p.click('[data-ltpl="sample"]');await p.waitForTimeout(800);
  await p.evaluate(([EQS,LONG])=>{const L=window.NiborEditorDebug.lecture;L.title='اختبار المعادلات';
    EQS.forEach((e,i)=>L.blocks.push({id:'eq'+i,type:i%2?'example':'definition',title:'مثال '+i,content:'لنحسب القيمة التالية $'+e+'$ ثم نكمل الشرح بالعربية.',solution:i%2?'الحل: $$'+e+'$$':'',keepTogether:true}));
    L.blocks.push({id:'eqLong',type:'example',title:'معادلة طويلة',content:'$$'+LONG+'$$',solution:'',keepTogether:true});

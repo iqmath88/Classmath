@@ -206,12 +206,46 @@ function printLessonPlan(data){
     sectionHTML("🗒️ ملاحظات",data.notes);
   printHTML("الخطة اليومية — "+data.topic,body,false,inst);
 }
+/* v2.18.0: قوالب امتحانية جاهزة — منها النموذج الوزاري (اللجنة الدائمة للامتحانات العامة) */
+function partLabel(data,j){return data&&data.partStyle==="latin"?String.fromCharCode(65+j)+"-":ARABIC_ENUM[j]+")"}
+function blankParts(n){return Array.from({length:n},()=>({id:uid(),text:""}))}
+function exQ(text,marks,parts){return {id:uid(),text:text||"",marks:String(marks),answer:"",parts:blankParts(parts)}}
+const EXAM_BUILTINS=[
+  {key:"ministerial",name:"نموذج وزاري (السادس العلمي)",desc:"6 أسئلة — أجب عن خمسة، لكل سؤال 20 درجة، فروع A/B/C، رأس اللجنة الدائمة للامتحانات العامة",
+   make:()=>({title:"الرياضيات",format:"ministerial",stream:"الإعدادية / العلمي",session:"الدور الأول",duration:"ثلاث ساعات",answerCount:5,partStyle:"latin",
+     notes:"<b>ملاحظة :</b> الإجابة عن خمسة أسئلة فقط ، ولكل سؤال ( 20 ) درجة .",
+     questions:[exQ("",20,2),exQ("",20,2),exQ("",20,2),exQ("أجب عن فرعين ممّا يأتي :",20,3),exQ("أجب عن فرعين ممّا يأتي :",20,3),exQ("أجب عن فرعين ممّا يأتي :",20,3)]})},
+  {key:"midyear",name:"امتحان نصف السنة",desc:"6 أسئلة — أجب عن خمسة، لكل سؤال 20 درجة",
+   make:()=>({title:"امتحان نصف السنة",format:"",duration:"ساعتان ونصف",answerCount:5,partStyle:"latin",notes:"<b>ملاحظة :</b> أجب عن خمسة أسئلة فقط ، ولكل سؤال ( 20 ) درجة .",
+     questions:[exQ("",20,2),exQ("",20,2),exQ("",20,2),exQ("",20,2),exQ("أجب عن فرعين ممّا يأتي :",20,3),exQ("أجب عن فرعين ممّا يأتي :",20,3)]})},
+  {key:"monthly",name:"امتحان شهري",desc:"4 أسئلة — لكل سؤال 25 درجة (المجموع 100)",
+   make:()=>({title:"امتحان الشهر الأول",format:"",duration:"ساعة واحدة",answerCount:"",partStyle:"",notes:"<b>ملاحظة :</b> أجب عن جميع الأسئلة .",
+     questions:[exQ("",25,2),exQ("",25,2),exQ("",25,2),exQ("",25,2)]})},
+  {key:"quiz",name:"امتحان يومي قصير",desc:"سؤالان — لكل سؤال 5 درجات",
+   make:()=>({title:"امتحان يومي",format:"",duration:"15 دقيقة",answerCount:"",partStyle:"",notes:"",
+     questions:[exQ("",5,1),exQ("",5,1)]})}
+];
+// معلومات أعلى ورقة الامتحان: الصف والمادة والوقت واسم الطالب — أو رأس اللجنة الدائمة في النموذج الوزاري
+function examInfoHTML(data,forKey){
+  const inst=S.curInst||INSTS()[0];
+  const line=n=>'<span class="eiLine">'+'.'.repeat(n)+'</span>';
+  if(data.format==="ministerial"){
+    return '<div class="examOfficial"><div class="eoCol"><b>اللجنة الدائمة للامتحانات العامة</b><span>الدراسة : '+esc(data.stream||"الإعدادية / العلمي")+'</span><span><b>المادة :</b> '+esc(MYSUB())+'</span>'+(forKey?'<span><b>نموذج الإجابة</b></span>':'<span>إسم الطالب : '+line(40)+'</span>')+'</div>'+
+      '<div class="eoCol eoLeft"><b>جمهورية العراق - وزارة التربية</b><span>'+esc(data.session||"الدور الأول")+' ( '+esc(academicYearStr().replace(/\s*[-–]\s*/," / "))+' )</span><span><b>الوقت : '+esc(data.duration||"ثلاث ساعات")+'</b></span>'+(forKey?'':'<span>الرقم الامتحاني : '+line(22)+'</span>')+'</div></div>';
+  }
+  const bits=["الصف: "+esc(data.grade)+" — "+secTerm(inst)+" "+esc(data.section),"المادة: "+esc(MYSUB())];
+  if(data.duration)bits.push("الوقت: "+esc(data.duration));
+  return '<div class="examInfo"><div class="eiRow">'+bits.map(b=>'<span>'+b+'</span>').join("")+'</div>'+(forKey?'':'<div class="eiRow eiStudent"><span>اسم الطالب: '+line(46)+'</span><span>الدرجة: '+line(12)+'</span></div>')+'</div>';
+}
 function openExamTemplatesSheet(onLoad,onCancel){
   const draw=()=>{
     el("modal").innerHTML=
     '<div class="overlay"><div class="sheet">'+
-      '<div class="sheetHead"><h3>📂 النماذج المحفوظة</h3><button class="x" id="etX">✕</button></div>'+
+      '<div class="sheetHead"><h3>📂 القوالب والنماذج</h3><button class="x" id="etX">✕</button></div>'+
       '<div class="form">'+
+        '<div class="subHead"><span class="subName">قوالب جاهزة</span></div>'+
+        '<div class="payList">'+EXAM_BUILTINS.map(t=>'<div class="behavRow"><div class="bd" data-etbuiltin="'+t.key+'" style="cursor:pointer"><b>'+esc(t.name)+'</b><div style="font-size:10.5px;color:#94A3B8;margin-top:2px">'+esc(t.desc)+'</div></div></div>').join("")+'</div>'+
+        '<div class="subHead" style="margin-top:12px"><span class="subName">نماذجي المحفوظة</span></div>'+
         (S.examTemplates.length===0?'<p class="empty" style="padding:16px">لا توجد نماذج محفوظة بعد. من محرر الأسئلة، اضغط «💾 حفظ كنموذج كامل».</p>':
           '<div class="payList">'+S.examTemplates.map(t=>
             '<div class="behavRow"><div class="bd" data-etload="'+t.id+'" style="cursor:pointer"><b>'+esc(t.name)+'</b>'+
@@ -222,6 +256,10 @@ function openExamTemplatesSheet(onLoad,onCancel){
       '<div class="sheetFoot"><button class="btn ghost" id="etCancel">إلغاء</button></div>'+
     '</div></div>';
     el("etX").onclick=el("etCancel").onclick=onCancel||closeModal;
+    el("modal").querySelectorAll("[data-etbuiltin]").forEach(d=>d.onclick=()=>{
+      const t=EXAM_BUILTINS.find(x=>x.key===d.dataset.etbuiltin);if(!t)return;
+      onLoad({id:null,name:t.name,builtin:true,data:t.make()});
+    });
     el("modal").querySelectorAll("[data-etload]").forEach(d=>d.onclick=()=>{
       const tpl=S.examTemplates.find(t=>t.id===d.dataset.etload);
       if(tpl)onLoad(tpl);
@@ -272,7 +310,11 @@ function openExamBuilder(){
       if(q.marks!==""&&(!Number.isFinite(Number(q.marks))||Number(q.marks)<0))errors.push("درجة السؤال "+(i+1)+" غير صحيحة");
       if(q.marks==="")warnings.push("لم تحدد درجة السؤال "+(i+1));
     });
-    const total=questions.reduce((sum,q)=>sum+(Number(q.marks)||0),0);
+    let total=questions.reduce((sum,q)=>sum+(Number(q.marks)||0),0);
+    // «أجب عن N أسئلة»: المجموع = أعلى N درجات
+    const n=parseInt(data.answerCount,10);
+    if(n>0&&n<questions.length){total=questions.map(q=>Number(q.marks)||0).sort((a,b)=>b-a).slice(0,n).reduce((a,b)=>a+b,0);if(n>=questions.length)warnings.push("عدد الأسئلة المطلوبة يساوي عدد الأسئلة")}
+    else if(n>questions.length)warnings.push("عدد الأسئلة المطلوب الإجابة عنها ("+n+") أكبر من عدد الأسئلة ("+questions.length+")");
     return {questions,errors,warnings,total};
   };
   const draw=()=>{
@@ -285,7 +327,9 @@ function openExamBuilder(){
           '<label>الصف<select id="ebGrade">'+opts(gradesFor(S.curInst||INSTS()[0]),data.grade)+'</select></label>'+
           '<label>'+secTerm(S.curInst||INSTS()[0])+'<select id="ebSection">'+opts(secList(S.curInst||INSTS()[0]),data.section)+'</select></label>'+
         '</div>'+
-        '<label>مدة الامتحان (اختياري)<input id="ebDuration" value="'+esc(data.duration)+'" placeholder="مثال: 90 دقيقة"></label>'+
+        '<div class="grid2"><label>مدة الامتحان (اختياري)<input id="ebDuration" value="'+esc(data.duration)+'" placeholder="مثال: 90 دقيقة"></label>'+
+        '<label>يُجاب عن (عدد الأسئلة، اختياري)<input id="ebAnswerCount" inputmode="numeric" value="'+esc(data.answerCount||"")+'" placeholder="الكل"></label></div>'+
+        (data.format==="ministerial"?'<div class="qeKept"><b>نموذج وزاري</b> — رأس «اللجنة الدائمة للامتحانات العامة»، وفروع A- و B- و C-.<small>'+esc(data.stream||"")+' — '+esc(data.session||"")+'</small></div>':'')+
         '<div class="subCard">'+
           '<div class="subHead"><span class="subName">🎨 ألوان ورقة الأسئلة</span></div>'+
           '<div class="grid2">'+
@@ -303,7 +347,7 @@ function openExamBuilder(){
         '<div class="fieldLbl">ملاحظات تظهر أعلى الأسئلة (اختياري)<div id="ebNotesHost"></div></div>'+
         '<div id="ebQuestions"></div>'+
         '<div class="actions"><button class="btn ghost" id="ebFromBank">📚 إضافة من البنك</button><button class="btn ghost" id="ebAddQ">+ سؤال جديد</button></div>'+
-        '<div class="actions"><button class="btn ghost" id="ebSaveTpl">💾 '+(loadedTemplateId?"حفظ التعديلات بنفس النموذج":"حفظ كنموذج كامل")+'</button>'+(loadedTemplateId?'<button class="btn ghost" id="ebSaveTplNew">📄 حفظ كنموذج جديد</button>':'')+'<button class="btn ghost" id="ebLoadTpl">📂 فتح نموذج محفوظ</button></div>'+
+        '<div class="actions"><button class="btn ghost" id="ebSaveTpl">💾 '+(loadedTemplateId?"حفظ التعديلات بنفس النموذج":"حفظ كنموذج كامل")+'</button>'+(loadedTemplateId?'<button class="btn ghost" id="ebSaveTplNew">📄 حفظ كنموذج جديد</button>':'')+'<button class="btn ghost" id="ebLoadTpl">📂 القوالب والنماذج</button></div>'+
       '</div>'+
       '<div class="sheetFoot"><span id="ebDraftStatus" style="font-size:10.5px;color:var(--muted);margin-inline-end:auto">الحفظ التلقائي مفعّل</span><button class="btn ghost" id="ebClose">إغلاق</button><button class="btn ghost" id="ebPrintAnswers">✅ نموذج الإجابة</button><button class="btn" id="ebPrint">🖨 طباعة ورقة الأسئلة</button></div>'+
     '</div></div>';
@@ -311,6 +355,7 @@ function openExamBuilder(){
     el("ebGrade").onchange=e=>{data.grade=e.target.value;saveDraft()};
     el("ebSection").onchange=e=>{data.section=e.target.value;saveDraft()};
     el("ebDuration").oninput=e=>{data.duration=e.target.value;saveDraft()};
+    el("ebAnswerCount").oninput=e=>{const v=parseInt(e.target.value,10);data.answerCount=v>0?v:"";saveDraft()};
     el("ebHeaderClr").onchange=e=>{data.headerColor=e.target.value;saveDraft()};
     el("ebQBoxClr").onchange=e=>{data.qBoxColor=e.target.value;saveDraft()};
     document.querySelectorAll("[data-ebswatch]").forEach(b=>{
@@ -379,6 +424,9 @@ function openExamBuilder(){
       toast("تم حفظ نسخة جديدة ✓");
     });
     el("ebLoadTpl").onclick=()=>openExamTemplatesSheet((tpl)=>{
+      const hasContent=data.questions.some(q=>stripHTML(q.text).trim()||q.parts.some(p=>stripHTML(p.text).trim()));
+      if(tpl.builtin&&hasContent&&!confirm("سيستبدل القالب الأسئلة الحالية. متابعة؟ (المسودة الحالية محفوظة في «نماذجي» إن حفظتها)"))return draw();
+      ["format","stream","session","answerCount","partStyle"].forEach(k=>delete data[k]);
       Object.assign(data,JSON.parse(JSON.stringify(tpl.data)));
       loadedTemplateId=tpl.id;
       saveDraft();
@@ -415,7 +463,7 @@ function openExamBuilder(){
           '<label style="font-size:11px">الدرجة<input data-qmarks="'+q.id+'" inputmode="numeric" value="'+esc(q.marks)+'" placeholder="—"></label>'+
         '</div>'+
         (q.parts.length?'<div style="margin-top:6px;display:flex;flex-direction:column;gap:8px">'+q.parts.map((p,j)=>
-          '<div class="fieldLbl" style="font-size:11px">فرع ('+ARABIC_ENUM[j]+')<div style="display:flex;gap:6px;align-items:start"><div data-ptexthost="'+q.id+'|'+p.id+'" style="flex:1"></div><button type="button" class="bDel" data-delp="'+q.id+'|'+p.id+'" style="align-self:center">✕</button></div></div>'
+          '<div class="fieldLbl" style="font-size:11px">فرع ('+partLabel(data,j).replace(/[-)]$/,"")+')<div style="display:flex;gap:6px;align-items:start"><div data-ptexthost="'+q.id+'|'+p.id+'" style="flex:1"></div><button type="button" class="bDel" data-delp="'+q.id+'|'+p.id+'" style="align-self:center">✕</button></div></div>'
         ).join("")+'</div>':"")+
         '<button class="btn ghost" data-addp="'+q.id+'" style="margin-top:6px;font-size:11.5px;padding:6px 12px">+ إضافة فرع لهذا السؤال (أ، ب، ج…)</button>'+
         '<div class="fieldLbl" style="font-size:11px;margin-top:10px;border-top:1px dashed var(--line);padding-top:8px">✅ الإجابة النموذجية (اختياري)<div data-qanshost="'+q.id+'"></div></div>'+
@@ -474,10 +522,10 @@ function printExamPaper(data){
           '<div class="examQText">'+(q.text||"")+'</div>'+
           (q.marks?'<div class="examMarks"><span aria-hidden="true">★</span> '+esc(q.marks)+' درجات</div>':'')+
         '</div>'+
-        (q.parts.filter(p=>stripHTML(p.text).trim()).length?'<div class="examParts">'+q.parts.filter(p=>stripHTML(p.text).trim()).map((p,j)=>'<div class="examPart">'+ARABIC_ENUM[j]+') '+p.text+'</div>').join("")+'</div>':'')+
+        (q.parts.filter(p=>stripHTML(p.text).trim()).length?'<div class="examParts">'+q.parts.filter(p=>stripHTML(p.text).trim()).map((p,j)=>'<div class="examPart">'+partLabel(data,j)+' '+p.text+'</div>').join("")+'</div>':'')+
       '</div>'
   );
-  const blocks=(stripHTML(data.notes).trim()?['<div class="examNotesBox">'+data.notes+'</div>']:[]).concat(qBlocks);
+  const blocks=[examInfoHTML(data,false)].concat(stripHTML(data.notes).trim()?['<div class="examNotesBox">'+data.notes+'</div>']:[]).concat(qBlocks);
   const body=blocks.join("");
   printHTML(data.title,body,false,inst,true,{
     grade:"الصف: "+esc(data.grade)+" — "+secTerm(inst)+" "+esc(data.section),
@@ -498,7 +546,7 @@ function printAnswerKey(data){
       '<div class="examParts"><div class="examPart">'+q.answer+'</div></div>'+
       '</div>':''
   ).filter(Boolean);
-  const blocks=['<div class="examNotesBox">🔑 نموذج الإجابة — للاستخدام الخاص بالمدرس فقط</div>'].concat(qBlocks);
+  const blocks=[examInfoHTML(data,true),'<div class="examNotesBox">🔑 نموذج الإجابة — للاستخدام الخاص بالمدرس فقط</div>'].concat(qBlocks);
   const body=blocks.join("");
   printHTML("🔑 نموذج الإجابة — "+data.title,body,false,inst,true,{
     grade:"الصف: "+esc(data.grade)+" — "+secTerm(inst)+" "+esc(data.section),

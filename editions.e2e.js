@@ -10,7 +10,7 @@ const area=p=>p.evaluate(()=>{const a=document.getElementById('lecturePreviewAre
 try{
  const p=await b.newPage({viewport:{width:1180,height:820},acceptDownloads:true});const errs=[];p.on('pageerror',e=>errs.push(e.message));p.on('dialog',d=>d.accept());
  await p.goto(base+'/index.html');await p.waitForTimeout(1400);if(await p.$('#swSkip'))await p.click('#swSkip');
- await goChapter(p);await p.click(await p.$('#emptyNewLecture')?'#emptyNewLecture':'#newLectureBtn');await p.waitForTimeout(800);
+ await goChapter(p);await p.click(await p.$('#emptyNewLecture')?'#emptyNewLecture':'#newLectureBtn');await p.waitForTimeout(250);if(await p.$('[data-ltpl]'))await p.click('[data-ltpl="sample"]');await p.waitForTimeout(800);
  await p.evaluate(()=>{const L=window.NiborEditorDebug.lecture;const mk=(type,content,solution)=>({id:'t'+Math.random().toString(36).slice(2),type,title:type==='example'?'مثال':'تمرين',content,solution,keepTogether:true,smart:{answerLines:0,showSolution:true}});
   L.blocks.push(mk('example','جد ناتج $2+3$','حل المثال الظاهر $=5$'),mk('exercise','جد ناتج $7\\times 8$','حل التمرين السري: الناتج $56$ لأن ضرب سبعة في ثمانية يعطي ستة وخمسين وهذا شرح أطول للحل'));window.NiborEditorDebug.render()});
  await p.waitForTimeout(700);await p.click('#saveLecture');await p.waitForTimeout(600);
