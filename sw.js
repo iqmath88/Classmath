@@ -1,4 +1,4 @@
-const CACHE = "masar-education-2-13-1-work-protection";
+const CACHE = "masar-education-2-14-0-menus";
 const ASSETS = [
   "./",
   "./index.html",

@@ -4,11 +4,37 @@ function toast(m){const b=document.getElementById("toastBox");b.innerHTML='<div 
 function el(id){return document.getElementById(id)}
 
 /* ============ التنقل ============ */
-const TABS=[["home","الرئيسية","home"],["lectures","المحاضرات","book"],["students","الطلبة","users"],["attendance","الحضور","check"],["evaluation","التقييم","percent"],["teaching","التدريس","pen"],["payments","الأقساط","wallet"],["settings","الإعدادات","settings"]];
+// v2.14.0: ترتيب الأقسام حسب الاستخدام اليومي — في الصف (الحضور، التقييم، الطلبة) ثم التحضير (المحاضرات، التدريس) ثم الإدارة
+const TABS=[["home","الرئيسية","home"],["attendance","الحضور","check"],["evaluation","التقييم","percent"],["students","الطلبة","users"],["lectures","المحاضرات","book"],["teaching","التدريس","pen"],["payments","الأقساط","wallet"],["settings","الإعدادات","settings"]];
+const TAB_GROUP_START={lectures:1,payments:1};
+const PHONE_MAIN=["home","attendance","evaluation","lectures"];
+const TAB_PARENT={stats:"evaluation",homework:"evaluation"};
+// قوائم «طباعة ▾» و«إرسال ▾»: تُغلق بعد الاختيار أو بالضغط خارجها
+if(!window.__actMenus){window.__actMenus=true;document.addEventListener("click",e=>{document.querySelectorAll("details.actMenu[open]").forEach(d=>{if(!d.contains(e.target)||e.target.closest(".actMenuList button"))setTimeout(()=>d.removeAttribute("open"),0)})})}
 function renderTabs(){
+  const cur=TAB_PARENT[S.tab]||S.tab;const inMore=!PHONE_MAIN.includes(cur);
   el("tabs").innerHTML=TABS.map(([k,l,i])=>
-    '<button class="tab'+(S.tab===k?" on":"")+'" data-tab="'+k+'" aria-label="'+l+'"><span class="ticon">'+(window.ICON?ICON(i):i)+'</span><span class="tlabel">'+l+'</span></button>').join("");
-  el("tabs").querySelectorAll(".tab").forEach(b=>b.onclick=()=>{goToTab(b.dataset.tab)});
+    '<button class="tab'+(cur===k?" on":"")+(TAB_GROUP_START[k]?" tabGroupStart":"")+(PHONE_MAIN.includes(k)?"":" tabMoreItem")+'" data-tab="'+k+'" aria-label="'+l+'"><span class="ticon">'+(window.ICON?ICON(i):i)+'</span><span class="tlabel">'+l+'</span></button>').join("")+
+    '<button class="tab tabMore'+(inMore?" on":"")+'" id="tabMoreBtn" aria-label="المزيد"><span class="ticon">'+(window.ICON?ICON('more'):'⋯')+'</span><span class="tlabel">'+(inMore?(TABS.find(t=>t[0]===cur)||[,'المزيد'])[1]:'المزيد')+'</span></button>';
+  el("tabs").querySelectorAll(".tab[data-tab]").forEach(b=>b.onclick=()=>{goToTab(b.dataset.tab)});
+  el("tabMoreBtn").onclick=openMoreTabs;
+}
+// على الهاتف: أربعة أقسام رئيسية + «المزيد» (الطلبة، التدريس، الأقساط، الإعدادات)
+function openMoreTabs(){
+  const items=TABS.filter(t=>!PHONE_MAIN.includes(t[0]));
+  el("modal").innerHTML='<div class="overlay"><div class="sheet moreSheet"><div class="sheetHead"><h3>المزيد</h3><button class="x" id="moreX">✕</button></div><div class="moreGrid">'+
+    items.map(([k,l,i])=>'<button class="moreItem'+(S.tab===k?" on":"")+'" data-more-tab="'+k+'"><span class="ticon">'+(window.ICON?ICON(i):i)+'</span><span>'+l+'</span></button>').join("")+'</div></div></div>';
+  el("moreX").onclick=closeModal;
+  el("modal").querySelectorAll("[data-more-tab]").forEach(b=>b.onclick=()=>{const t=b.dataset.moreTab;closeModal();setTimeout(()=>goToTab(t),30)});
+}
+// v2.14.0: الصف الافتراضي في الحضور والتقييم والواجبات والخطة/الأقساط: صف حصة اليوم، أو الصف الأكثر طلبة — لا «الأول متوسط» الفارغ
+function classCount(g,s){return VIS().filter(x=>x.grade===g&&x.section===s&&(x.status||"مستمر")==="مستمر").length}
+function bestClass(){
+  const now=new Date().getDay();
+  const today=TT_VIS().filter(x=>x.day===now).sort((a,b)=>(parseInt(a.period)||0)-(parseInt(b.period)||0));
+  for(const l of today){if(classCount(l.grade,l.section))return [l.grade,l.section]}
+  const m=new Map();VIS().forEach(x=>{if((x.status||"مستمر")!=="مستمر")return;const k=x.grade+"|"+x.section;m.set(k,(m.get(k)||0)+1)});
+  let best=null,n=0;m.forEach((c,k)=>{if(c>n){n=c;best=k}});return best?best.split("|"):null;
 }
 function fixFilterState(){
   const effInst=S.curInst||INSTS()[0];
@@ -24,6 +50,8 @@ function fixFilterState(){
   if(!sections.includes(S.pSection))S.pSection=sections[0];
   if(S.fg&&!grades.includes(S.fg))S.fg="";
   if(S.fs&&!sections.includes(S.fs))S.fs="";
+  let bc;const pick=()=>{if(bc===undefined)bc=bestClass();return bc&&grades.includes(bc[0])&&sections.includes(bc[1])?bc:null};
+  [["aGrade","aSection"],["gGrade","gSection"],["hGrade","hSection"],["pGrade","pSection"]].forEach(([G,Sc])=>{if(!classCount(S[G],S[Sc])){const b=pick();if(b){S[G]=b[0];S[Sc]=b[1]}}});
 }
 function render(){
   if(S.tab!=="lectures")document.body.classList.remove("editorFocus","inLectureEditor","pvActive");
@@ -135,8 +163,23 @@ function renderHome(){
     (canSave?"":'<div class="notice">⚠️ المتصفح مانع التخزين المحلي — البيانات ما تنحفظ تلقائياً. استخدم زر «نسخة احتياطية» قبل ما تسكّر، وزر «استيراد» حتى ترجّعها.</div>')+
     backupBanner()+
     nowCardHTML(todayLessons)+
-    (!(S.settings.sync&&S.settings.sync.userId)?'<div class="notice" id="homeAcctNotice" style="cursor:pointer">'+ICON('user')+' لم تسجّل الدخول بحساب بعد — اضغط هنا لتسجيل الدخول أو إنشاء حسابك (معلم/طالب/ولي أمر)</div>':"")+
     (todayLessons.length>0&&!attTakenToday?'<div class="notice warnNotice">'+ICON('clipboard')+' عندك حصص اليوم ولم تسجّل الحضور بعد — اضغط أي حصة أدناه لتسجيله.</div>':"")+
+    secH('calendar','حصص اليوم — '+DAYS[new Date().getDay()])+
+    '<div id="lessonsBox"></div>'+
+    (VIS().length===0?'<div class="emptyCard"><span class="emptyIc">'+ICON('userPlus')+'</span><div><b>ابدأ بإضافة طلبتك</b><p>أضف أول طالب لتظهر هنا الإحصاءات وإنذارات الغياب والمتفوقون.</p></div><button class="btn" id="emptyAddStudent">إضافة طالب</button></div>':"")+
+    '<div class="homeInsights"'+(VIS().length===0?' hidden':'')+'>'+
+    secH('alert','إنذارات الغياب',' <span class="secExtra">الحد: <input id="absLim" class="limIn" inputmode="numeric" value="'+(S.settings.absLimit||5)+'"> أيام</span>')+
+    '<div id="alertBox"></div>'+
+    secH('trendDown','طلبة معرّضون للرسوب (دون 50)')+
+    '<div id="riskBox"></div>'+
+    '</div>'+
+    secH('bolt','إجراءات سريعة')+
+    '<div class="qaGrid quickActions">'+
+      qaCard('qaAtt','check','تسجيل الحضور','حضور حصة اليوم بنقرة')+
+      qaCard('qaAddStudent','userPlus','إضافة طالب','طالب جديد لأي شعبة')+
+      qaCard('qaExam','exam','امتحان جديد','أنشئ واطبع امتحانًا')+
+      qaCard('qaLecture','book','محاضرة جديدة','افتح المحاضرات وابدأ التأليف')+
+    '</div>'+
     '<div class="statRow">'+
       statTile('users',VIS().length,'إجمالي الطلبة','main')+
       statTile('user',male,'ذكور')+
@@ -144,30 +187,17 @@ function renderHome(){
       statTile('check',present,'حاضر اليوم','ok')+
       statTile('alert',absent,'غائب اليوم','bad')+
     '</div>'+
-    (VIS().length===0?'<div class="emptyCard"><span class="emptyIc">'+ICON('userPlus')+'</span><div><b>ابدأ بإضافة طلبتك</b><p>أضف أول طالب لتظهر هنا الإحصاءات وإنذارات الغياب والمتفوقون.</p></div><button class="btn" id="emptyAddStudent">إضافة طالب</button></div>':"")+
-    secH('bolt','إجراءات سريعة')+
-    '<div class="qaGrid quickActions">'+
-      qaCard('qaAtt','check','تسجيل الحضور','حضور حصة اليوم بنقرة')+
-      qaCard('qaAddStudent','userPlus','إضافة طالب','طالب جديد لأي شعبة')+
-      qaCard('qaExam','exam','امتحان جديد','أنشئ واطبع امتحانًا')+
-      qaCard('qaPayments','wallet','الأقساط','الدفعات والمتأخرات')+
-    '</div>'+
-    secH('calendar','حصص اليوم — '+DAYS[new Date().getDay()])+
-    '<div id="lessonsBox"></div>'+
     '<div class="homeInsights"'+(VIS().length===0?' hidden':'')+'>'+
+    secH('star','الطلبة المتفوقون (90 فأكثر)')+
+    '<div id="topBox"></div>'+
     secH('chart','الطلبة حسب الصف')+
     '<div class="bars">'+myGrades.map(g=>{
       const n=VIS().filter(s=>s.grade===g).length;
       return '<div class="barRow"><span>'+esc(g)+'</span><div class="barTrack"><div class="barFill" style="width:'+(n/max*100)+'%"></div></div><span class="barNum">'+n+'</span></div>';
     }).join("")+'</div>'+
-    secH('alert','إنذارات الغياب',' <span class="secExtra">الحد: <input id="absLim" class="limIn" inputmode="numeric" value="'+(S.settings.absLimit||5)+'"> أيام</span>')+
-    '<div id="alertBox"></div>'+
-    secH('star','الطلبة المتفوقون (90 فأكثر)')+
-    '<div id="topBox"></div>'+
-    secH('trendDown','طلبة معرّضون للرسوب (دون 50)')+
-    '<div id="riskBox"></div>'+
     '</div>'+
-    '<div id="hwFollowBox"></div>';
+    '<div id="hwFollowBox"></div>'+
+    (!(S.settings.sync&&S.settings.sync.userId)?'<div class="notice" id="homeAcctNotice" style="cursor:pointer">'+ICON('user')+' لم تسجّل الدخول بحساب بعد — اضغط هنا لتسجيل الدخول أو إنشاء حسابك (معلم/طالب/ولي أمر)</div>':"");
   bindBackupBanner();
   el("absLim").onchange=e=>{
     const v=Math.max(1,parseInt(e.target.value)||5);
@@ -177,7 +207,7 @@ function renderHome(){
   el("qaAtt").onclick=()=>goToTab("attendance");
   el("qaAddStudent").onclick=()=>{goToTab("students");openForm(null)};
   el("qaExam").onclick=()=>openExamBuilder();
-  el("qaPayments").onclick=()=>goToTab("payments");
+  if(el("qaLecture"))el("qaLecture").onclick=()=>goToTab("lectures");
   el("nowAtt").onclick=()=>goToTab("attendance");
   if(el("emptyAddStudent"))el("emptyAddStudent").onclick=()=>{goToTab("students");openForm(null)};
   const homeAcctNotice=el("homeAcctNotice");
@@ -220,26 +250,38 @@ function renderSettings(){
   el("content").innerHTML=
     '<h2 class="h">'+ICON('settings','hIc')+' الإعدادات</h2>'+'<p class="appVersionLine">نيبور كلاس · الإصدار v'+APP_VER+'</p>'+
 
-    '<h3 class="h2" style="margin-top:0">🎨 مظهر التطبيق</h3>'+
-    '<label style="font-size:11.5px;margin-bottom:10px">نوع خط واجهة التطبيق (كل الشاشات، مو الطباعة)<select id="setAppFont">'+PRINT_FONT_OPTIONS.map(f=>'<option value="'+f.id+'"'+((S.settings.appFont||"tajawal")===f.id?" selected":"")+'>'+f.label+'</option>').join("")+'</select></label>'+
-
-    '<h3 class="h2">👤 إعداداتي الأساسية</h3>'+
+    '<nav class="setIndex" aria-label="أقسام الإعدادات">'+[['basic','الأساسية'],['account','الحساب والأمان'],['data','البيانات والنسخ'],['look','المظهر والطباعة'],['help','المساعدة']].map(([k,l])=>'<button type="button" data-sg="'+k+'">'+l+'</button>').join('')+'</nav>'+
+    '<section class="setGroup" id="sg-basic"><h3 class="setGroupHead">👤 الأساسية</h3>'+
     '<div class="filters"><input id="setTeacher" placeholder="اسم المدرس" value="'+esc(S.settings.teacher||"")+'"><input id="setSubject" placeholder="المادة التي تدرّسها" value="'+esc(S.settings.subject||"")+'"></div>'+
 
     '<div class="filters" style="grid-template-columns:1fr"><input id="setAcadYear" placeholder="السنة الدراسية (تلقائي: '+academicYearStr()+')" value="'+esc(S.settings.acadYear||"")+'"></div>'+
     '<button class="btn ghost full" id="instBtn" style="margin-top:0">🏫 إدارة مؤسساتي — إضافة مدرسة أو معهد</button>'+
     '<button class="btn ghost full" id="gwBtn" style="margin-top:0">⚖️ تقسيم الدرجات — خصّصه حسب نظام مادتك</button>'+
 
-    '<h3 class="h2">🧰 أدوات إضافية</h3>'+
-    (featureOn("exams")?'<button class="btn ghost full" id="examsBtn" style="margin-top:0">📝 الامتحانات اليومية الإلكترونية</button>':'')+
-    (featureOn("stats")?'<button class="btn ghost full" id="statsBtn" style="margin-top:0">📊 صفحة الإحصاءات الكاملة</button>':'')+
-    (featureOn("honor")?'<button class="btn ghost full" id="honorBtn" style="margin-top:0">🏆 لوحة الشرف وشهادات التقدير</button>':'')+
-    (featureOn("plot")?'<button class="btn ghost full" id="plotBtn" style="margin-top:0">📈 رسم الدوال الرياضية</button>':'')+
-    (featureOn("calendar")?'<button class="btn ghost full" id="calBtn" style="margin-top:0">📅 التقويم الدراسي</button>':'')+
-    (featureOn("examBuilder")?'<button class="btn ghost full" id="examBuilderBtn" style="margin-top:0">📝 إعداد وطباعة ورقة أسئلة</button>':'')+
-    (featureOn("qbank")?'<button class="btn ghost full" id="qbankBtn" style="margin-top:0">📚 بنك الأسئلة</button>':'')+
+    '</section>'+
+    '<section class="setGroup" id="sg-account"><h3 class="setGroupHead">🔒 الحساب والأمان</h3>'+
+    '<h3 class="h2 setSub">👤 حسابي</h3>'+
+    '<button class="btn full" id="acctBtn" style="margin-top:0">'+(S.settings.sync&&S.settings.sync.userId?"👤 حسابي — "+(ROLE_LABEL[S.settings.accountRole]||"معلم")+" ("+esc(S.settings.sync.email||"")+")":"👤 تسجيل الدخول / إنشاء حساب")+'</button>'+
 
-    '<h3 class="h2">🎨 هوية مخرجات PDF</h3>'+
+    '<h3 class="h2 setSub">🔒 الهوية والأمان</h3>'+
+    '<button class="btn ghost full" id="sigBtn" style="margin-top:0">'+(S.settings.signature?"✍️ تعديل التوقيع الحي":"✍️ إضافة توقيع حي للتقارير")+'</button>'+
+    '<button class="btn ghost full" id="ctBtn" style="margin-top:0">📇 بطاقة التواصل — هاتفي وحساباتي بالتقارير</button>'+
+    '<button class="btn ghost full" id="pinBtn" style="margin-top:0">'+((S.settings.pinHash||S.settings.pin)?"🔒 تغيير أو إزالة رمز القفل":"🔓 تفعيل رمز قفل التطبيق")+'</button>'+
+
+    '</section>'+
+    '<section class="setGroup" id="sg-data"><h3 class="setGroupHead">☁️ البيانات والنسخ الاحتياطي</h3>'+
+    '<div class="dataSafety" id="dataSafety"><div class="dsRow">جارِ فحص حالة التخزين…</div></div>'+
+    '<button class="btn ghost full" id="snapBtn" style="margin-top:0">'+ICON('clock')+' اللقطات الاحتياطية التلقائية — استعادة أو تنزيل</button>'+
+    (featureOn("archive")?'<button class="btn ghost full" id="arcBtn" style="margin-top:0">📦 أرشيف السنوات — طي السنة وبدء جديدة</button>':'')+
+    '<button class="btn ghost full" id="syncBtn" style="margin-top:0">'+(syncOn()?"☁️ المزامنة التلقائية مفعّلة ✓":"☁️ تفعيل المزامنة التلقائية بين الأجهزة")+'</button>'+
+    '<div class="actions"><button class="btn ghost" id="bkShare">📤 مزامنة لجهاز آخر</button><button class="btn" id="bkExp">'+ICON('clipboard')+' حفظ نسخة احتياطية</button><button class="btn ghost" id="bkImp">⬆ استيراد نسخة</button></div>'+
+
+    '</section>'+
+    '<section class="setGroup" id="sg-look"><h3 class="setGroupHead">🎨 المظهر والطباعة</h3>'+
+    '<h3 class="h2 setSub">🎨 مظهر التطبيق</h3>'+
+    '<label style="font-size:11.5px;margin-bottom:10px">نوع خط واجهة التطبيق (كل الشاشات، مو الطباعة)<select id="setAppFont">'+PRINT_FONT_OPTIONS.map(f=>'<option value="'+f.id+'"'+((S.settings.appFont||"tajawal")===f.id?" selected":"")+'>'+f.label+'</option>').join("")+'</select></label>'+
+
+    '<h3 class="h2 setSub">🎨 هوية مخرجات PDF</h3>'+
     '<p class="empty" style="padding:2px 4px 7px;font-size:11px">خصص محتوى الرأس والتذييل لجميع التقارير. الحقول الفارغة تستخدم بيانات التقرير تلقائياً.</p>'+
     '<div class="filters">'+
       '<label style="font-size:11.5px">نمط الرأس<select id="setPrintHeaderStyle"><option value="premium"'+(((S.settings.printDesign||{}).headerStyle||"premium")==="premium"?" selected":"")+'>فاخر</option><option value="professional"'+(((S.settings.printDesign||{}).headerStyle||"premium")==="professional"?" selected":"")+'>رسمي</option><option value="minimal"'+(((S.settings.printDesign||{}).headerStyle||"premium")==="minimal"?" selected":"")+'>مختصر</option></select></label>'+
@@ -253,7 +295,7 @@ function renderSettings(){
     '<div class="filters" style="grid-template-columns:1fr"><label style="font-size:11.5px;display:flex;align-items:center;gap:8px"><input type="checkbox" id="setPrintFillPage" style="width:auto"'+((S.settings.printDesign||{}).fillExamPage===false?"":" checked")+'>توزيع الأسئلة لملء الصفحة تلقائياً عند توفر مساحة كافية</label></div>'+
     '<div class="actions"><button class="btn ghost" id="printDesignReset">↩️ استعادة الافتراضي</button><button class="btn" id="printDesignSave">💾 حفظ هوية PDF</button></div>'+
 
-    '<h3 class="h2">🖨️ تخصيص خط الطباعة</h3>'+
+    '<h3 class="h2 setSub">🖨️ تخصيص خط الطباعة</h3>'+
     '<p class="empty" style="padding:2px 4px 6px;font-size:11px">يتحكم بنوع وحجم الخط بترويسة وتذييل أوراق الأسئلة المطبوعة. حجم منتصف الرأس أكبر افتراضيًا من الأطراف.</p>'+
     '<label style="font-size:11.5px;margin-bottom:8px">نوع الخط<select id="setFontFamily">'+PRINT_FONT_OPTIONS.map(f=>'<option value="'+f.id+'"'+((S.settings.printFont?.family||"tajawal")===f.id?" selected":"")+'>'+f.label+'</option>').join("")+'</select></label>'+
     '<div class="filters">'+
@@ -268,29 +310,18 @@ function renderSettings(){
       '<label style="font-size:11.5px">هامش أمان الطباعة (مم) — زوّده لو تطلع صفحة ثانية زايدة عندك<input type="number" id="setPrintSafety" min="0" max="100" step="1" value="'+(Number(S.settings.printSafetyMM)||6)+'"></label>'+
     '</div>'+
 
-    '<h3 class="h2" style="margin-top:0">👤 حسابي</h3>'+
-    '<button class="btn full" id="acctBtn" style="margin-top:0">'+(S.settings.sync&&S.settings.sync.userId?"👤 حسابي — "+(ROLE_LABEL[S.settings.accountRole]||"معلم")+" ("+esc(S.settings.sync.email||"")+")":"👤 تسجيل الدخول / إنشاء حساب")+'</button>'+
-
-    '<h3 class="h2">🔒 الهوية والأمان</h3>'+
-    '<button class="btn ghost full" id="sigBtn" style="margin-top:0">'+(S.settings.signature?"✍️ تعديل التوقيع الحي":"✍️ إضافة توقيع حي للتقارير")+'</button>'+
-    '<button class="btn ghost full" id="ctBtn" style="margin-top:0">📇 بطاقة التواصل — هاتفي وحساباتي بالتقارير</button>'+
-    '<button class="btn ghost full" id="pinBtn" style="margin-top:0">'+((S.settings.pinHash||S.settings.pin)?"🔒 تغيير أو إزالة رمز القفل":"🔓 تفعيل رمز قفل التطبيق")+'</button>'+
-
-    '<h3 class="h2">☁️ البيانات والنسخ الاحتياطي</h3>'+
-    '<div class="dataSafety" id="dataSafety"><div class="dsRow">جارِ فحص حالة التخزين…</div></div>'+
-    '<button class="btn ghost full" id="snapBtn" style="margin-top:0">'+ICON('clock')+' اللقطات الاحتياطية التلقائية — استعادة أو تنزيل</button>'+
-    (featureOn("archive")?'<button class="btn ghost full" id="arcBtn" style="margin-top:0">📦 أرشيف السنوات — طي السنة وبدء جديدة</button>':'')+
-    '<button class="btn ghost full" id="syncBtn" style="margin-top:0">'+(syncOn()?"☁️ المزامنة التلقائية مفعّلة ✓":"☁️ تفعيل المزامنة التلقائية بين الأجهزة")+'</button>'+
-    '<div class="actions"><button class="btn ghost" id="bkShare">📤 مزامنة لجهاز آخر</button><button class="btn" id="bkExp">'+ICON('clipboard')+' حفظ نسخة احتياطية</button><button class="btn ghost" id="bkImp">⬆ استيراد نسخة</button></div>'+
-
-    '<h3 class="h2">❔ المساعدة والتخصيص</h3>'+
+    '</section>'+
+    '<section class="setGroup" id="sg-help"><h3 class="setGroupHead">❔ المساعدة والتخصيص</h3>'+
     '<button class="btn ghost full" id="tourBtn" style="margin-top:0">🎓 جولة تعريفية بالتطبيق</button>'+
     '<button class="btn ghost full" id="wizardBtn" style="margin-top:0">🧭 إعادة تشغيل مساعد الإعداد</button>'+
     '<button class="btn ghost full" id="pluginsBtn" style="margin-top:0">🧩 تخصيص الميزات الظاهرة</button>'+
+    '<p class="empty setNote">الإحصاءات ولوحة الشرف والامتحانات الإلكترونية صارت في «التقييم»، وورقة الأسئلة وبنك الأسئلة ورسم الدوال والتقويم في «التدريس».</p>'+
+    '</section>'+
     '<div style="text-align:center;padding:22px 10px 8px;color:#94A3B8;font-size:11.5px;line-height:1.8">'+
       '<b style="display:block;font-size:13px;color:var(--green2)">مسار</b>'+
       'تطوير الأستاذ فائز جواد الحمداني<br>جميع الحقوق محفوظة © '+new Date().getFullYear()+
     '</div>';
+  el("content").querySelectorAll("[data-sg]").forEach(b=>b.onclick=()=>{const g=el("sg-"+b.dataset.sg);if(g)g.scrollIntoView({behavior:"smooth",block:"start"})});
   el("setAppFont").onchange=e=>{
     S.settings.appFont=e.target.value;save.settings();applyAppFont();toast("تم تغيير خط التطبيق ✓");
   };

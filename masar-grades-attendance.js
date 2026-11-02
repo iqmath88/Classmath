@@ -327,19 +327,29 @@ function renderEvaluation(){
   const toggle='<div class="tplChips" id="evalToggle" style="margin-bottom:10px">'+
     '<button data-evalsub="grades" class="'+(S.evalSub==="grades"?"on":"")+'">📚 الدرجات</button>'+
     '<button data-evalsub="homework" class="'+(S.evalSub==="homework"?"on":"")+'">📋 الواجبات</button>'+
+    // v2.14.0: أدوات التقييم انتقلت من الإعدادات إلى هنا
+    ((typeof featureOn!=="function"||featureOn("stats"))?'<button class="chipTool" id="evStats">📊 الإحصاءات</button>':'')+
+    ((typeof featureOn!=="function"||featureOn("honor"))?'<button class="chipTool" id="evHonor">🏆 لوحة الشرف</button>':'')+
+    ((typeof featureOn!=="function"||featureOn("exams"))?'<button class="chipTool" id="evExams">📝 امتحانات إلكترونية</button>':'')+
     '</div>';
   el("content").insertAdjacentHTML("afterbegin",toggle);
   el("content").querySelectorAll("[data-evalsub]").forEach(b=>b.onclick=()=>{S.evalSub=b.dataset.evalsub;renderEvaluation()});
+  if(el("evStats"))el("evStats").onclick=()=>goToTab("stats");
+  if(el("evHonor"))el("evHonor").onclick=()=>openHonorBoard();
+  if(el("evExams"))el("evExams").onclick=()=>openExamsSheet();
 }
 /* ============ التدريس (تبويب مدمج: أسئلة + بنك أسئلة + خطة يومية + رسم دوال) ============ */
 function renderTeaching(){
   if(!S.teachSub)S.teachSub="plan";
-  const tabsDef=[["plan","📅 الخطة اليومية"],["exam","📝 ورقة الأسئلة"],["qbank","📚 بنك الأسئلة"],["plot","📈 رسم الدوال"]];
+  const fo=k=>typeof featureOn!=="function"||featureOn(k);
+  const tabsDef=[["plan","📅 الخطة اليومية"]].concat(fo("examBuilder")?[["exam","📝 ورقة الأسئلة"]]:[],fo("qbank")?[["qbank","📚 بنك الأسئلة"]]:[],fo("plot")?[["plot","📈 رسم الدوال"]]:[]);
+  if(!tabsDef.some(t=>t[0]===S.teachSub))S.teachSub="plan";
   el("content").innerHTML=
     '<h2 class="h">📝 أدوات التدريس</h2>'+
-    '<div class="tplChips" id="teachToggle">'+tabsDef.map(([k,l])=>'<button data-teachsub="'+k+'" class="'+(S.teachSub===k?"on":"")+'">'+l+'</button>').join("")+'</div>'+
+    '<div class="tplChips" id="teachToggle">'+tabsDef.map(([k,l])=>'<button data-teachsub="'+k+'" class="'+(S.teachSub===k?"on":"")+'">'+l+'</button>').join("")+(fo("calendar")?'<button class="chipTool" id="tcCal">📆 التقويم الدراسي</button>':'')+'</div>'+
     '<div id="teachBody" style="margin-top:10px"></div>';
   el("content").querySelectorAll("[data-teachsub]").forEach(b=>b.onclick=()=>{S.teachSub=b.dataset.teachsub;renderTeaching()});
+  if(el("tcCal"))el("tcCal").onclick=()=>openCalendar();
   if(S.teachSub==="plan")renderDailyPlan();
   else if(S.teachSub==="exam"){
     el("teachBody").innerHTML='<p class="empty" style="padding:16px 4px">جهّز واطبع ورقة أسئلة امتحان مع نموذج إجابة خاص بالمدرّس.</p><button class="btn full" id="goExamBtn">📝 فتح إعداد ورقة الأسئلة</button>';
@@ -500,7 +510,7 @@ function renderGrades(){
     S.gSub="d0";
   }
   el("content").innerHTML=
-    '<h2 class="h">📚 درجات مادة '+esc(MYSUB())+'</h2>'+
+    '<h2 class="h">📚 '+((S.settings.subject||"").trim()?'درجات مادة '+esc(MYSUB()):'الدرجات')+'</h2>'+
     '<div class="filters three">'+
       '<select id="gGrade">'+opts(gradesFor(S.curInst||INSTS()[0]),S.gGrade)+'</select>'+
       '<select id="gSection">'+opts(secList(S.curInst||INSTS()[0]),S.gSection)+'</select>'+
@@ -516,13 +526,18 @@ function renderGrades(){
         Array.from({length:examCount(S.gField)},(_,i)=>["d"+i,examName(S.gField,i)]).concat([["w","الامتحان التحريري"]])
           .map(([v,l])=>'<option value="'+v+'"'+(S.gSub===v?" selected":"")+'>'+esc(l)+'</option>').join(""))+
       '</select></div>':"")+
-    '<div class="actions" style="margin-bottom:8px"><button class="btn ghost" id="gAna">📈 تحليل</button><button class="btn ghost" id="gExp">⬇ Excel</button><button class="btn ghost" id="gPrn">🖨 طباعة السجل الكامل</button></div>'+
-    '<div class="actions" style="margin-bottom:12px;background:var(--okbg);padding:8px;border-radius:14px">'+
-      '<button class="btn ghost" id="gExamPrn">🖨 نتائج هذا الامتحان</button><button class="btn ghost" id="gExamSend">📤 إرسال نتائج هذا الامتحان</button><button class="btn" id="gRep">📤 كشوفات كاملة للصف</button>'+
-    '</div>'+
-    '<div class="actions" style="margin-bottom:12px">'+
-      '<button class="btn ghost" id="gAllDailyPrn">🖨 كل الامتحانات اليومية</button><button class="btn ghost" id="gAllMonthsPrn">🖨 كل الأشهر المكتملة</button>'+
-      '<button class="btn ghost" id="gHalfYearPrn">🖨 تقرير نصف السنة</button><button class="btn ghost" id="gEndYearPrn">🖨 تقرير نهاية السنة</button>'+
+    // v2.14.0: تسعة أزرار صارت أربعة: تحليل، وطباعة ▾، وإرسال ▾، وExcel
+    '<div class="actions actGroup" style="margin-bottom:12px">'+
+      '<button class="btn ghost" id="gAna">📈 تحليل</button>'+
+      '<details class="actMenu"><summary class="btn ghost">🖨 طباعة ▾</summary><div class="actMenuList">'+
+        '<button class="btn ghost" id="gExamPrn">نتائج هذا الامتحان</button><button class="btn ghost" id="gPrn">السجل الكامل للصف</button>'+
+        '<button class="btn ghost" id="gAllDailyPrn">كل الامتحانات اليومية</button><button class="btn ghost" id="gAllMonthsPrn">كل الأشهر المكتملة</button>'+
+        '<button class="btn ghost" id="gHalfYearPrn">تقرير نصف السنة</button><button class="btn ghost" id="gEndYearPrn">تقرير نهاية السنة</button>'+
+      '</div></details>'+
+      '<details class="actMenu"><summary class="btn">📤 إرسال ▾</summary><div class="actMenuList">'+
+        '<button class="btn ghost" id="gExamSend">نتائج هذا الامتحان للأولياء</button><button class="btn ghost" id="gRep">كشوفات كاملة للصف</button>'+
+      '</div></details>'+
+      '<button class="btn ghost" id="gExp">⬇ Excel</button>'+
     '</div>'+
     '<div id="gBox"></div>';
   el("gGrade").onchange=e=>{S.gGrade=e.target.value;renderGBox()};

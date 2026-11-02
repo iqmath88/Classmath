@@ -1127,3 +1127,37 @@ html .pageView .solutionLabel.pvEmpty::before{opacity:.5}
 /* v2.13.1: نافذة استئناف التحرير */
 .resumeSheet .rsText{font-size:15px;line-height:1.9;margin:4px 0}
 .resumeSheet .rsLog{font-size:12px;color:#64748b}.resumeSheet .rsLog pre{white-space:pre-wrap;font-size:11px;background:#f1f5f9;border-radius:8px;padding:8px;margin:6px 0 0}
+
+/* =========================================================
+   v2.14.0 — إعادة ترتيب القوائم
+   ========================================================= */
+/* قائمة الأقسام: فواصل بين المجموعات على الآيباد بالعرض، و«المزيد» على الهاتف */
+html .tab.tabMore{display:none!important}
+@media (max-width:599px){html .tab.tabMoreItem{display:none!important}html .tab.tabMore{display:flex!important}}
+@media (min-width:1024px){html .tab.tabGroupStart{margin-top:14px!important;position:relative}html .tab.tabGroupStart::before{content:"";position:absolute;top:-8px;right:20%;left:20%;height:1px;background:var(--glass-line,#e2e8f0)}}
+.moreSheet .moreGrid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;padding:8px 2px 14px}
+.moreSheet .moreItem{display:flex;align-items:center;gap:10px;min-height:58px;padding:12px 14px;border-radius:14px;border:1px solid var(--glass-line,#e2e8f0);background:var(--card,#fff);font:inherit;font-size:15px;font-weight:700;color:var(--brand-ink,#14215A);cursor:pointer}
+.moreSheet .moreItem.on{background:var(--brand-soft,#EEF2FB);border-color:var(--brand-line,#c7d2fe)}
+.moreSheet .moreItem .ic{width:22px;height:22px}
+/* زر الإضافة العائم مكرر على الشاشات الواسعة (زر «إضافة طالب» ظاهر في الأعلى) */
+@media (min-width:900px){html #fabBox .fab{display:none!important}}
+/* الإعدادات: مجموعات وفهرس قفز */
+.setIndex{position:sticky;top:8px;z-index:6;display:flex;gap:6px;overflow-x:auto;padding:6px;margin:6px 0 14px;border-radius:14px;background:var(--glass-bg,rgba(255,255,255,.85));border:1px solid var(--glass-line,#e2e8f0);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px)}
+.setIndex button{flex:0 0 auto;border:0;border-radius:10px;background:transparent;font:inherit;font-size:13px;font-weight:700;color:var(--brand-ink,#14215A);padding:8px 12px;cursor:pointer;min-height:38px}
+.setIndex button:hover{background:var(--brand-soft,#EEF2FB)}
+.setGroup{background:var(--card,#fff);border:1px solid var(--glass-line,#e2e8f0);border-radius:18px;padding:12px 14px 16px;margin:0 0 16px;scroll-margin-top:72px}
+.setGroupHead{font-size:17px;font-weight:800;margin:2px 0 10px;color:var(--brand-ink,#14215A)}
+html .setGroup .h2.setSub{font-size:14px!important;margin:16px 0 8px!important;opacity:.92}
+html .setGroup .h2.setSub:first-of-type{margin-top:4px!important}
+.setNote{font-size:12px!important;padding:8px 4px 0!important;text-align:start}
+/* أدوات القسم في شريط التبويبات الفرعية */
+html .tplChips .chipTool{background:transparent!important;border:1px dashed var(--brand-line,#c7d2fe)!important;color:var(--brand,#14215A)!important}
+html .tplChips .chipTool:hover{background:var(--brand-soft,#EEF2FB)!important}
+/* قوائم «طباعة ▾» و«إرسال ▾» */
+.actGroup{flex-wrap:wrap}
+.actMenu{position:relative;display:inline-block}
+.actMenu>summary{list-style:none;cursor:pointer;display:inline-flex;align-items:center}
+.actMenu>summary::-webkit-details-marker{display:none}
+.actMenuList{position:absolute;top:calc(100% + 6px);right:0;z-index:30;min-width:240px;display:flex;flex-direction:column;gap:4px;padding:6px;background:var(--card,#fff);border:1px solid var(--glass-line,#e2e8f0);border-radius:14px;box-shadow:0 12px 30px rgba(15,23,42,.18)}
+html .actMenuList .btn{width:100%!important;justify-content:flex-start!important;margin:0!important;text-align:start}
+@media (max-width:599px){.actMenuList{position:fixed;top:auto;bottom:90px;right:12px;left:12px;min-width:0}}
