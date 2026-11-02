@@ -3,13 +3,17 @@ const ARABIC_ENUM=["أ","ب","ج","د","هـ","و","ز","ح","ط","ي","ك","ل"
 /* ============ بنك الأسئلة ============ */
 const DIFFICULTY_LEVELS=[["easy","🟢 سهل"],["medium","🟡 متوسط"],["hard","🔴 صعب"]];
 const diffLabel=d=>(DIFFICULTY_LEVELS.find(x=>x[0]===d)||["",""])[1];
+/* v2.17.1: نص عادي من سؤال HTML (للعرض والبحث)، وتطبيع عربي للبحث، وبصمة لكشف الأسئلة المكررة */
+function qPlain(html){const d=document.createElement("div");d.innerHTML=String(html||"");d.querySelectorAll("[data-latex]").forEach(m=>{m.textContent=" "+m.getAttribute("data-latex")+" "});return (d.textContent||"").replace(/\s+/g," ").trim()}
+function arNorm(t){return String(t||"").toLowerCase().replace(/[\u064B-\u0652\u0640]/g,"").replace(/[أإآٱ]/g,"ا").replace(/ى/g,"ي").replace(/ة/g,"ه").replace(/\s+/g," ").trim()}
+function qKey(q){return arNorm(qPlain(q.text))+"|"+(q.parts||[]).map(p=>arNorm(qPlain(p.text))).filter(Boolean).join("|")}
 function qbankFilters(){
   const chapters=[...new Set(S.qbank.map(q=>q.chapter).filter(Boolean))];
   const topics=[...new Set(S.qbank.map(q=>q.topic).filter(Boolean))];
   return {chapters,topics};
 }
 function openQuestionBank(pickMode,onPick,onCancel){
-  let filterChapter="",filterTopic="",filterDiff="";
+  let filterChapter="",filterTopic="",filterDiff="",searchText="";
   const draw=()=>{
     const {chapters,topics}=qbankFilters();
     const list=S.qbank.filter(q=>
@@ -28,13 +32,14 @@ function openQuestionBank(pickMode,onPick,onCancel){
           '<select id="qbFTopic"><option value="">كل المواضيع</option>'+topics.map(t=>'<option'+(filterTopic===t?" selected":"")+'>'+esc(t)+'</option>').join("")+'</select>'+
           '<select id="qbFDiff"><option value="">كل المستويات</option>'+DIFFICULTY_LEVELS.map(([v,l])=>'<option value="'+v+'"'+(filterDiff===v?" selected":"")+'>'+l+'</option>').join("")+'</select>'+
         '</div>'+
+        '<input id="qbSearch" type="search" class="qbSearch" placeholder="🔎 ابحث في نص الأسئلة والفصل والموضوع…" value="'+esc(searchText)+'" autocomplete="off">'+
         (pickMode?'<div class="actions"><button class="btn ghost" id="qbRandom">🎲 اختيار عشوائي (5 أسئلة)</button></div>':'')+
         '<div id="qbList" class="payList">'+
           (list.length===0?'<p class="empty" style="padding:14px">لا توجد أسئلة مطابقة بالبنك بعد.</p>':
-            list.map(q=>'<div class="behavRow" data-qbid="'+q.id+'">'+
+            list.map(q=>'<div class="behavRow" data-qbid="'+q.id+'" data-qs="'+esc(arNorm(qPlain(q.text)+" "+(q.parts||[]).map(p=>qPlain(p.text)).join(" ")+" "+(q.chapter||"")+" "+(q.topic||"")))+'">'+
               (pickMode?'<input type="checkbox" data-qbcheck="'+q.id+'" style="width:20px;height:20px;align-self:center">':'')+
-              '<div class="bd"><b>'+esc(q.text.slice(0,60))+(q.text.length>60?"…":"")+'</b>'+
-              '<div style="font-size:10.5px;color:#94A3B8;margin-top:2px">'+(q.chapter?esc(q.chapter)+" — ":"")+(q.topic?esc(q.topic)+" — ":"")+diffLabel(q.difficulty)+(q.parts&&q.parts.length?" — "+q.parts.length+" فرع":"")+'</div></div>'+
+              '<div class="bd"><b>'+(t=>esc(t.slice(0,80))+(t.length>80?"…":""))(qPlain(q.text))+'</b>'+
+              '<div style="font-size:10.5px;color:#94A3B8;margin-top:2px">'+(q.chapter?esc(q.chapter)+" — ":"")+(q.topic?esc(q.topic)+" — ":"")+diffLabel(q.difficulty)+(q.parts&&q.parts.filter(p=>stripHTML(p.text).trim()).length?" — "+q.parts.filter(p=>stripHTML(p.text).trim()).length+" فرع":"")+(stripHTML(q.answer||"").trim()?" — مع الحل":"")+'</div></div>'+
               (pickMode?'':'<button class="bDel" data-qbdel="'+q.id+'">✕</button>')+
             '</div>').join(""))+
         '</div>'+
@@ -44,6 +49,9 @@ function openQuestionBank(pickMode,onPick,onCancel){
     el("qbFChapter").onchange=e=>{filterChapter=e.target.value;draw()};
     el("qbFTopic").onchange=e=>{filterTopic=e.target.value;draw()};
     el("qbFDiff").onchange=e=>{filterDiff=e.target.value;draw()};
+    // البحث يُخفي الصفوف غير المطابقة دون إعادة رسم النافذة (فلا يفقد حقل البحث التركيز)
+    const applySearch=()=>{const t=arNorm(searchText);const words=t.split(" ").filter(Boolean);let n=0;el("modal").querySelectorAll("#qbList [data-qbid]").forEach(r=>{const hit=!words.length||words.every(w=>(r.dataset.qs||"").includes(w));r.style.display=hit?"":"none";if(hit)n++});let em=el("qbNoHit");if(!n&&words.length){if(!em){el("qbList").insertAdjacentHTML("beforeend",'<p class="empty" id="qbNoHit" style="padding:14px">لا يوجد سؤال يطابق البحث.</p>')}}else if(em)em.remove()};
+    el("qbSearch").oninput=e=>{searchText=e.target.value;applySearch()};applySearch();
     el("qbX").onclick=onCancel||closeModal;
     if(pickMode){
       el("qbCancel").onclick=onCancel||closeModal;
@@ -54,7 +62,8 @@ function openQuestionBank(pickMode,onPick,onCancel){
         onPick(picked);
       };
       el("qbRandom").onclick=()=>{
-        const shuffled=list.slice().sort(()=>Math.random()-0.5).slice(0,5);
+        const visible=new Set(Array.from(el("modal").querySelectorAll("#qbList [data-qbid]")).filter(r=>r.style.display!=="none").map(r=>r.dataset.qbid));
+        const shuffled=list.filter(q=>visible.has(q.id)).sort(()=>Math.random()-0.5).slice(0,5);
         if(!shuffled.length){toast("لا توجد أسئلة مطابقة للفلتر الحالي");return}
         onPick(shuffled);
       };
@@ -76,7 +85,8 @@ function openQuestionBank(pickMode,onPick,onCancel){
   draw();
 }
 function openQuestionEditor(id,onDone,prefill){
-  const q=id?S.qbank.find(x=>x.id===id):Object.assign({id:uid(),text:"",marks:"",chapter:"",topic:"",difficulty:"medium",parts:[]},prefill||{});
+  const q=id?S.qbank.find(x=>x.id===id):Object.assign({id:uid(),text:"",marks:"",chapter:"",topic:"",difficulty:"medium",parts:[],answer:""},prefill||{});
+  const keptParts=(q.parts||[]).filter(p=>stripHTML(p.text).trim()),hasAns=!!stripHTML(q.answer||"").trim();
   el("modal").innerHTML=
   '<div class="overlay"><div class="sheet">'+
     '<div class="sheetHead"><h3>'+(id?"تعديل سؤال":"سؤال جديد للبنك")+'</h3><button class="x" id="qeX">✕</button></div>'+
@@ -90,6 +100,7 @@ function openQuestionEditor(id,onDone,prefill){
         '<label>مستوى الصعوبة<select id="qeDiff">'+DIFFICULTY_LEVELS.map(([v,l])=>'<option value="'+v+'"'+(q.difficulty===v?" selected":"")+'>'+l+'</option>').join("")+'</select></label>'+
         '<label>الدرجة (اختياري)<input id="qeMarks" inputmode="numeric" value="'+esc(q.marks)+'"></label>'+
       '</div>'+
+      (keptParts.length||hasAns?'<div class="qeKept"><b>محفوظ مع السؤال:</b> '+(keptParts.length?keptParts.length+(keptParts.length===1?" فرع":" فروع"):"")+(keptParts.length&&hasAns?" و":"")+(hasAns?"الحل النموذجي":"")+'<small>تُعدَّل الفروع والحل من ورقة الامتحان، وتنتقل معه عند إضافته من البنك.</small></div>':'')+
     '</div>'+
     '<div class="sheetFoot"><button class="btn ghost" id="qeCancel">إلغاء</button><button class="btn" id="qeSave">حفظ بالبنك</button></div>'+
   '</div></div>';
@@ -109,7 +120,18 @@ function openQuestionEditor(id,onDone,prefill){
     q.topic=el("qeTopic").value.trim();
     q.difficulty=el("qeDiff").value;
     q.marks=el("qeMarks").value.trim();
-    if(!id)S.qbank.push(q);
+    if(!id){
+      // v2.17.1: لا تكرار — سؤال بالنص والفروع نفسها موجود مسبقًا
+      const k=qKey(q),dup=S.qbank.find(x=>qKey(x)===k);
+      if(dup){
+        if(confirm("هذا السؤال موجود في البنك مسبقًا. تحديث النسخة الموجودة بدل إضافة نسخة مكررة؟")){
+          Object.assign(dup,{text:q.text,chapter:q.chapter||dup.chapter,topic:q.topic||dup.topic,difficulty:q.difficulty,marks:q.marks||dup.marks,parts:(q.parts&&q.parts.length?q.parts:dup.parts),answer:(stripHTML(q.answer||"").trim()?q.answer:dup.answer||"")});
+          save.qbank();toast("حُدّث السؤال الموجود في البنك ✓");
+        }else toast("لم يُضف — السؤال موجود في البنك");
+        onDone&&onDone();return;
+      }
+      S.qbank.push(q);
+    }
     save.qbank();
     toast("تم الحفظ بالبنك ✓");
     onDone&&onDone();
@@ -313,13 +335,17 @@ function openExamBuilder(){
     el("ebFromBank").onclick=()=>{
       openQuestionBank(true,(picked)=>{
         const firstIsEmpty=data.questions.length===1&&!stripHTML(data.questions[0].text).trim()&&!data.questions[0].parts.some(p=>stripHTML(p.text).trim());
-        picked.forEach((q,i)=>{
-          const newQ={id:uid(),text:q.text,marks:q.marks||"",answer:q.answer||"",parts:(q.parts||[]).map(p=>({id:uid(),text:p.text}))};
+        // v2.17.1: السؤال المضاف مسبقًا لا يتكرر في الامتحان
+        const have=new Set(data.questions.map(x=>x.fromBank).filter(Boolean)),haveKeys=new Set(data.questions.map(qKey));
+        const fresh=picked.filter(q=>!have.has(q.id)&&!haveKeys.has(qKey(q)));
+        fresh.forEach((q,i)=>{
+          const newQ={id:uid(),fromBank:q.id,text:q.text,marks:q.marks||"",answer:q.answer||"",parts:(q.parts||[]).map(p=>({id:uid(),text:p.text}))};
           if(i===0&&firstIsEmpty)data.questions[0]=newQ;
           else data.questions.push(newQ);
         });
-        draw();
-        toast("أُضيف "+picked.length+" سؤال من البنك ✓");
+        saveDraft();draw();
+        const skipped=picked.length-fresh.length;
+        toast((fresh.length?"أُضيف "+fresh.length+" سؤال من البنك ✓":"لم يُضف شيء")+(skipped?" — تُخطّي "+skipped+" مضاف مسبقًا":""));
       },draw);
     };
     el("ebSaveTpl").onclick=()=>{
@@ -421,7 +447,7 @@ function openExamBuilder(){
     el("ebQuestions").querySelectorAll("[data-savebank]").forEach(b=>b.onclick=()=>{
       const q=data.questions.find(x=>x.id===b.dataset.savebank);
       if(!stripHTML(q.text).trim()){toast("اكتب نص السؤال أولاً");return}
-      openQuestionEditor(null,()=>{draw()},{text:q.text,marks:q.marks||""});
+      openQuestionEditor(null,()=>{draw()},{text:q.text,marks:q.marks||"",parts:(q.parts||[]).filter(p=>stripHTML(p.text).trim()).map(p=>({id:uid(),text:p.text})),answer:q.answer||""});
     });
     el("ebQuestions").querySelectorAll("[data-delp]").forEach(b=>b.onclick=()=>{
       const[qid,pid]=b.dataset.delp.split("|");
