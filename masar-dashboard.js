@@ -33,8 +33,19 @@ function injectSecNav(){
 }
 // الأقسام تعيد رسم نفسها مباشرة في مواضع كثيرة؛ هذا يعيد شريط الأقسام كلما اختفى
 if(!window.__secNavObs){window.__secNavObs=true;const c=document.getElementById("content");if(c)new MutationObserver(()=>{if(!c.querySelector(":scope > .secNav"))injectSecNav()}).observe(c,{childList:true})}
+/* v2.16.1: صفحة واضحة حين لا يوجد طلبة أصلًا (بدل الفلاتر وأزرار التقارير الفارغة) */
+function hasActiveStudents(){return VIS().some(s=>(s.status||"مستمر")==="مستمر")}
+function noStudentsPage(title,note){
+  el("content").innerHTML='<h2 class="h">'+title+'</h2><div class="emptyCard noStuCard"><span class="emptyIc">'+ICON('userPlus')+'</span><div><b>لا يوجد طلبة بعد</b><p>'+note+'</p></div><div class="noStuActs"><button class="btn" id="nsAdd">إضافة طالب</button><button class="btn ghost" id="nsGo">الذهاب إلى الطلبة</button></div></div>';
+  el("nsAdd").onclick=()=>{goToTab("students");openForm(null)};el("nsGo").onclick=()=>goToTab("students");
+}
+/* v2.16.1: القائمة الجانبية تبدأ تحت الشريط العلوي مهما كان ارتفاعه (شريط الساعة في التطبيق المثبّت يزيده) */
+(function(){const set=()=>{const t=document.querySelector("header.top");if(!t)return;document.documentElement.style.setProperty("--hdr-h",Math.max(0,Math.round(t.getBoundingClientRect().height))+"px")};
+  window.addEventListener("resize",set);window.addEventListener("orientationchange",()=>setTimeout(set,350));
+  const t=document.querySelector("header.top");if(t&&window.ResizeObserver)new ResizeObserver(set).observe(t,{box:"border-box"});set();setTimeout(set,1200)})();
 /* v2.16.0: رقم الإصدار ظاهر في الشريط العلوي، ونافذة «عن التطبيق» بما الجديد */
 const RELEASE_NOTES=[
+  ["2.16.1",["القائمة الجانبية لا تغطي الشريط العلوي على الآيباد، وصارت أضيق ليتسع المحتوى","شريط علوي أقصر وتنبيه واحد فقط في الرئيسية","صفحة واضحة «لا يوجد طلبة بعد» في الحضور والأقساط"]],
   ["2.16.0",["قائمتان بدل ثمانية أقسام: «شؤون الطلبة» و«شؤون التدريسي»","مزامنة المحاضرات والملازم سحابيًا بين الأجهزة","رقم الإصدار ظاهر في التطبيق"]],
   ["2.15.0",["نسخة الطالب (بلا حلول) ونسخة الأستاذ (مع الحلول) للمحاضرة والملزمة"]],
   ["2.14.0",["فحص شامل للتطبيق وإعادة ترتيب القوائم"]],
@@ -207,14 +218,16 @@ function renderHome(){
     const list=VIS().filter(s=>s.grade===les.grade&&s.section===les.section);
     return list.some(s=>t[s.id]!==undefined);
   });
+  // v2.16.1: تنبيه واحد فقط في كل مرة — النسخة الاحتياطية أولًا، ثم «ابدأ بإضافة طلبتك»، ثم تسجيل الدخول
+  const bb=backupBanner(),noStu=VIS().length===0,showEmpty=noStu&&!bb,showAcct=!bb&&!noStu&&!(S.settings.sync&&S.settings.sync.userId);
   el("content").innerHTML=
     (canSave?"":'<div class="notice">⚠️ المتصفح مانع التخزين المحلي — البيانات ما تنحفظ تلقائياً. استخدم زر «نسخة احتياطية» قبل ما تسكّر، وزر «استيراد» حتى ترجّعها.</div>')+
-    backupBanner()+
+    bb+
     nowCardHTML(todayLessons)+
     (todayLessons.length>0&&!attTakenToday?'<div class="notice warnNotice">'+ICON('clipboard')+' عندك حصص اليوم ولم تسجّل الحضور بعد — اضغط أي حصة أدناه لتسجيله.</div>':"")+
-    secH('calendar','حصص اليوم — '+DAYS[new Date().getDay()])+
-    '<div id="lessonsBox"></div>'+
-    (VIS().length===0?'<div class="emptyCard"><span class="emptyIc">'+ICON('userPlus')+'</span><div><b>ابدأ بإضافة طلبتك</b><p>أضف أول طالب لتظهر هنا الإحصاءات وإنذارات الغياب والمتفوقون.</p></div><button class="btn" id="emptyAddStudent">إضافة طالب</button></div>':"")+
+    '<div class="homeLessons"'+(todayLessons.length?'':' hidden')+'>'+secH('calendar','حصص اليوم — '+DAYS[new Date().getDay()])+
+    '<div id="lessonsBox"></div></div>'+
+    (showEmpty?'<div class="emptyCard"><span class="emptyIc">'+ICON('userPlus')+'</span><div><b>ابدأ بإضافة طلبتك</b><p>أضف أول طالب لتظهر هنا الإحصاءات وإنذارات الغياب والمتفوقون.</p></div><button class="btn" id="emptyAddStudent">إضافة طالب</button></div>':"")+
     '<div class="homeInsights"'+(VIS().length===0?' hidden':'')+'>'+
     secH('alert','إنذارات الغياب',' <span class="secExtra">الحد: <input id="absLim" class="limIn" inputmode="numeric" value="'+(S.settings.absLimit||5)+'"> أيام</span>')+
     '<div id="alertBox"></div>'+
@@ -228,7 +241,7 @@ function renderHome(){
       qaCard('qaExam','exam','امتحان جديد','أنشئ واطبع امتحانًا')+
       qaCard('qaLecture','book','محاضرة جديدة','افتح المحاضرات وابدأ التأليف')+
     '</div>'+
-    '<div class="statRow">'+
+    '<div class="statRow"'+(noStu?' hidden':'')+'>'+
       statTile('users',VIS().length,'إجمالي الطلبة','main')+
       statTile('user',male,'ذكور')+
       statTile('user',(VIS().length-male),'إناث')+
@@ -245,7 +258,7 @@ function renderHome(){
     }).join("")+'</div>'+
     '</div>'+
     '<div id="hwFollowBox"></div>'+
-    (!(S.settings.sync&&S.settings.sync.userId)?'<div class="notice" id="homeAcctNotice" style="cursor:pointer">'+ICON('user')+' لم تسجّل الدخول بحساب بعد — اضغط هنا لتسجيل الدخول أو إنشاء حسابك (معلم/طالب/ولي أمر)</div>':"");
+    (showAcct?'<div class="notice" id="homeAcctNotice" style="cursor:pointer">'+ICON('user')+' لم تسجّل الدخول بحساب بعد — اضغط هنا لتسجيل الدخول أو إنشاء حسابك (معلم/طالب/ولي أمر)</div>':"");
   bindBackupBanner();
   el("absLim").onchange=e=>{
     const v=Math.max(1,parseInt(e.target.value)||5);
@@ -366,7 +379,7 @@ function renderSettings(){
     '<p class="empty setNote">الإحصاءات ولوحة الشرف والامتحانات الإلكترونية صارت في «التقييم»، وورقة الأسئلة وبنك الأسئلة ورسم الدوال والتقويم في «التدريس».</p>'+
     '</section>'+
     '<div style="text-align:center;padding:22px 10px 8px;color:#94A3B8;font-size:11.5px;line-height:1.8">'+
-      '<b style="display:block;font-size:13px;color:var(--green2)">مسار</b>'+
+      '<b style="display:block;font-size:13px;color:var(--green2)">نيبور كلاس</b>'+
       'تطوير الأستاذ فائز جواد الحمداني<br>جميع الحقوق محفوظة © '+new Date().getFullYear()+
     '</div>';
   el("content").querySelectorAll("[data-sg]").forEach(b=>b.onclick=()=>{const g=el("sg-"+b.dataset.sg);if(g)g.scrollIntoView({behavior:"smooth",block:"start"})});

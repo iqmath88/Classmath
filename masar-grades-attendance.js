@@ -1,5 +1,6 @@
 /* ============ الحضور ============ */
 function renderAttendance(){
+  if(!hasActiveStudents())return noStudentsPage('✅ تسجيل الحضور','أضف طلبتك أولًا، ثم سجّل الحضور بضغطة لكل طالب، وتظهر هنا تقارير الغياب الشهرية.');
   el("content").innerHTML=
     '<h2 class="h">✅ تسجيل الحضور</h2>'+
     '<div class="filters three">'+
@@ -129,6 +130,7 @@ function openMonthReport(){
 
 /* ============ الأقساط ============ */
 function renderPayments(){
+  if(!hasActiveStudents())return noStudentsPage('💰 الأقساط والدفعات','أضف طلبتك أولًا لتسجيل الأقساط والمدفوعات ومتابعة المتأخرين.');
   const list=VIS().filter(s=>s.grade===S.pGrade&&s.section===S.pSection);
   if(S.pSid&&!list.some(s=>s.id===S.pSid))S.pSid="";
   el("content").innerHTML=

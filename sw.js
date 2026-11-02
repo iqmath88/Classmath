@@ -1,4 +1,4 @@
-const CACHE = "masar-education-2-16-0-groups-sync";
+const CACHE = "masar-education-2-16-1-polish";
 const ASSETS = [
   "./",
   "./index.html",
