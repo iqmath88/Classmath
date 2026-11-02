@@ -19,6 +19,13 @@ let db=null,mode="memory",flushTimer=null,lastError=null,persisted=null,migrated
 // v2.17.0: كتابات تصل قبل فتح IndexedDB كانت تبقى في الذاكرة فقط ثم يمحوها التحميل من القاعدة — تُحفظ هنا وتُطبَّق بعد الفتح
 let booting=true;const early=new Map();
 let retryTimer=null,retryDelay=500,inflight=0;const flushWaiters=[];
+// v2.17.1: سجل كتابة متزامن في localStorage — يبقى حتى لو أُغلق التطبيق فجأة قبل اكتمال معاملة IndexedDB (المعيار يُلغيها عند الإغلاق)،
+// ويُحذف بعد تأكيد الكتابة، ويُعاد تطبيقه عند الفتح التالي إن بقي.
+const JPFX="nbj:",JDEL="\u0000DEL",JMAX=1500000;
+function jPut(k,v){try{if(v===null)localStorage.setItem(JPFX+k,JDEL);else if(v.length<=JMAX)localStorage.setItem(JPFX+k,v)}catch(_){}}
+function jClear(k,v){try{const cur=localStorage.getItem(JPFX+k);if(cur!==null&&(cur===v||(v===null&&cur===JDEL)))localStorage.removeItem(JPFX+k)}catch(_){}}
+function jReplay(){let n=0;try{const ks=[];for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k&&k.startsWith(JPFX))ks.push(k)}
+  ks.forEach(jk=>{const k=jk.slice(JPFX.length);if(!MANAGED.test(k)){localStorage.removeItem(jk);return}const v=localStorage.getItem(jk);if(v===JDEL){cache.delete(k);pending.set(k,null)}else{cache.set(k,v);pending.set(k,v)}n++})}catch(_){}return n}
 const listeners={error:[],saved:[]};
 // تزامن بين التبويبات: كل تبويب يحمل نسخة في الذاكرة، فنبث التغييرات حتى لا يكتب تبويب قديم فوق الجديد
 let bc=null;try{bc=new BroadcastChannel("nibor-class-db");bc.onmessage=e=>{const m=e.data||{};if(!m.k||!MANAGED.test(m.k))return;if(m.v===null)cache.delete(m.k);else cache.set(m.k,m.v);try{global.dispatchEvent(new CustomEvent("masar:storage-remote",{detail:{key:m.k}}))}catch(_){}}}catch(_){bc=null}
@@ -75,7 +82,8 @@ async function migrateFromLocalStorage(){
 }
 
 /* ---------- الكتابة: دفعات صغيرة في معاملة واحدة ---------- */
-function scheduleFlush(){if(flushTimer)return;emit("pending",{count:pending.size});flushTimer=setTimeout(()=>{flushTimer=null;flush()},0)}
+// v2.17.1: الكتابة تبدأ في المهمة نفسها (microtask) لا في مهمة لاحقة — فإغلاق التطبيق فور الحفظ لا يسبق بدء المعاملة
+function scheduleFlush(){if(flushTimer)return;emit("pending",{count:pending.size});flushTimer=true;const run=()=>{flushTimer=null;flush()};if(typeof queueMicrotask==="function")queueMicrotask(run);else Promise.resolve().then(run)}
 function settleWaiters(){if(pending.size||inflight)return;while(flushWaiters.length)try{flushWaiters.shift()(true)}catch(_){}}
 async function flush(){
   if(mode!=="idb"||!pending.size){settleWaiters();return true}
@@ -86,6 +94,7 @@ async function flush(){
     inflight--;
     if(lastError){lastError=null}
     retryDelay=500;
+    batch.forEach((v,k)=>jClear(k,v));
     emit("saved",{keys:[...batch.keys()],pending:pending.size});
     if(pending.size)scheduleFlush();else settleWaiters();
     return true;
@@ -110,8 +119,8 @@ const api={
   getItem(k){if(mode==="local"){try{return localStorage.getItem(k)}catch(_){return null}}return cache.has(k)?cache.get(k):null},
   setItem(k,v){v=String(v);
     if(mode==="local"){localStorage.setItem(k,v);return}               // يرمي عند الامتلاء كما كان
-    cache.set(k,v);if(mode==="idb"){pending.set(k,v);scheduleFlush();broadcast(k,v)}else if(booting)early.set(k,v)},
-  removeItem(k){if(mode==="local"){try{localStorage.removeItem(k)}catch(_){}return}cache.delete(k);if(mode==="idb"){pending.set(k,null);scheduleFlush();broadcast(k,null)}else if(booting)early.set(k,null)},
+    cache.set(k,v);if(mode==="idb"){jPut(k,v);pending.set(k,v);scheduleFlush();broadcast(k,v)}else if(booting)early.set(k,v)},
+  removeItem(k){if(mode==="local"){try{localStorage.removeItem(k)}catch(_){}return}cache.delete(k);if(mode==="idb"){jPut(k,null);pending.set(k,null);scheduleFlush();broadcast(k,null)}else if(booting)early.set(k,null)},
   get pendingCount(){return pending.size+inflight},
   // يحل حين تُكتب كل التغييرات المعلقة كتابة دائمة (أو فورًا إن لم يكن هناك ما يُكتب)
   whenFlushed(){if(mode!=="idb")return Promise.resolve(true);if(!pending.size&&!inflight)return Promise.resolve(true);return new Promise(r=>{flushWaiters.push(r);scheduleFlush()})},
@@ -151,7 +160,9 @@ api.ready=(async()=>{
     const all=await loadAllKV();all.forEach((v,k)=>cache.set(k,v));
     mode="idb";booting=false;
     // ما كُتب أثناء الفتح يغلب ما في القاعدة (لأنه أحدث)، ثم يُحفظ
-    if(early.size){early.forEach((v,k)=>{if(v===null){cache.delete(k);pending.set(k,null)}else{cache.set(k,v);pending.set(k,v)}});early.clear();scheduleFlush()}
+    // كتابات لم تكتمل في الجلسة السابقة (إغلاق مفاجئ) تُستعاد من السجل أولًا
+    if(jReplay())scheduleFlush();
+    if(early.size){early.forEach((v,k)=>{if(v===null){cache.delete(k);pending.set(k,null)}else{cache.set(k,v);pending.set(k,v);jPut(k,v)}});early.clear();scheduleFlush()}
     try{await migrateFromLocalStorage()}catch(err){
       // فشل الترحيل: لا نحذف شيئًا من localStorage، ونقرأ منه ما لم يُنسخ
       console.error("ترحيل التخزين لم يكتمل — البيانات باقية في localStorage",err);
