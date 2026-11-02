@@ -1078,7 +1078,7 @@ html .pageView .canvasInsert:hover::before,html .pageView .selectedBlock+.canvas
 html .pageView .canvasInsert:hover::after,html .pageView .selectedBlock+.canvasInsert::after{color:#1D4ED8;background:#fff;box-shadow:0 0 0 1px rgba(37,99,235,.35)}
 html .pageView .canvasInsert:first-child{margin-top:-6px!important}
 /* شريط التنسيق مع التكبير: يبقى بحجمه الطبيعي */
-html .pageView .compoundEditor.rtActive .richToolbar{zoom:var(--pvz-inv,1)}
+html .pageView.pvZoomed .compoundEditor.rtActive .richToolbar{zoom:var(--pvz-inv,1)}
 /* شريط التكبير والصفحات */
 .pvDock{position:fixed;bottom:16px;left:16px;z-index:35;display:flex;align-items:center;gap:4px;padding:5px;border-radius:14px;background:var(--card,#fff);border:1px solid var(--glass-line,#e2e8f0);box-shadow:0 8px 24px rgba(16,24,64,.16)}
 .pvDock button{min-width:40px;height:40px;border:0;border-radius:10px;background:transparent;font:inherit;font-size:15px;font-weight:800;color:var(--brand-ink,#14215A);display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:0 10px;cursor:pointer}
@@ -1123,3 +1123,7 @@ html .pageView .pvTitle .blockTitleInput:placeholder-shown+.pvDash{display:none}
 .lectureEditor:not(.pageView) .pvDash{display:none}
 html .pageView .solutionLabel.pvEmpty::before{opacity:.5}
 .richToolbar.rtLazy{display:none!important}
+
+/* v2.13.1: نافذة استئناف التحرير */
+.resumeSheet .rsText{font-size:15px;line-height:1.9;margin:4px 0}
+.resumeSheet .rsLog{font-size:12px;color:#64748b}.resumeSheet .rsLog pre{white-space:pre-wrap;font-size:11px;background:#f1f5f9;border-radius:8px;padding:8px;margin:6px 0 0}
