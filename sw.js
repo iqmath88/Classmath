@@ -1,4 +1,4 @@
-const CACHE = "masar-education-2-16-1-polish";
+const CACHE = "masar-education-2-16-2-fast-open";
 const ASSETS = [
   "./",
   "./index.html",
@@ -105,22 +105,25 @@ self.addEventListener("fetch", (e) => {
   const url=new URL(e.request.url);
   if(url.origin!==location.origin)return; // ما نتدخل بطلبات مواقع أخرى (مثل Supabase)
   if(e.request.mode==="navigate"){
-    // شبكة أولاً لصفحة التطبيق نفسها: تضمن أحدث نسخة كل ما توفر اتصال، وتسقط لنسخة مخزّنة عند انقطاع الإنترنت
-    e.respondWith(
-      fetch(e.request).then(res=>{const clone=res.clone();caches.open(CACHE).then(c=>c.put("./index.html",clone));return res})
-        .catch(()=>caches.match("./index.html"))
-    );
+    // v2.16.1: الشبكة أولًا لكن بمهلة 2.5 ثانية — على الإنترنت البطيء تُعرض النسخة المخزّنة فورًا بدل الانتظار
+    e.respondWith((async()=>{
+      const cached=await caches.match("./index.html");
+      const net=fetch(e.request).then(res=>{if(res.ok){const clone=res.clone();caches.open(CACHE).then(c=>c.put("./index.html",clone))}return res});
+      if(!cached)return net.catch(()=>Response.error());
+      const timeout=new Promise(r=>setTimeout(()=>r(cached),2500));
+      return Promise.race([net.catch(()=>cached),timeout]);
+    })());
     return;
   }
-  // لبقية الملفات: نعرض النسخة المخزّنة فورًا (سرعة)، وبنفس الوقت نجيب نسخة جديدة بالخلفية ونحدّث الكاش تلقائيًا للمرة الجاية
-  // (بدل الاعتماد فقط على ضغط زر "تحديث" يدويًا)
+  // v2.16.1: بقية الملفات مخزّنة مع كل إصدار (اسم الذاكرة يتغير مع كل تحديث)، فتُقرأ من الجهاز مباشرة.
+  // ignoreSearch: الصفحة تطلب styles.css?v=… والمخزّن مسبقًا styles.css — كانت المطابقة تفشل فيُحمَّل كل شيء من الشبكة.
   e.respondWith(
-    caches.match(e.request).then((cached) => {
-      const network = fetch(e.request).then((res) => {
+    caches.match(e.request,{ignoreSearch:true}).then((cached) => {
+      if(cached)return cached;
+      return fetch(e.request).then((res) => {
         if (res.ok) { const clone = res.clone(); caches.open(CACHE).then((c) => c.put(e.request, clone)); }
         return res;
-      }).catch(() => cached);
-      return cached || network;
+      });
     })
   );
 });

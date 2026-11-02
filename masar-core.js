@@ -685,7 +685,8 @@ const wsKey=(k,id)=>{const w=(id===undefined?S.wsId:id);return (w?("w:"+w+":"):"
 async function loadKey(k,fb){return loadRaw(wsKey(k),fb)}
 async function saveKey(k,v){return saveRaw(wsKey(k),v)}
 if("serviceWorker" in navigator&&location.protocol==="https:"){
-  navigator.serviceWorker.register("./sw.js").then(reg=>{
+  // v2.16.1: التسجيل بعد اكتمال فتح الصفحة، حتى لا ينافس تخزينُ الملفات (2 ميغابايت) فتحَ التطبيق على الإنترنت البطيء
+  const regSW=()=>navigator.serviceWorker.register("./sw.js").then(reg=>{
     const notifyUpdate=worker=>{
       const box=document.createElement("div");
       box.style.cssText="position:fixed;left:12px;right:12px;bottom:70px;z-index:9999;background:#0F172A;color:#fff;padding:12px 16px;border-radius:14px;font-size:13px;font-weight:700;box-shadow:0 8px 24px rgba(0,0,0,.35);display:flex;align-items:center;gap:10px;justify-content:space-between";
@@ -710,9 +711,12 @@ if("serviceWorker" in navigator&&location.protocol==="https:"){
     window.addEventListener("focus",()=>reg.update().catch(()=>{}));
     let reloading=false;
     navigator.serviceWorker.addEventListener("controllerchange",()=>{
-      if(reloading)return;reloading=true;location.reload();
+      // v2.16.1: في أول زيارة (بلا عامل خدمة سابق) لا داعي لإعادة تحميل الصفحة كاملة
+      if(reloading||!hadController)return;reloading=true;location.reload();
     });
   }).catch(()=>{});
+  const hadController=!!navigator.serviceWorker.controller;
+  if(document.readyState==="complete")setTimeout(regSW,1500);else window.addEventListener("load",()=>setTimeout(regSW,1500),{once:true});
 }
 const save={
   students:()=>{saveKey("students",S.students);scheduleSync()},
