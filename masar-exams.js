@@ -212,7 +212,7 @@ function blankParts(n){return Array.from({length:n},()=>({id:uid(),text:""}))}
 function exQ(text,marks,parts){return {id:uid(),text:text||"",marks:String(marks),answer:"",parts:blankParts(parts)}}
 const EXAM_BUILTINS=[
   {key:"ministerial",name:"نموذج وزاري (السادس العلمي)",desc:"6 أسئلة — أجب عن خمسة، لكل سؤال 20 درجة، فروع A/B/C، رأس اللجنة الدائمة للامتحانات العامة",
-   make:()=>({title:"الرياضيات",format:"ministerial",stream:"الإعدادية / العلمي",session:"الدور الأول",duration:"ثلاث ساعات",answerCount:5,partStyle:"latin",
+   make:()=>({title:"الرياضيات",format:"ministerial",mono:true,stream:"الإعدادية / العلمي",session:"الدور الأول",duration:"ثلاث ساعات",answerCount:5,partStyle:"latin",
      notes:"<b>ملاحظة :</b> الإجابة عن خمسة أسئلة فقط ، ولكل سؤال ( 20 ) درجة .",
      questions:[exQ("",20,2),exQ("",20,2),exQ("",20,2),exQ("أجب عن فرعين ممّا يأتي :",20,3),exQ("أجب عن فرعين ممّا يأتي :",20,3),exQ("أجب عن فرعين ممّا يأتي :",20,3)]})},
   {key:"midyear",name:"امتحان نصف السنة",desc:"6 أسئلة — أجب عن خمسة، لكل سؤال 20 درجة",
@@ -226,6 +226,14 @@ const EXAM_BUILTINS=[
      questions:[exQ("",5,1),exQ("",5,1)]})}
 ];
 // معلومات أعلى ورقة الامتحان: الصف والمادة والوقت واسم الطالب — أو رأس اللجنة الدائمة في النموذج الوزاري
+// سؤال بنمط الورقة الوزارية: «س1 : A- …» — نص عادي بلا بطاقات ملوّنة
+function ministerialQHTML(data,q,i){
+  const parts=q.parts.filter(p=>stripHTML(p.text).trim());
+  const head=stripHTML(q.text).trim()?q.text:"";
+  const pHTML=(p,j)=>'<span class="mPartLbl">'+partLabel(data,j)+'</span> '+p.text;
+  if(!head&&parts.length)return '<div class="mQ"><div class="mLine"><b class="mNo">س'+(i+1)+' :</b> '+pHTML(parts[0],0)+'</div>'+parts.slice(1).map((p,j)=>'<div class="mLine mSub">'+pHTML(p,j+1)+'</div>').join("")+'</div>';
+  return '<div class="mQ"><div class="mLine"><b class="mNo">س'+(i+1)+' :</b> '+head+'</div>'+parts.map((p,j)=>'<div class="mLine mSub">'+pHTML(p,j)+'</div>').join("")+'</div>';
+}
 function examInfoHTML(data,forKey){
   const inst=S.curInst||INSTS()[0];
   const line=n=>'<span class="eiLine">'+'.'.repeat(n)+'</span>';
@@ -511,7 +519,8 @@ function examQuestionOrdinal(i){
 }
 function printExamPaper(data){
   const inst=S.curInst||INSTS()[0];
-  const qBlocks=data.questions.filter(q=>stripHTML(q.text).trim()||q.parts.some(p=>stripHTML(p.text).trim())).map((q,i)=>
+  const official=data.format==="ministerial";
+  const qBlocks=data.questions.filter(q=>stripHTML(q.text).trim()||q.parts.some(p=>stripHTML(p.text).trim())).map((q,i)=>official?ministerialQHTML(data,q,i):
       '<div class="examQ examQGlass" style="--examCardColor:'+(data.mono?"#ffffff":esc(data.qBoxColor))+'">'+
         '<div class="examIdentityTab" data-number="'+String(i+1).padStart(2,"0")+'">'+
           '<span class="examIdentityMark" aria-hidden="true">✥</span>'+ 
@@ -525,14 +534,15 @@ function printExamPaper(data){
         (q.parts.filter(p=>stripHTML(p.text).trim()).length?'<div class="examParts">'+q.parts.filter(p=>stripHTML(p.text).trim()).map((p,j)=>'<div class="examPart">'+partLabel(data,j)+' '+p.text+'</div>').join("")+'</div>':'')+
       '</div>'
   );
-  const blocks=[examInfoHTML(data,false)].concat(stripHTML(data.notes).trim()?['<div class="examNotesBox">'+data.notes+'</div>']:[]).concat(qBlocks);
+  const blocks=[examInfoHTML(data,false)].concat(stripHTML(data.notes).trim()?[official?'<div class="mNote">'+data.notes+'</div>':'<div class="examNotesBox">'+data.notes+'</div>']:[]).concat(qBlocks);
   const body=blocks.join("");
   printHTML(data.title,body,false,inst,true,{
     grade:"الصف: "+esc(data.grade)+" — "+secTerm(inst)+" "+esc(data.section),
     subject:"المادة: "+esc(MYSUB()),
     duration:data.duration?"الوقت: "+esc(data.duration):"",
     headerColor:data.mono?"#ffffff":data.headerColor,
-    mono:data.mono
+    mono:data.mono,
+    officialHeader:data.format==="ministerial"
   },blocks);
 }
 function printAnswerKey(data){
@@ -553,7 +563,8 @@ function printAnswerKey(data){
     subject:"المادة: "+esc(MYSUB()),
     duration:"",
     headerColor:data.mono?"#ffffff":data.headerColor,
-    mono:data.mono
+    mono:data.mono,
+    officialHeader:data.format==="ministerial"
   },blocks);
 }
 const MATH_SYMBOLS=["√","∛","π","×","÷","±","∓","≤","≥","≠","≈","≡","∞","°","½","⅓","¼","¾","⅔","²","³","ⁿ","∑","∏","∫","∬","∆","∇","θ","α","β","γ","δ","λ","μ","Ω","∈","∉","∪","∩","⊂","⊆","→","⇒","⇔","∴","∵","∠","⊥","∥","%","‰","√( )","( )²","( )/( )"];

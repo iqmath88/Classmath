@@ -222,8 +222,9 @@ async function printHTML(title,body,withParent,instOverride,examMode,examMeta,pa
         (resolvedNote?'<div class="pExamNote">'+esc(resolvedNote)+'</div>':'')+
       '</div>'+
     '</div>';
-  const headerHTML=examMode?examBandHTML:normalBandHTML;
-  const footerHTML=examMode?
+  // v2.18.1: النموذج الوزاري برأس رسمي واحد (داخل الورقة) — بلا الشريط الزخرفي حتى لا يظهر رأسان
+  const headerHTML=examMode?(em.officialHeader?'':examBandHTML):normalBandHTML;
+  const footerHTML=(examMode&&em.officialHeader)?'<div class="pPageFootWrap pOfficialFoot"></div>':examMode?
     '<div class="pPageFootWrap pExamFootWrap" style="--printPrimary:'+esc(designPrimary)+';--printAccent:'+esc(designAccent)+'">'+
       '<div class="pExamFoot">'+
         '<div class="pExamFootTeacher"><strong>'+esc(resolvedFooterRight)+'</strong></div>'+

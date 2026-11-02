@@ -1266,3 +1266,13 @@ html body.pdfExporting .lecturePaginationMeasure .lecturePaper[data-orient]{widt
 @media (max-width:599px){.ltGrid{grid-template-columns:1fr 1fr}.ltCard{min-height:96px;padding:12px}}
 .lectureBlock.tplEmpty{display:none!important}
 .ltSheet .ltBody{padding:6px 16px 18px;overflow:auto;max-height:calc(100vh - 140px)}
+
+/* ---------- v2.18.1: الورقة الوزارية بنمطها الرسمي (أسود وأبيض، بلا بطاقات) ---------- */
+.mNote{font-weight:800;font-size:14px;margin:2px 0 10px;color:#0F172A}
+.mNote b{text-decoration:underline}
+.mQ{margin:0 0 12px;font-size:14px;line-height:2;color:#0F172A;break-inside:avoid}
+.mQ .mLine{padding-inline-start:0}
+.mQ .mSub{padding-inline-start:2.2em}
+.mQ .mNo{font-size:15px;margin-inline-end:4px}
+.mQ .mPartLbl{font-weight:800;direction:ltr;unicode-bidi:isolate}
+.pOfficialFoot{min-height:4mm}

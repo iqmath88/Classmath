@@ -45,7 +45,7 @@ try{
  ok('قالب الملزمة: فصل جاهز بـ 3 محاضرات شرح + مراجعة الفصل',ch.n===4&&ch.titles.join('|')==='المحاضرة 1|المحاضرة 2|المحاضرة 3|مراجعة الفصل',ch);
  ok('صفحة الفصل تعرض المحاضرات الأربع وزر تصدير الملزمة',await p.evaluate(()=>document.querySelectorAll('.openLecture').length===4&&!!document.getElementById('bookletBtn')));
  // ===== قوالب الامتحان =====
- await p.evaluate(()=>{window.__printed=[];window.printHTML=(title,body)=>{window.__printed.push({title,body})};for(const k of Object.keys(localStorage))if(/examBuilderDraft/.test(k))localStorage.removeItem(k);document.getElementById('modal').innerHTML='';openExamBuilder()});await p.waitForTimeout(600);
+ await p.evaluate(()=>{window.__printed=[];window.printHTML=(title,body,wp,inst,exam,em)=>{window.__printed.push({title,body,em:em||{}})};for(const k of Object.keys(localStorage))if(/examBuilderDraft/.test(k))localStorage.removeItem(k);document.getElementById('modal').innerHTML='';openExamBuilder()});await p.waitForTimeout(600);
  await p.click('#ebLoadTpl');await p.waitForTimeout(400);
  const ets=await p.evaluate(()=>[...document.querySelectorAll('[data-etbuiltin]')].map(x=>x.dataset.etbuiltin));
  ok('قوالب امتحانية جاهزة: وزاري، نصف السنة، شهري، يومي',ets.join(',')==='ministerial,midyear,monthly,quiz',ets);
@@ -56,7 +56,9 @@ try{
  // ملء فرع من كل سؤال ثم الطباعة
  await p.evaluate(()=>{document.querySelectorAll('[data-ptexthost] [contenteditable="true"]').forEach((e,i)=>{e.innerHTML='جد ناتج $x^'+i+'$';e.dispatchEvent(new Event('input',{bubbles:true}))})});await p.waitForTimeout(900);
  await p.evaluate(()=>{window.confirm=()=>true;document.getElementById('ebPrint').click()});await p.waitForTimeout(800);
- const pr=await p.evaluate(()=>window.__printed[0]?window.__printed[0].body:'');
+ const pr=await p.evaluate(()=>window.__printed[0]?window.__printed[0].body.replace(/<[^>]+>/g,''):'');
+ const prEm=await p.evaluate(()=>window.__printed[0]?window.__printed[0].em:{});
+ ok('النموذج الوزاري: رأس واحد فقط (بلا الشريط الزخرفي) وأسئلة بنمط «س1 :» بلا بطاقات',prEm.officialHeader===true&&await p.evaluate(()=>{const b=window.__printed[0].body;return /class="mQ"/.test(b)&&!/examQGlass/.test(b)&&/س1 :/.test(b.replace(/<[^>]+>/g,''))}),prEm);
  ok('الطباعة الوزارية: رأس اللجنة الدائمة للامتحانات العامة ووزارة التربية',/اللجنة الدائمة للامتحانات العامة/.test(pr)&&/جمهورية العراق - وزارة التربية/.test(pr)&&/الدور الأول/.test(pr)&&/ثلاث ساعات/.test(pr),pr.slice(0,400));
  ok('الطباعة الوزارية: اسم الطالب والرقم الامتحاني والملاحظة',/إسم الطالب/.test(pr)&&/الرقم الامتحاني/.test(pr)&&/الإجابة عن خمسة أسئلة فقط/.test(pr));
  ok('الطباعة الوزارية: الفروع A- و B- و C-',/A- /.test(pr)&&/B- /.test(pr)&&/C- /.test(pr));
