@@ -1408,21 +1408,65 @@ async function renderLecturePreview(){
 
 
 // v2.8.13: كل الأكواد بشرطات مزدوجة صحيحة؛ ¦ يحدد موضع المؤشر بعد الإدراج.
+// v2.19.0: مكتبة رموز موسّعة (≈ 230 رمزًا في 12 مجموعة) + بحث. المؤشر يقف تلقائيًا داخل أول خانة فارغة.
+function eqCur(code){const c=[code.indexOf('{}'),code.indexOf('[]'),code.indexOf('()'),code.indexOf('  ')].filter(x=>x>=0);return c.length?Math.min(...c)+1:code.length}
+const EQS=(label,code)=>[label,code,eqCur(code)];
 const EQ_GROUPS={
   "أساسيات":[
-    ["كسر","\\frac{}{}",6],["جذر","\\sqrt{}",6],["جذر نوني","\\sqrt[]{}",6],["أس","^{}",2],["أس سفلي","_{}",2],["قيمة مطلقة","\\left|  \\right|",7],["قوسان","\\left(  \\right)",7],["±","\\pm",3],["≠","\\ne",3],["≤","\\le",3],["≥","\\ge",3],["×","\\times",6],["÷","\\div",4],["·","\\cdot",5]
+    ["كسر","\\frac{}{}",6],["جذر","\\sqrt{}",6],["جذر نوني","\\sqrt[]{}",6],["أس","^{}",2],["أس سفلي","_{}",2],EQS("أس وسفلي","_{}^{}"),["قيمة مطلقة","\\left|  \\right|",7],["قوسان","\\left(  \\right)",7],EQS("أقواس مربعة","\\left[  \\right]"),EQS("أقواس معقوفة","\\left\\{  \\right\\}"),
+    ["±","\\pm",3],EQS("∓","\\mp"),["×","\\times",6],["÷","\\div",4],["·","\\cdot",5],["≠","\\ne",3],["≤","\\le",3],["≥","\\ge",3],EQS("≈ تقريبًا","\\approx"),EQS("∞ لانهاية","\\infty"),
+    EQS("درجة °","^{\\circ}"),EQS("نسبة مئوية %","\\%"),EQS("عاملي n!","!"),EQS("كسر صغير","\\tfrac{}{}"),EQS("كسر كبير","\\dfrac{}{}"),EQS("أكبر عدد صحيح ⌊⌋","\\lfloor  \\rfloor"),EQS("سقف ⌈⌉","\\lceil  \\rceil"),EQS("مسافة","\;"),EQS("نص عربي","\\text{  }")
+  ],
+  "رموز يونانية":[
+    EQS("ألفا α","\\alpha"),EQS("بيتا β","\\beta"),EQS("غاما γ","\\gamma"),EQS("دلتا δ","\\delta"),EQS("دلتا كبيرة Δ","\\Delta"),EQS("إبسلون ε","\\varepsilon"),EQS("زيتا ζ","\\zeta"),EQS("إيتا η","\\eta"),EQS("ثيتا θ","\\theta"),EQS("ثيتا كبيرة Θ","\\Theta"),
+    EQS("لامدا λ","\\lambda"),EQS("ميو μ","\\mu"),EQS("نيو ν","\\nu"),EQS("كساي ξ","\\xi"),EQS("باي π","\\pi"),EQS("رو ρ","\\rho"),EQS("سيغما σ","\\sigma"),EQS("سيغما كبيرة Σ","\\Sigma"),EQS("تاو τ","\\tau"),EQS("فاي φ","\\varphi"),
+    EQS("فاي كبيرة Φ","\\Phi"),EQS("كاي χ","\\chi"),EQS("بساي ψ","\\psi"),EQS("أوميغا ω","\\omega"),EQS("أوميغا كبيرة Ω","\\Omega"),EQS("غاما كبيرة Γ","\\Gamma"),EQS("لامدا كبيرة Λ","\\Lambda"),EQS("باي كبيرة Π","\\Pi")
+  ],
+  "دوال":[
+    EQS("دالة f(x)","f()"),EQS("دالة g(x)","g()"),EQS("تركيب g∘f","(g\\circ f)()"),EQS("معكوس الدالة","f^{-1}()"),EQS("جا sin","\\sin"),EQS("جتا cos","\\cos"),EQS("ظا tan","\\tan"),EQS("ظتا cot","\\cot"),EQS("قا sec","\\sec"),EQS("قتا csc","\\csc"),
+    EQS("sin²","\\sin^{2}"),EQS("cos²","\\cos^{2}"),EQS("tan²","\\tan^{2}"),EQS("معكوس الجيب","\\sin^{-1}"),EQS("معكوس جيب التمام","\\cos^{-1}"),EQS("معكوس الظل","\\tan^{-1}"),EQS("لوغاريتم طبيعي ln","\\ln"),EQS("لوغاريتم log","\\log"),EQS("لوغاريتم للأساس","\\log_{}"),EQS("أس طبيعي eˣ","e^{}"),
+    EQS("exp","\\exp"),EQS("القيمة العظمى max","\\max"),EQS("القيمة الصغرى min","\\min"),EQS("sinh","\\sinh"),EQS("cosh","\\cosh"),EQS("دالة متعددة القاعدة","f(x)=\\begin{cases}  & x\\geq 0 \\\\  & x<0 \\end{cases}"),EQS("مجال الدالة","D_{f}"),EQS("مدى الدالة","R_{f}")
   ],
   "تفاضل وتكامل":[
-    ["تكامل","\\int  \\, dx",5],["تكامل محدد","\\int_{}^{} \\, dx",6],["مشتقة","\\frac{d}{dx}\\left(  \\right)",19],["مشتقة ثانية","\\frac{d^2}{dx^2}\\left(  \\right)",23],["نهاية","\\lim_{x \\to }",12],["مجموع","\\sum_{}^{}",6],["حاصل ضرب","\\prod_{}^{}",7],["لانهاية","\\infty",6]
+    ["تكامل","\\int  \\, dx",5],["تكامل محدد","\\int_{}^{} \\, dx",6],["مشتقة","\\frac{d}{dx}\\left(  \\right)",19],["مشتقة ثانية","\\frac{d^2}{dx^2}\\left(  \\right)",23],["نهاية","\\lim_{x \\to }",12],["مجموع","\\sum_{}^{}",6],["حاصل ضرب","\\prod_{}^{}",7],["لانهاية","\\infty",6],
+    EQS("dy/dx","\\frac{dy}{dx}"),EQS("d²y/dx²","\\frac{d^{2}y}{dx^{2}}"),EQS("f′(x)","f'()"),EQS("f″(x)","f''()"),EQS("y′","y'"),EQS("y″","y''"),EQS("مشتقة جزئية ∂","\\frac{\\partial }{\\partial x}"),EQS("نهاية عند اللانهاية","\\lim_{x \\to \\infty}"),EQS("نهاية من اليمين","\\lim_{x \\to {}^{+}}"),EQS("نهاية من اليسار","\\lim_{x \\to {}^{-}}"),
+    EQS("تكامل ثنائي ∬","\\iint  \\, dA"),EQS("تكامل مغلق ∮","\\oint"),EQS("التعويض بين حدين","\\Big[  \\Big]_{}^{}"),EQS("تعويض |ab","\\left.  \\right|_{}^{}"),EQS("تزايد Δx","\\Delta x"),EQS("dx","\\, dx"),EQS("مجموع من 1 إلى n","\\sum_{i=1}^{n}"),EQS("متتابعة {aₙ}","\\{a_{n}\\}"),EQS("نهاية متتابعة","\\lim_{n \\to \\infty} a_{n}"),EQS("نابلا ∇","\\nabla")
   ],
   "جبر وأعداد مركبة":[
-    ["مرافق","\\overline{}",10],["الجزء الحقيقي","\\operatorname{Re}()",18],["الجزء التخيلي","\\operatorname{Im}()",18],["زاوية θ","\\theta",6],["ألفا α","\\alpha",6],["بيتا β","\\beta",5],["باي π","\\pi",3],["ينتمي","\\in",3],["الأعداد الحقيقية","\\mathbb{R}",10],["الأعداد المركبة","\\mathbb{C}",10]
+    ["مرافق","\\overline{}",10],["الجزء الحقيقي","\\operatorname{Re}()",18],["الجزء التخيلي","\\operatorname{Im}()",18],["زاوية θ","\\theta",6],["ألفا α","\\alpha",6],["بيتا β","\\beta",5],["باي π","\\pi",3],["ينتمي","\\in",3],["الأعداد الحقيقية","\\mathbb{R}",10],["الأعداد المركبة","\\mathbb{C}",10],
+    EQS("العدد i","i"),EQS("مقياس العدد |z|","\\left| z \\right|"),EQS("سعة arg","\\arg()"),EQS("الصورة القطبية","r(\\cos\\theta + i\\sin\\theta)"),EQS("cis θ","\\operatorname{cis}\\theta"),EQS("الصيغة الأسية","re^{i\\theta}"),EQS("مبرهنة ديموافر","(\\cos\\theta + i\\sin\\theta)^{n} = \\cos n\\theta + i\\sin n\\theta"),EQS("الجذر التكعيبي ω","\\omega"),EQS("1+ω+ω²=0","1+\\omega+\\omega^{2}=0"),EQS("القانون العام","x=\\frac{-b\\pm\\sqrt{b^{2}-4ac}}{2a}"),
+    EQS("المميز Δ","\\Delta=b^{2}-4ac"),EQS("توافيق nCr","\\binom{}{}"),EQS("تباديل nPr","{}^{n}P_{r}"),EQS("مضروب","n!")
+  ],
+  "مجموعات ومنطق":[
+    EQS("ينتمي ∈","\\in"),EQS("لا ينتمي ∉","\\notin"),EQS("جزئية ⊂","\\subset"),EQS("جزئية أو تساوي ⊆","\\subseteq"),EQS("ليست جزئية ⊄","\\not\\subset"),EQS("تحتوي ⊃","\\supset"),EQS("اتحاد ∪","\\cup"),EQS("تقاطع ∩","\\cap"),EQS("فرق ∖","\\setminus"),EQS("خالية ∅","\\varnothing"),
+    EQS("الطبيعية ℕ","\\mathbb{N}"),EQS("الصحيحة ℤ","\\mathbb{Z}"),EQS("الصحيحة الموجبة ℤ⁺","\\mathbb{Z}^{+}"),EQS("النسبية ℚ","\\mathbb{Q}"),EQS("الحقيقية ℝ","\\mathbb{R}"),EQS("المركبة ℂ","\\mathbb{C}"),EQS("فترة مغلقة [a,b]","[\\, , \\,]"),EQS("فترة مفتوحة (a,b)","(\\, , \\,)"),EQS("مجموعة بشرط","\\{\\, x \\mid  \\,\\}"),EQS("مجموعة عناصر","\\{\\,  \\,\\}"),
+    EQS("لكل ∀","\\forall"),EQS("يوجد ∃","\\exists"),EQS("لا يوجد ∄","\\nexists"),EQS("نفي ¬","\\neg"),EQS("و ∧","\\land"),EQS("أو ∨","\\lor"),EQS("يؤدي ⇒","\\Rightarrow"),EQS("إذا وفقط إذا ⇔","\\Leftrightarrow"),EQS("إذن ∴","\\therefore"),EQS("لأن ∵","\\because"),EQS("متمّمة","A^{c}")
+  ],
+  "علاقات وأسهم":[
+    EQS("=","="),EQS("≠","\\neq"),EQS("≈","\\approx"),EQS("≡ تطابق","\\equiv"),EQS("∼ تشابه","\\sim"),EQS("≅ تطابق","\\cong"),EQS("∝ تناسب","\\propto"),EQS("<","<"),EQS(">",">"),EQS("≤","\\leq"),
+    EQS("≥","\\geq"),EQS("≪","\\ll"),EQS("≫","\\gg"),EQS("سهم →","\\to"),EQS("سهم ←","\\leftarrow"),EQS("سهم ↔","\\leftrightarrow"),EQS("يؤدي ⟹","\\Longrightarrow"),EQS("⟸","\\Longleftarrow"),EQS("⟺","\\Longleftrightarrow"),EQS("يقترن ↦","\\mapsto"),
+    EQS("↑","\\uparrow"),EQS("↓","\\downarrow"),EQS("سهم فوق النص","\\xrightarrow{}"),EQS("تعريف ≔","\\coloneqq"),EQS("تساوي بالتعريف","\\overset{\\text{def}}{=}")
+  ],
+  "هندسة ومتجهات":[
+    EQS("زاوية ∠","\\angle"),EQS("زاوية مقيسة","\\measuredangle"),EQS("مثلث △","\\triangle"),EQS("عمودي ⊥","\\perp"),EQS("يوازي ∥","\\parallel"),EQS("درجة °","^{\\circ}"),EQS("قطعة مستقيمة AB","\\overline{AB}"),EQS("شعاع AB","\\overrightarrow{AB}"),EQS("متجه v","\\vec{}"),EQS("طول المتجه","\\left\\| \\vec{v} \\right\\|"),
+    EQS("متجه الوحدة î","\\hat{i}"),EQS("ĵ","\\hat{j}"),EQS("k̂","\\hat{k}"),EQS("ضرب قياسي","\\vec{a}\\cdot\\vec{b}"),EQS("ضرب اتجاهي","\\vec{a}\\times\\vec{b}"),EQS("زاوية ABC","\\widehat{ABC}"),EQS("قوس AB","\\overset{\\frown}{AB}"),EQS("نقطة (x,y)","(\\, , \\,)"),EQS("نقطة ثلاثية","(\\, , \\, , \\,)"),EQS("مسافة بين نقطتين","d=\\sqrt{(x_{2}-x_{1})^{2}+(y_{2}-y_{1})^{2}}"),
+    EQS("الميل","m=\\frac{y_{2}-y_{1}}{x_{2}-x_{1}}"),EQS("مساحة الدائرة","\\pi r^{2}"),EQS("محيط الدائرة","2\\pi r"),EQS("فيثاغورس","a^{2}+b^{2}=c^{2}")
+  ],
+  "القطوع المخروطية":[
+    EQS("دائرة","(x-h)^{2}+(y-k)^{2}=r^{2}"),EQS("قطع مكافئ (محور السينات)","y^{2}=4px"),EQS("قطع مكافئ (محور الصادات)","x^{2}=4py"),EQS("قطع ناقص (أفقي)","\\frac{x^{2}}{a^{2}}+\\frac{y^{2}}{b^{2}}=1"),EQS("قطع ناقص (عمودي)","\\frac{x^{2}}{b^{2}}+\\frac{y^{2}}{a^{2}}=1"),EQS("قطع زائد (أفقي)","\\frac{x^{2}}{a^{2}}-\\frac{y^{2}}{b^{2}}=1"),EQS("قطع زائد (عمودي)","\\frac{y^{2}}{a^{2}}-\\frac{x^{2}}{b^{2}}=1"),EQS("الاختلاف المركزي","e=\\frac{c}{a}"),EQS("c² ناقص","c^{2}=a^{2}-b^{2}"),EQS("c² زائد","c^{2}=a^{2}+b^{2}"),
+    EQS("البؤرة F","F(\\, , \\,)"),EQS("الدليل","x=-p"),EQS("الرأس V","V(\\, , \\,)"),EQS("المحاذي (الخطوط المقاربة)","y=\\pm\\frac{b}{a}x"),EQS("طول المحور الكبير","2a"),EQS("طول المحور الصغير","2b"),EQS("البعد البؤري","2c")
+  ],
+  "مصفوفات":[
+    ["مصفوفة 2×2","\\begin{pmatrix} a & b \\\\ c & d \\end{pmatrix}",16],["مصفوفة 3×3","\\begin{pmatrix} a & b & c \\\\ d & e & f \\\\ g & h & i \\end{pmatrix}",16],["محدد 2×2","\\begin{vmatrix} a & b \\\\ c & d \\end{vmatrix}",16],EQS("محدد 3×3","\\begin{vmatrix} a & b & c \\\\ d & e & f \\\\ g & h & i \\end{vmatrix}"),EQS("مصفوفة بأقواس مربعة","\\begin{bmatrix} a & b \\\\ c & d \\end{bmatrix}"),EQS("متجه عمودي","\\begin{pmatrix} x \\\\ y \\\\ z \\end{pmatrix}"),EQS("مصفوفة الوحدة I","I=\\begin{pmatrix} 1 & 0 \\\\ 0 & 1 \\end{pmatrix}"),EQS("مدوّر المصفوفة Aᵀ","A^{T}"),EQS("معكوس المصفوفة A⁻¹","A^{-1}"),EQS("محدد |A|","\\left| A \\right|"),
+    EQS("det","\\det()"),EQS("عنصر aᵢⱼ","a_{ij}"),["نظام معادلات","\\begin{cases} x+y=0 \\\\ x-y=0 \\end{cases}",14],EQS("مصفوفة 2×3","\\begin{pmatrix} a & b & c \\\\ d & e & f \\end{pmatrix}"),EQS("نقاط ⋯","\\cdots"),EQS("نقاط عمودية ⋮","\\vdots"),EQS("نقاط مائلة ⋱","\\ddots")
+  ],
+  "إحصاء واحتمال":[
+    EQS("الوسط x̄","\\bar{x}"),EQS("الوسط الحسابي","\\bar{x}=\\frac{\\sum x_{i}}{n}"),EQS("الانحراف المعياري σ","\\sigma"),EQS("التباين σ²","\\sigma^{2}"),EQS("مجموع Σxᵢ","\\sum_{i=1}^{n} x_{i}"),EQS("احتمال P(A)","P()"),EQS("احتمال شرطي","P(A \\mid B)"),EQS("احتمال الاتحاد","P(A\\cup B)"),EQS("احتمال التقاطع","P(A\\cap B)"),EQS("المتمّم","P(A^{c})=1-P(A)"),
+    EQS("توافيق","\\binom{n}{r}=\\frac{n!}{r!(n-r)!}"),EQS("تباديل","{}^{n}P_{r}=\\frac{n!}{(n-r)!}"),EQS("التوقع E(X)","E(X)"),EQS("ذات الحدين","\\binom{n}{k}p^{k}(1-p)^{n-k}")
   ],
   "خطوات الحل":[
     ["خطوات محاذاة","\\begin{aligned}  &=  \\\\ &=  \\\\ &=  \\end{aligned}",16],["خطوتان","\\begin{aligned}  &=  \\\\ &=  \\end{aligned}",16],["نظام معادلات","\\begin{cases}  \\\\  \\end{cases}",13],["دالة متعددة القاعدة","f(x)=\\begin{cases}  & x\\geq 0 \\\\  & x<0 \\end{cases}",19],["إذن ⟸","\\Rightarrow ",12],["تكافؤ ⟺","\\Leftrightarrow ",16],["سطران متوسطان","\\begin{gathered}  \\\\  \\end{gathered}",17],["مع شرح","  \\quad \\text{(  )}",0],
-  ],
-  "مصفوفات":[
-    ["مصفوفة 2×2","\\begin{pmatrix} a & b \\\\ c & d \\end{pmatrix}",16],["مصفوفة 3×3","\\begin{pmatrix} a & b & c \\\\ d & e & f \\\\ g & h & i \\end{pmatrix}",16],["محدد 2×2","\\begin{vmatrix} a & b \\\\ c & d \\end{vmatrix}",16],["نظام معادلات","\\begin{cases} x+y=0 \\\\ x-y=0 \\end{cases}",14]
+    EQS("إذن ∴","\\therefore "),EQS("مربع نهاية البرهان ∎","\\blacksquare"),EQS("خطأ ✗ (شطب)","\\cancel{}"),EQS("تأكيد بإطار","\\boxed{}"),EQS("تعليق تحت المعادلة","\\underbrace{}_{\\text{تعليق}}"),EQS("تعليق فوق المعادلة","\\overbrace{}^{\\text{تعليق}}")
   ]
 };
 let equationTarget=null;
@@ -1430,7 +1474,7 @@ function ensureEquationModal(){
   if(document.getElementById("equationEditorModal"))return;
   const wrap=document.createElement("div");
   wrap.id="equationEditorModal";wrap.className="eqModal";wrap.setAttribute("aria-hidden","true");
-  wrap.innerHTML='<div class="eqDialog" role="dialog" aria-modal="true" aria-labelledby="eqDialogTitle"><div class="eqHeader"><div><b id="eqDialogTitle">∑ محرر المعادلات</b><span>اختر رمزًا ليُدرج ويقف المؤشر داخله، ثم اكتب القيم — أو اكتب كود LaTeX مباشرة</span></div><button type="button" id="eqClose" aria-label="إغلاق">×</button></div><div class="eqTabs" id="eqTabs"></div><div class="eqSymbols" id="eqSymbols"></div><div class="eqModeBar"><label><input type="checkbox" id="eqDisplayMode"> عرض كسطر مستقل</label><button type="button" class="eduGhost" id="eqHistoryToggle">سجل المعادلات</button></div><div id="eqHistory" class="eqHistory" hidden></div><label class="eqInputLabel">محتوى المعادلة<textarea id="eqLatexInput" dir="ltr" rows="3" spellcheck="false" placeholder="اكتب المعادلة أو استخدم الأزرار أعلاه"></textarea></label><div class="eqPreview"><span>معاينة مباشرة</span><small id="eqValidation" class="eqValidation"></small><div id="eqLiveDiagnostics" class="mathLiveDiagnostics" hidden></div><div id="eqPreviewBox">ابدأ بكتابة المعادلة</div></div><div class="eqActions"><button type="button" class="eduGhost" id="eqClear">مسح</button><div><button type="button" class="eduSecondary" id="eqCancel">إلغاء</button><button type="button" class="eduPrimary" id="eqInsert">حفظ المعادلة</button></div></div></div>';
+  wrap.innerHTML='<div class="eqDialog" role="dialog" aria-modal="true" aria-labelledby="eqDialogTitle"><div class="eqHeader"><div><b id="eqDialogTitle">∑ محرر المعادلات</b><span>اختر رمزًا ليُدرج ويقف المؤشر داخله، ثم اكتب القيم — أو اكتب كود LaTeX مباشرة</span></div><button type="button" id="eqClose" aria-label="إغلاق">×</button></div><input type="search" id="eqSearch" class="eqSearch" placeholder="🔎 ابحث عن رمز: جذر، تكامل، قطع ناقص، سيغما، ⊂ ، sin …" autocomplete="off" dir="auto"><div class="eqTabs" id="eqTabs"></div><div class="eqSymbols" id="eqSymbols"></div><div class="eqModeBar"><label><input type="checkbox" id="eqDisplayMode"> عرض كسطر مستقل</label><button type="button" class="eduGhost" id="eqHistoryToggle">سجل المعادلات</button></div><div id="eqHistory" class="eqHistory" hidden></div><label class="eqInputLabel">محتوى المعادلة<textarea id="eqLatexInput" dir="ltr" rows="3" spellcheck="false" placeholder="اكتب المعادلة أو استخدم الأزرار أعلاه"></textarea></label><div class="eqPreview"><span>معاينة مباشرة</span><small id="eqValidation" class="eqValidation"></small><div id="eqLiveDiagnostics" class="mathLiveDiagnostics" hidden></div><div id="eqPreviewBox">ابدأ بكتابة المعادلة</div></div><div class="eqActions"><button type="button" class="eduGhost" id="eqClear">مسح</button><div><button type="button" class="eduSecondary" id="eqCancel">إلغاء</button><button type="button" class="eduPrimary" id="eqInsert">حفظ المعادلة</button></div></div></div>';
   document.body.appendChild(wrap);
   document.getElementById("eqClose").onclick=closeEquationEditor;document.getElementById("eqCancel").onclick=closeEquationEditor;
   wrap.onclick=e=>{if(e.target===wrap)closeEquationEditor()};
@@ -1439,12 +1483,20 @@ function ensureEquationModal(){
   document.getElementById("eqLiveDiagnostics").addEventListener("masar:math-quick-fix",e=>{const x=document.getElementById("eqLatexInput");x.value=e.detail.value;updateEquationPreview();x.focus()});
   document.getElementById("eqInsert").onclick=insertEquationIntoBlock;document.getElementById("eqHistoryToggle").onclick=toggleEquationHistory;
   const tabs=document.getElementById("eqTabs");Object.keys(EQ_GROUPS).forEach((name,i)=>{const b=document.createElement("button");b.type="button";b.textContent=name;b.dataset.group=name;b.className=i===0?"active":"";b.onpointerdown=e=>e.preventDefault();b.onclick=()=>renderEquationGroup(name);tabs.appendChild(b)});
-  renderEquationGroup(Object.keys(EQ_GROUPS)[0]);
+  renderEquationGroup(Object.keys(EQ_GROUPS)[0]);bindEquationSearch();
 }
-function renderEquationGroup(name){
-  document.querySelectorAll("#eqTabs button").forEach(b=>b.classList.toggle("active",b.dataset.group===name));
+function eqNorm(t){return String(t||"").toLowerCase().replace(/[\u064B-\u0652\u0640]/g,"").replace(/[أإآ]/g,"ا").replace(/ى/g,"ي").replace(/ة/g,"ه").replace(/\\/g,"").trim()}
+function bindEquationSearch(){const q=document.getElementById("eqSearch");if(!q||q.dataset.bound)return;q.dataset.bound="1";q.oninput=()=>{const t=eqNorm(q.value);if(!t){const act=document.querySelector("#eqTabs button.active");renderEquationGroup(act?act.dataset.group:Object.keys(EQ_GROUPS)[0]);return}
+  const words=t.split(/\s+/).filter(Boolean),seen=new Set(),hits=[];
+  Object.entries(EQ_GROUPS).forEach(([g,list])=>list.forEach(item=>{const hay=eqNorm(item[0]+" "+item[1]+" "+g);if(words.every(w=>hay.includes(w))&&!seen.has(item[1])){seen.add(item[1]);hits.push(item)}}));
+  renderEquationGroup(null,hits)}}
+function renderEquationGroup(name,list){
+  if(name!==null)document.querySelectorAll("#eqTabs button").forEach(b=>b.classList.toggle("active",b.dataset.group===name));
+  if(name!==null){const q=document.getElementById("eqSearch");if(q&&q.value){q.value=""}}
   const box=document.getElementById("eqSymbols");box.innerHTML="";
-  EQ_GROUPS[name].forEach(([label,code,cursor])=>{const b=document.createElement("button");b.type="button";b.title=label;const shown=code.replace(/\{\}/g,'{\\square}').replace(/\(\)/g,'(\\square)').replace(/\\left([|(])\s+\\right/g,'\\left$1 \\square \\right');b.innerHTML='<span class="eqSymbolMath" dir="ltr" data-latex="'+safe(shown)+'">'+safe(shown)+'</span><small'+(/[\u0600-\u06FF]/.test(label)?'':' dir="ltr"')+'>'+safe(label)+'</small>';b.onpointerdown=e=>e.preventDefault();b.onclick=()=>insertEquationSnippet(code,cursor);box.appendChild(b)});
+  const items=list||EQ_GROUPS[name]||[];
+  if(list&&!list.length){box.innerHTML='<p class="eqNoHit">لا يوجد رمز مطابق — جرّب كلمة أخرى، أو اكتب كود LaTeX مباشرة في الحقل.</p>';return}
+  items.forEach(([label,code,cursor])=>{const b=document.createElement("button");b.type="button";b.title=label;const shown=code.replace(/\{\}/g,'{\\square}').replace(/\(\)/g,'(\\square)').replace(/\\left([|(])\s+\\right/g,'\\left$1 \\square \\right');b.innerHTML='<span class="eqSymbolMath" dir="ltr" data-latex="'+safe(shown)+'">'+safe(shown)+'</span><small'+(/[\u0600-\u06FF]/.test(label)?'':' dir="ltr"')+'>'+safe(label)+'</small>';b.onpointerdown=e=>e.preventDefault();b.onclick=()=>insertEquationSnippet(code,cursor);box.appendChild(b)});
   renderKatex(box);
 }
 function insertEquationSnippet(code,cursor){const x=document.getElementById("eqLatexInput"),start=x.selectionStart||0,end=x.selectionEnd||0;x.setRangeText(code,start,end,"end");const pos=start+Math.min(cursor==null?code.length:cursor,code.length);x.setSelectionRange(pos,pos);if(!isCoarsePointer()||document.activeElement===x)x.focus();updateEquationPreview()}
