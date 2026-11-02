@@ -453,12 +453,21 @@ function syncPayload(){
   // ما إلها داعي تنكتب داخل البيانات المرفوعة للسحابة
   const d=unwrapBackup(JSON.parse(backupData()));
   if(d.settings){delete d.settings.pin;delete d.settings.pinHash;delete d.settings.pinSalt;delete d.settings.sync}
+  // v2.16.0: المحاضرات والفصول والرأس والتذييل ضمن المزامنة (كانت تُسقط)
+  try{if(window.NiborLectureSync)d.lectureSync=window.NiborLectureSync.exportForSync()}catch(e){console.error("lecture sync export",e)}
   return d;
 }
 async function syncPush(){
   if(!syncOn())return false;
   await ensureFreshToken();
   const now=new Date().toISOString();
+  // v2.16.0: قبل الرفع، ادمج محاضرات السحابة (من جهاز آخر) حتى لا يمحوها هذا الرفع
+  try{
+    if(window.NiborLectureSync){
+      const g=await fetch(syncBase()+"?id=eq."+encodeURIComponent(syncRowId())+"&select=ls:payload->lectureSync",{headers:syncHeaders()});
+      if(g.ok){const rows=await g.json();if(rows[0]&&rows[0].ls)window.NiborLectureSync.mergeFromSync(rows[0].ls)}
+    }
+  }catch(e){console.warn("lecture pre-merge",e)}
   try{
     const r=await fetch(syncBase(),{method:"POST",
       headers:Object.assign(syncHeaders(),{Prefer:"resolution=merge-duplicates"}),
@@ -485,6 +494,11 @@ async function syncPull(silent){
       return ok;
     }
     const row=rows[0];
+    // v2.16.0: المحاضرات تُدمج دائمًا محاضرةً محاضرة (الأحدث يفوز) — حتى مع وجود تعديلات محلية
+    let lecMerge=null;
+    try{const ls=row.payload&&row.payload.lectureSync;if(ls&&window.NiborLectureSync)lecMerge=window.NiborLectureSync.mergeFromSync(JSON.parse(JSON.stringify(ls)))}catch(e){console.error("lecture merge",e)}
+    const lecLocalNewer=lecMerge?!!lecMerge.localNewer:!!window.NiborLectureSync; // سحابة بلا محاضرات (إصدار أقدم): ارفعها
+    if(row.payload&&row.payload.lectureSync)delete row.payload.lectureSync;
     if(row.updated_at!==S.settings.syncStamp){
       const localDirty=S.settings.syncDirtyAt&&(!S.settings.syncStamp||S.settings.syncDirtyAt>S.settings.syncStamp);
       if(localDirty){
@@ -500,9 +514,13 @@ async function syncPull(silent){
       S.settings.lastSyncAt=new Date().toISOString();
       await saveKey("settings",S.settings);
       syncApplying=false;
-      updateHeader();render();
+      updateHeader();if(!document.body.classList.contains("inLectureEditor"))render();
+      if(lecLocalNewer)scheduleSync(); // لدى هذا الجهاز محاضرات ليست في السحابة
       if(!silent)toast("تمت المزامنة — البيانات محدثة ✓");
-    }else if(!silent)toast("بياناتك مطابقة للسحابة ✓");
+    }else{
+      if(lecLocalNewer)scheduleSync();
+      if(!silent)toast(lecMerge&&lecMerge.changed?"تمت مزامنة المحاضرات ✓":"بياناتك مطابقة للسحابة ✓");
+    }
     return true;
   }catch(e){
     syncApplying=false;
@@ -517,6 +535,7 @@ function openSyncSheet(){
   '<div class="overlay"><div class="sheet">'+
     '<div class="sheetHead"><h3>👤 حسابي والمزامنة السحابية</h3><button class="x" id="syX">✕</button></div>'+
     '<div class="form">'+
+      '<p class="syncScope" style="margin:0 0 8px;font-size:12.5px;color:var(--text-muted,#64748b)">تشمل المزامنة: الطلبة والحضور والدرجات والأقساط وجدول الحصص والامتحانات، و<b>المحاضرات والملازم والرأس والتذييل</b> (يُدمج كل تعديل محاضرةً محاضرة، والأحدث يفوز).</p>'+
       (syncOn()?'<div class="avgBox">المزامنة مفعّلة '+(c.userId?"(حساب مستخدم — أكثر أمانًا) ":"(رمز مشترك) ")+'✓'+(S.settings.lastSyncAt?'<div style="font-size:11px;margin-top:4px;opacity:.8">آخر مزامنة: '+S.settings.lastSyncAt.slice(0,16).replace("T"," ")+'</div>':"")+'</div>':'<div class="notice">غير مفعّلة — تحتاج حساب Supabase مجاني.</div>')+
 
       '<div class="subCard">'+

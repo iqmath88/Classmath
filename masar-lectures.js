@@ -140,13 +140,70 @@ function restoreHistory(snapshot){if(!snapshot)return;const spot=activeRichSpot(
 function uid(){return "lec_"+Date.now().toString(36)+Math.random().toString(36).slice(2,7)}
 function clone(v){return JSON.parse(JSON.stringify(v))}
 function storageGet(key,fallback){return window.MasarStorage?window.MasarStorage.get(key,fallback):(function(){try{return JSON.parse(localStorage.getItem(key)||JSON.stringify(fallback))}catch(_){return fallback}})()}
-function storageSet(key,value){return window.MasarStorage?window.MasarStorage.set(key,value):localStorage.setItem(key,JSON.stringify(value))}
+function storageSetRaw(key,value){return window.MasarStorage?window.MasarStorage.set(key,value):localStorage.setItem(key,JSON.stringify(value))}
+/* ============ v2.16.0: مزامنة المحاضرات والملازم سحابيًا ============
+   الدمج على مستوى المحاضرة والفصل: الأحدث تعديلًا يفوز، والمحذوف يُسجَّل (علامة حذف) حتى لا يعود من جهاز آخر.
+   مفتاح جديد واحد فقط (sync-meta)؛ لا تغيير في مفاتيح التخزين أو بنية البيانات. */
+const SYNC_META_KEY="masar-education-v1-sync-meta";
+const SYNC_ITEM_KEYS=["masar-education-v1-lectures","masar-education-v1-projects"];
+const SYNC_WHOLE_KEYS=["masar-education-v1-block-library","masar-education-v1-print-brand"];
+let syncMerging=false;
+function syncMetaGet(){const m=storageGet(SYNC_META_KEY,null);const o=(m&&typeof m==='object')?m:{};o.keys=o.keys&&typeof o.keys==='object'?o.keys:{};o.del=o.del&&typeof o.del==='object'?o.del:{};return o}
+function idsOf(key,list){const out=new Set();(Array.isArray(list)?list:[]).forEach(x=>{if(!x||!x.id)return;out.add(x.id);if(key==="masar-education-v1-projects")(x.chapters||[]).forEach(c=>c&&c.id&&out.add(x.id+'/'+c.id))});return out}
+function noteSyncChange(key,prev,next){
+  if(syncMerging)return;
+  if(!SYNC_ITEM_KEYS.includes(key)&&!SYNC_WHOLE_KEYS.includes(key))return;
+  try{const m=syncMetaGet(),now=new Date().toISOString();m.keys[key]=now;
+    if(SYNC_ITEM_KEYS.includes(key)){const before=idsOf(key,prev),after=idsOf(key,next);before.forEach(id=>{if(!after.has(id))m.del[id]=now});after.forEach(id=>{if(m.del[id])delete m.del[id]})}
+    storageSetRaw(SYNC_META_KEY,m);
+  }catch(_){}
+  try{if(typeof window.scheduleSync==='function')window.scheduleSync()}catch(_){}
+}
+function storageSet(key,value){const watch=!syncMerging&&(SYNC_ITEM_KEYS.includes(key)||SYNC_WHOLE_KEYS.includes(key));const prev=watch&&SYNC_ITEM_KEYS.includes(key)?storageGet(key,[]):null;const r=storageSetRaw(key,value);if(watch)noteSyncChange(key,prev,value);return r}
+function stampOf(x){if(x&&x.auto&&x.updatedAt===x.createdAt)return '';return String((x&&(x.updatedAt||x.createdAt))||'')} // المشروع الافتراضي التلقائي لا يغلب تعديلًا حقيقيًا من جهاز آخر
+function mergeById(local,remote,del,prefix){
+  const L=new Map(),out=[];(local||[]).forEach(x=>x&&x.id&&L.set(x.id,x));const R=new Map();(remote||[]).forEach(x=>x&&x.id&&R.set(x.id,x));
+  const order=[...L.keys()];R.forEach((_,id)=>{if(!L.has(id))order.push(id)});
+  let changed=false;
+  order.forEach(id=>{const key=(prefix||'')+id,l=L.get(id),r=R.get(id);const pick=!l?r:!r?l:(stampOf(r)>stampOf(l)?r:l);const d=del[key];
+    if(d&&d>=stampOf(pick)){if(l)changed=true;return}
+    if(pick!==l)changed=true;out.push(pick)});
+  return {list:out,changed};
+}
+function mergeProjects(local,remote,del){
+  const top=mergeById(local,remote,del,'');let changed=top.changed;
+  const L=new Map((local||[]).filter(x=>x&&x.id).map(x=>[x.id,x])),R=new Map((remote||[]).filter(x=>x&&x.id).map(x=>[x.id,x]));
+  top.list=top.list.map(p=>{const l=L.get(p.id),r=R.get(p.id);if(!l||!r)return p;const ch=mergeById(l.chapters,r.chapters,del,p.id+'/');if(JSON.stringify(ch.list)!==JSON.stringify(l.chapters||[]))changed=true;return Object.assign({},p,{chapters:ch.list})});
+  return {list:top.list,changed};
+}
+function exportForSync(){const data={};[...SYNC_ITEM_KEYS,...SYNC_WHOLE_KEYS].forEach(k=>{const v=storageGet(k,null);if(v!==null)data[k]=v});return {v:1,meta:syncMetaGet(),data}}
+function mergeFromSync(remote){
+  if(!remote||remote.v!==1||!remote.data||typeof remote.data!=='object')return {changed:false,localNewer:false};
+  const m=syncMetaGet(),rm=remote.meta&&typeof remote.meta==='object'?remote.meta:{keys:{},del:{}};
+  const del=Object.assign({},m.del);Object.entries(rm.del||{}).forEach(([id,t])=>{if(!del[id]||String(t)>del[id])del[id]=String(t)});
+  let changed=false;const res={};
+  syncMerging=true;
+  try{
+    const lec=mergeById(loadLectures(),Array.isArray(remote.data["masar-education-v1-lectures"])?remote.data["masar-education-v1-lectures"]:[],del,'');
+    if(lec.changed){storageSetRaw("masar-education-v1-lectures",lec.list);changed=true;res.lectures=true}
+    const prj=mergeProjects(storageGet("masar-education-v1-projects",[]),Array.isArray(remote.data["masar-education-v1-projects"])?remote.data["masar-education-v1-projects"]:[],del);
+    if(prj.changed){storageSetRaw("masar-education-v1-projects",prj.list);changed=true;res.projects=true}
+    SYNC_WHOLE_KEYS.forEach(k=>{const rt=String((rm.keys||{})[k]||''),lt=String(m.keys[k]||'');if(remote.data[k]!==undefined&&rt>lt){storageSetRaw(k,remote.data[k]);m.keys[k]=rt;changed=true}});
+    SYNC_ITEM_KEYS.forEach(k=>{const rt=String((rm.keys||{})[k]||'');if(rt>String(m.keys[k]||''))m.keys[k]=rt});
+    m.del=del;storageSetRaw(SYNC_META_KEY,m);
+  }finally{syncMerging=false}
+  // هل لدى هذا الجهاز ما ليس في السحابة؟ (يُرفع بعدها)
+  const mine=exportForSync();const localNewer=JSON.stringify(mine.data["masar-education-v1-lectures"]||[])!==JSON.stringify(remote.data["masar-education-v1-lectures"]||[])||JSON.stringify(mine.data["masar-education-v1-projects"]||[])!==JSON.stringify(remote.data["masar-education-v1-projects"]||[])||SYNC_WHOLE_KEYS.some(k=>JSON.stringify(mine.data[k]??null)!==JSON.stringify(remote.data[k]??null));
+  if(changed&&!document.body.classList.contains('inLectureEditor')&&typeof S!=='undefined'&&S.tab==='lectures'){try{renderProjectsDashboard()}catch(_){}}
+  return {changed,localNewer,res};
+}
+window.NiborLectureSync=Object.freeze({exportForSync,mergeFromSync,get meta(){return syncMetaGet()}});
 function storageRemove(key){return window.MasarStorage?window.MasarStorage.remove(key):localStorage.removeItem(key)}
 function loadLectures(){const list=storageGet(LECTURE_KEY,[]);return Array.isArray(list)?list:[]}
 function saveLectures(list){storageSet(LECTURE_KEY,list)}
 function loadBlockLibrary(){const list=storageGet(BLOCK_LIBRARY_KEY,[]);return Array.isArray(list)?list:[]}
 function saveBlockLibrary(list){storageSet(BLOCK_LIBRARY_KEY,list)}
-function loadProjects(){let list=storageGet(PROJECTS_KEY,[]);if(!Array.isArray(list))list=[];if(!list.length){const now=new Date().toISOString(),legacy=loadLectures();const project={id:"prj_legacy",title:"مشروعي الأول",grade:legacy[0]?.grade||"السادس العلمي",subject:legacy[0]?.subject||"الرياضيات",createdAt:now,updatedAt:now,chapters:[{id:"ch_legacy",title:legacy[0]?.chapter||"الفصل الأول",order:1}]};list=[project];legacy.forEach(l=>{l.projectId=project.id;l.chapterId=project.chapters[0].id});saveLectures(legacy);saveProjects(list)}return list}
+function loadProjects(){let list=storageGet(PROJECTS_KEY,[]);if(!Array.isArray(list))list=[];if(!list.length){const now=new Date().toISOString(),legacy=loadLectures();const project={id:"prj_legacy",auto:true,title:"مشروعي الأول",grade:legacy[0]?.grade||"السادس العلمي",subject:legacy[0]?.subject||"الرياضيات",createdAt:now,updatedAt:now,chapters:[{id:"ch_legacy",title:legacy[0]?.chapter||"الفصل الأول",order:1}]};list=[project];legacy.forEach(l=>{l.projectId=project.id;l.chapterId=project.chapters[0].id});saveLectures(legacy);saveProjects(list)}return list}
 function saveProjects(list){storageSet(PROJECTS_KEY,list)}
 function projectById(id){return loadProjects().find(p=>p.id===id)}
 function chapterById(project,id){return project?.chapters?.find(c=>c.id===id)}
@@ -1073,7 +1130,7 @@ async function bookletHTML(lectures,o,say){const B=loadBrand();const holder=docu
  const all=[...holder.querySelectorAll('.lecturePaper')];all.forEach((p,k)=>{const num=p.querySelector('.lecturePageNumber');if(num)num.textContent=pageLabel(B,k+1,all.length);p.dataset.page=String(k+1)});
  const styleAttr=lectureSizeStyle(lectures[0]||{},true);
  return {html:(o.cover?bookletCoverHTML(o,lectures,styleAttr):'')+(o.toc&&rows.length>1?bookletTocHTML(rows,styleAttr):'')+holder.innerHTML,pages:all.length,rows}}
-function saveBookletPrefs(projectId,chapterId,o){const list=loadProjects(),p=list.find(x=>x.id===projectId),c=p&&chapterById(p,chapterId);if(!c)return;c.booklet={title:o.title,kicker:o.kicker,grade:o.grade,year:o.year,note:o.note,cover:o.cover,toc:o.toc,skip:o.skip,student:!!o.student,examples:!!o.examples};saveProjects(list)}
+function saveBookletPrefs(projectId,chapterId,o){const list=loadProjects(),p=list.find(x=>x.id===projectId),c=p&&chapterById(p,chapterId);if(!c)return;c.booklet={title:o.title,kicker:o.kicker,grade:o.grade,year:o.year,note:o.note,cover:o.cover,toc:o.toc,skip:o.skip,student:!!o.student,examples:!!o.examples};c.updatedAt=p.updatedAt=new Date().toISOString();saveProjects(list)}
 function openBookletSheet(projectId,chapterId){const modal=document.getElementById('modal');if(!modal)return;const p=projectById(projectId),c=chapterById(p,chapterId);const all=bookletLectures(projectId,chapterId);
  if(!all.length){(typeof toast==='function'?toast('لا توجد محاضرات محفوظة في هذا الفصل'):alert('لا توجد محاضرات محفوظة في هذا الفصل'));return}
  const o=bookletDefaults(p,c);const I=n=>(window.ICON?ICON(n):'');

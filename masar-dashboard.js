@@ -8,16 +8,63 @@ function el(id){return document.getElementById(id)}
 const TABS=[["home","الرئيسية","home"],["attendance","الحضور","check"],["evaluation","التقييم","percent"],["students","الطلبة","users"],["lectures","المحاضرات","book"],["teaching","التدريس","pen"],["payments","الأقساط","wallet"],["settings","الإعدادات","settings"]];
 const TAB_GROUP_START={lectures:1,payments:1};
 const PHONE_MAIN=["home","attendance","evaluation","lectures"];
-const TAB_PARENT={stats:"evaluation",homework:"evaluation"};
+const TAB_PARENT={stats:"evaluation",homework:"evaluation",grades:"evaluation"};
+// v2.16.0: أربعة أزرار فقط — الرئيسية، شؤون الطلبة، شؤون التدريسي، الإعدادات — وداخل كل مجموعة شريط أقسام
+const NAV_GROUPS={
+  students:{label:"شؤون الطلبة",icon:"users",tabs:["attendance","evaluation","students","payments"]},
+  teaching:{label:"شؤون التدريسي",icon:"book",tabs:["lectures","teaching"]}
+};
+const TOP_NAV=["home","g:students","g:teaching","settings"];
+function tabLabel(k){return (TABS.find(t=>t[0]===k)||[,k])[1]}
+function tabIcon(k){return (TABS.find(t=>t[0]===k)||[,,"home"])[2]}
+function groupOf(tab){const t=TAB_PARENT[tab]||tab;for(const g in NAV_GROUPS)if(NAV_GROUPS[g].tabs.includes(t))return g;return null}
+function groupLast(g){let t=null;try{t=localStorage.getItem("nibor-sec-"+g)}catch(_){}return NAV_GROUPS[g].tabs.includes(t)?t:NAV_GROUPS[g].tabs[0]}
+function openGroup(g){if(groupOf(S.tab)===g)return;goToTab(groupLast(g))}
+function secNavHTML(){
+  const g=groupOf(S.tab);if(!g)return "";const cur=TAB_PARENT[S.tab]||S.tab;const G=NAV_GROUPS[g];
+  return '<nav class="secNav" role="tablist" aria-label="'+G.label+'" data-group="'+g+'"><span class="secNavHead">'+G.label+'</span>'+G.tabs.map(k=>'<button type="button" role="tab" class="secTab'+(cur===k?" on":"")+'" aria-selected="'+(cur===k)+'" data-sec="'+k+'">'+(window.ICON?ICON(tabIcon(k)):"")+'<span>'+tabLabel(k)+'</span></button>').join("")+'</nav>';
+}
+function injectSecNav(){
+  const g=groupOf(S.tab);const c=el("content");if(!g||!c||document.body.classList.contains("inLectureEditor")||c.querySelector(":scope > .previewShell, :scope > .lectureEditor, :scope > .loading"))return;
+  try{localStorage.setItem("nibor-sec-"+g,TAB_PARENT[S.tab]||S.tab)}catch(_){}
+  if(c.querySelector(":scope > .secNav"))return;
+  c.insertAdjacentHTML("afterbegin",secNavHTML());
+  c.querySelectorAll(":scope > .secNav [data-sec]").forEach(b=>b.onclick=()=>{if((TAB_PARENT[S.tab]||S.tab)!==b.dataset.sec)goToTab(b.dataset.sec)});
+}
+// الأقسام تعيد رسم نفسها مباشرة في مواضع كثيرة؛ هذا يعيد شريط الأقسام كلما اختفى
+if(!window.__secNavObs){window.__secNavObs=true;const c=document.getElementById("content");if(c)new MutationObserver(()=>{if(!c.querySelector(":scope > .secNav"))injectSecNav()}).observe(c,{childList:true})}
+/* v2.16.0: رقم الإصدار ظاهر في الشريط العلوي، ونافذة «عن التطبيق» بما الجديد */
+const RELEASE_NOTES=[
+  ["2.16.0",["قائمتان بدل ثمانية أقسام: «شؤون الطلبة» و«شؤون التدريسي»","مزامنة المحاضرات والملازم سحابيًا بين الأجهزة","رقم الإصدار ظاهر في التطبيق"]],
+  ["2.15.0",["نسخة الطالب (بلا حلول) ونسخة الأستاذ (مع الحلول) للمحاضرة والملزمة"]],
+  ["2.14.0",["فحص شامل للتطبيق وإعادة ترتيب القوائم"]],
+  ["2.13.1",["حماية العمل من الإغلاق المفاجئ أثناء التحرير"]]
+];
+function renderVersionBadge(){
+  if(el("verBtn"))return;const host=document.querySelector(".top .appMiniName")||document.querySelector(".top .school");if(!host)return;
+  host.insertAdjacentHTML("beforeend",'<button type="button" id="verBtn" class="appVer" title="عن التطبيق وما الجديد">v'+APP_VER+'</button>');
+  el("verBtn").onclick=openAboutSheet;
+  let seen=null;try{seen=localStorage.getItem("nibor-seen-ver");localStorage.setItem("nibor-seen-ver",APP_VER)}catch(_){}
+  if(seen&&seen!==APP_VER)setTimeout(()=>toast("تم التحديث إلى الإصدار v"+APP_VER+" — اضغط رقم الإصدار لمعرفة الجديد"),1200);
+}
+function openAboutSheet(){
+  el("modal").innerHTML='<div class="overlay"><div class="sheet aboutSheet"><div class="sheetHead"><h3>نيبور كلاس</h3><button class="x" id="abX">✕</button></div>'+
+    '<div class="aboutVer"><img src="icon-192.png" alt="" width="56" height="56"><div><b>الإصدار v'+APP_VER+'</b><small>منصة المعلم للمحاضرات والطلبة والاختبارات</small></div></div>'+
+    '<div class="aboutNotes">'+RELEASE_NOTES.map(([v,items],i)=>'<section class="'+(v===APP_VER?"cur":"")+'"><h4>v'+v+(v===APP_VER?' <em>الحالي</em>':'')+'</h4><ul>'+items.map(x=>'<li>'+esc(x)+'</li>').join("")+'</ul></section>').join("")+'</div>'+
+    '<div class="actions"><button class="btn ghost" id="abUpd">التحقق من وجود تحديث</button><button class="btn" id="abOk">تم</button></div></div></div>';
+  el("abX").onclick=closeModal;el("abOk").onclick=closeModal;
+  el("abUpd").onclick=async()=>{try{const r=navigator.serviceWorker&&await navigator.serviceWorker.getRegistration();if(r){await r.update();toast(r.waiting||r.installing?"يوجد تحديث جديد — سيُطبَّق عند إعادة الفتح":"لديك أحدث إصدار ✓")}else toast("لديك الإصدار v"+APP_VER)}catch(_){toast("تعذر التحقق — تأكد من الاتصال")}};
+}
 // قوائم «طباعة ▾» و«إرسال ▾»: تُغلق بعد الاختيار أو بالضغط خارجها
 if(!window.__actMenus){window.__actMenus=true;document.addEventListener("click",e=>{document.querySelectorAll("details.actMenu[open]").forEach(d=>{if(!d.contains(e.target)||e.target.closest(".actMenuList button"))setTimeout(()=>d.removeAttribute("open"),0)})})}
 function renderTabs(){
-  const cur=TAB_PARENT[S.tab]||S.tab;const inMore=!PHONE_MAIN.includes(cur);
-  el("tabs").innerHTML=TABS.map(([k,l,i])=>
-    '<button class="tab'+(cur===k?" on":"")+(TAB_GROUP_START[k]?" tabGroupStart":"")+(PHONE_MAIN.includes(k)?"":" tabMoreItem")+'" data-tab="'+k+'" aria-label="'+l+'"><span class="ticon">'+(window.ICON?ICON(i):i)+'</span><span class="tlabel">'+l+'</span></button>').join("")+
-    '<button class="tab tabMore'+(inMore?" on":"")+'" id="tabMoreBtn" aria-label="المزيد"><span class="ticon">'+(window.ICON?ICON('more'):'⋯')+'</span><span class="tlabel">'+(inMore?(TABS.find(t=>t[0]===cur)||[,'المزيد'])[1]:'المزيد')+'</span></button>';
+  const cur=TAB_PARENT[S.tab]||S.tab;const g=groupOf(S.tab);
+  el("tabs").innerHTML=TOP_NAV.map(k=>{
+    if(k.startsWith("g:")){const id=k.slice(2),G=NAV_GROUPS[id];return '<button class="tab tabGroup'+(g===id?" on":"")+'" data-group="'+id+'" aria-label="'+G.label+'"><span class="ticon">'+(window.ICON?ICON(G.icon):"")+'</span><span class="tlabel">'+G.label+'</span></button>'}
+    return '<button class="tab'+(cur===k?" on":"")+'" data-tab="'+k+'" aria-label="'+tabLabel(k)+'"><span class="ticon">'+(window.ICON?ICON(tabIcon(k)):"")+'</span><span class="tlabel">'+tabLabel(k)+'</span></button>'}).join("");
   el("tabs").querySelectorAll(".tab[data-tab]").forEach(b=>b.onclick=()=>{goToTab(b.dataset.tab)});
-  el("tabMoreBtn").onclick=openMoreTabs;
+  el("tabs").querySelectorAll(".tab[data-group]").forEach(b=>b.onclick=()=>openGroup(b.dataset.group));
+  renderVersionBadge();
 }
 // على الهاتف: أربعة أقسام رئيسية + «المزيد» (الطلبة، التدريس، الأقساط، الإعدادات)
 function openMoreTabs(){
@@ -70,6 +117,7 @@ function render(){
   else if(S.tab==="stats")renderStatsPage();
   else if(S.tab==="settings")renderSettings();
   else renderHome();
+  injectSecNav();
 }
 
 /* ============ الرئيسية ============ */

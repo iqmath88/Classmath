@@ -1176,3 +1176,27 @@ html .lectureDocHead.lecBand .lecEdPill{display:inline-flex;align-items:center;b
 .bookCover .bcEdition.bcTeacher{background:var(--hb-main,#14215A)}
 [data-theme="classic"].bookCover .bcEdition{background:#fff;color:#111827;border:1.4pt solid #111827}
 html .previewActs{flex-wrap:wrap;align-items:center}
+
+/* ---------- v2.16.0: شؤون الطلبة / شؤون التدريسي + رقم الإصدار ---------- */
+html .tab.tabMore{display:none!important}
+html .secNav{display:flex;align-items:center;gap:6px;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;margin:0 0 14px;padding:5px;border-radius:16px;background:var(--glass-bg,#fff);border:1px solid var(--glass-line,#e2e8f0);box-shadow:0 1px 3px rgba(15,23,42,.05)}
+html .secNav::-webkit-scrollbar{display:none}
+html .secNavHead{font-size:12px;font-weight:800;color:var(--text-muted,#64748b);padding:0 8px 0 4px;white-space:nowrap;flex:0 0 auto}
+html .secTab{display:inline-flex;align-items:center;gap:6px;flex:0 0 auto;border:0;background:transparent;border-radius:12px;padding:9px 14px;min-height:40px;font:inherit;font-size:14px;font-weight:700;color:var(--text-secondary,#475569);cursor:pointer;white-space:nowrap}
+html .secTab svg.ic{width:18px;height:18px}
+html .secTab.on{background:var(--brand,#14215A);color:#fff;box-shadow:0 2px 6px rgba(20,33,90,.25)}
+html .secTab:not(.on):hover{background:var(--surface-soft,#F1F5F9)}
+@media (max-width:599px){html .secNavHead{display:none}html .secNav{margin:0 0 10px}html .secTab{padding:8px 11px;font-size:13px}html .secNav{display:grid;grid-auto-flow:column;grid-auto-columns:1fr}html .secTab{justify-content:center}}
+html .appVer{border:1px solid var(--glass-line,#e2e8f0);background:var(--surface-soft,#F1F5F9);color:var(--text-secondary,#475569);border-radius:99px;padding:2px 8px;font:inherit;font-size:11px;font-weight:700;direction:ltr;cursor:pointer;line-height:1.5;margin-inline-start:6px;flex:0 0 auto;align-self:center}
+html .appVer:hover{color:var(--brand,#14215A)}
+.aboutSheet .aboutVer{display:flex;align-items:center;gap:12px;padding:6px 2px 14px;border-bottom:1px solid var(--glass-line,#e2e8f0)}
+.aboutSheet .aboutVer img{border-radius:14px}
+.aboutSheet .aboutVer b{display:block;font-size:18px}
+.aboutSheet .aboutVer small{color:var(--text-muted,#64748b)}
+.aboutSheet .aboutNotes{max-height:46vh;overflow:auto;padding:4px 2px}
+.aboutSheet .aboutNotes h4{margin:12px 0 4px;font-size:14px;direction:rtl}
+.aboutSheet .aboutNotes h4 em{font-style:normal;font-size:11px;background:var(--brand,#14215A);color:#fff;border-radius:99px;padding:1px 8px;margin-inline-start:4px}
+.aboutSheet .aboutNotes ul{margin:0;padding-inline-start:20px;font-size:13.5px;line-height:1.8}
+.aboutSheet .aboutNotes section:not(.cur){opacity:.75}
+html .top .appVer{background:rgba(255,255,255,.14);border-color:rgba(255,255,255,.38);color:#fff;font-size:10.5px;padding:0 7px;vertical-align:middle}
+html .top .appVer:hover{background:rgba(255,255,255,.26);color:#fff}
