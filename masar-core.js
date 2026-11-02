@@ -502,6 +502,26 @@ function openExamsSheet(){
 }
 const VIS=()=>S.curInst?S.students.filter(s=>instOf(s)===S.curInst):S.students;
 const DATA_KEYS=["students","grades","attendance","payments","behavior","homework","timetable","settings","exams","messages","events","qbank","examTemplates","dailyPlans"];
+/* v2.17.0: تبويبان مفتوحان — حين يحفظ تبويب آخر، يُحدَّث ما في ذاكرة هذا التبويب بدل أن يكتب فوقه لاحقًا بنسخة قديمة */
+window.addEventListener("masar:storage-remote",e=>{
+  try{
+    const key=String(e.detail&&e.detail.key||"");if(!key.startsWith("sdb:"))return;
+    let k=key.slice(4);const pre=S.wsId?("w:"+S.wsId+":"):"";
+    if(pre){if(!k.startsWith(pre))return;k=k.slice(pre.length)}else if(/^w:/.test(k))return;
+    if(!DATA_KEYS.includes(k))return;
+    const raw=window.MasarDB&&window.MasarDB.getItem(key);if(raw==null)return;
+    const v=JSON.parse(raw);
+    if(k==="settings"){const keep=S.settings&&S.settings.sync;S.settings=Object.assign({},v);if(keep&&!S.settings.sync)S.settings.sync=keep}else S[k]=v;
+    memStore[k]=raw;
+    clearTimeout(window.__remoteRenderT);
+    window.__remoteRenderT=setTimeout(()=>{
+      const typing=document.activeElement&&/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName)&&el("content").contains(document.activeElement);
+      if(document.body.classList.contains("inLectureEditor")||typing)return;
+      try{render()}catch(_){}
+      if(typeof toast==="function")toast("حُدّثت البيانات من نافذة أخرى مفتوحة");
+    },250);
+  }catch(err){console.warn("remote storage update",err)}
+});
 const hasCloud=typeof window!=="undefined"&&!!window.storage;
 let hasLocal=false;
 try{localStorage.setItem("__t","1");localStorage.removeItem("__t");hasLocal=true}catch(e){}
