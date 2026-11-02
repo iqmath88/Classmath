@@ -45,6 +45,7 @@ function noStudentsPage(title,note){
   const t=document.querySelector("header.top");if(t&&window.ResizeObserver)new ResizeObserver(set).observe(t,{box:"border-box"});set();setTimeout(set,1200)})();
 /* v2.16.0: رقم الإصدار ظاهر في الشريط العلوي، ونافذة «عن التطبيق» بما الجديد */
 const RELEASE_NOTES=[
+  ["2.17.0",["مؤشر حفظ في الشريط العلوي: «جارِ الحفظ» / «تم الحفظ» / «فشل الحفظ» بعد الكتابة الدائمة فعلًا","تعارض المزامنة: حين تُعدَّل المحاضرة نفسها على جهازين تُحفظ النسختان مع إشعار، ولا يعتمد ذلك على ساعة الجهاز","إعادة محاولة الرفع تلقائيًا بعد انقطاع الإنترنت","تبويبان مفتوحان لا يكتب أحدهما فوق الآخر","مسودة الامتحان تُحفظ فورًا عند الإغلاق"]],
   ["2.16.2",["فتح أسرع: الملفات تُقرأ من الجهاز، وعلى الإنترنت البطيء يفتح التطبيق من النسخة المخزّنة خلال ثانيتين ونصف"]],
   ["2.16.1",["القائمة الجانبية لا تغطي الشريط العلوي على الآيباد، وصارت أضيق ليتسع المحتوى","شريط علوي أقصر وتنبيه واحد فقط في الرئيسية","صفحة واضحة «لا يوجد طلبة بعد» في الحضور والأقساط"]],
   ["2.16.0",["قائمتان بدل ثمانية أقسام: «شؤون الطلبة» و«شؤون التدريسي»","مزامنة المحاضرات والملازم سحابيًا بين الأجهزة","رقم الإصدار ظاهر في التطبيق"]],
@@ -55,9 +56,24 @@ const RELEASE_NOTES=[
 function renderVersionBadge(){
   if(el("verBtn"))return;const host=document.querySelector(".top .appMiniName")||document.querySelector(".top .school");if(!host)return;
   host.insertAdjacentHTML("beforeend",'<button type="button" id="verBtn" class="appVer" title="عن التطبيق وما الجديد">v'+APP_VER+'</button>');
+  host.insertAdjacentHTML("beforeend",'<span id="saveState" class="saveState" role="status" aria-live="polite" hidden></span>');initSaveState();
   el("verBtn").onclick=openAboutSheet;
   let seen=null;try{seen=localStorage.getItem("nibor-seen-ver");localStorage.setItem("nibor-seen-ver",APP_VER)}catch(_){}
   if(seen&&seen!==APP_VER)setTimeout(()=>toast("تم التحديث إلى الإصدار v"+APP_VER+" — اضغط رقم الإصدار لمعرفة الجديد"),1200);
+}
+/* v2.17.0: مؤشر حالة الحفظ — «جارِ الحفظ» / «تم الحفظ» / «فشل الحفظ»، مبني على اكتمال الكتابة الدائمة فعلًا */
+function initSaveState(){
+  if(window.__saveStateInit)return;window.__saveStateInit=true;
+  let showT=0,hideT=0,failed=false;const box=()=>el("saveState");
+  const set=(cls,txt)=>{const b=box();if(!b)return;b.hidden=false;b.className="saveState "+cls;b.textContent=txt};
+  window.addEventListener("masar:storage-pending",()=>{if(failed)return;clearTimeout(hideT);clearTimeout(showT);showT=setTimeout(()=>set("busy","جارِ الحفظ…"),400)});
+  window.addEventListener("masar:storage-saved",e=>{clearTimeout(showT);const b=box();if(e.detail&&e.detail.pending)return;
+    const wasVisible=b&&!b.hidden;if(failed||wasVisible){failed=false;set("ok","تم الحفظ ✓");clearTimeout(hideT);hideT=setTimeout(()=>{const x=box();if(x)x.hidden=true},1800)}});
+  window.addEventListener("masar:storage-error",e=>{failed=true;clearTimeout(showT);clearTimeout(hideT);const q=e.detail&&/quota|QuotaExceeded/i.test(String(e.detail.name||e.detail.message||e.detail));
+    set("bad",q?"⚠️ فشل الحفظ: المساحة ممتلئة":"⚠️ فشل الحفظ — إعادة المحاولة…");
+    const b=box();if(b)b.onclick=()=>{toast(q?"مساحة التخزين ممتلئة — احفظ نسخة احتياطية واحذف صورًا كبيرة":"ستُعاد المحاولة تلقائيًا. لا تغلق التطبيق، واحفظ نسخة احتياطية إن تكرر");try{window.MasarDB&&window.MasarDB.flush()}catch(_){}}});
+  // تنبيه قبل إغلاق الصفحة إن بقيت كتابات معلقة
+  window.addEventListener("beforeunload",e=>{try{if(window.MasarDB&&window.MasarDB.pendingCount>0){window.MasarDB.flush();e.preventDefault();e.returnValue=""}}catch(_){}});
 }
 function openAboutSheet(){
   el("modal").innerHTML='<div class="overlay"><div class="sheet aboutSheet"><div class="sheetHead"><h3>نيبور كلاس</h3><button class="x" id="abX">✕</button></div>'+
