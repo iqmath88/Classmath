@@ -229,15 +229,16 @@ function openExamBuilder(){
   }catch(_){/* تجاهل المسودة التالفة */}
   let loadedTemplateId=null; // النموذج المفتوح حالياً (إن وُجد) — لحفظ التعديلات عليه مباشرة بدل إنشاء نموذج جديد كل مرة
   let toolbar=null,draftTimer=null;
-  const saveDraft=()=>{
-    clearTimeout(draftTimer);
-    draftTimer=setTimeout(()=>{
-      try{
-        localStorage.setItem(draftKey,JSON.stringify({version:APP_VER,savedAt:Date.now(),data}));
-        const st=el("ebDraftStatus");if(st)st.textContent="تم حفظ المسودة تلقائياً ✓";
-      }catch(_){/* التخزين قد يكون ممتلئاً أو محظوراً */}
-    },700);
+  const writeDraft=()=>{
+    try{
+      localStorage.setItem(draftKey,JSON.stringify({version:APP_VER,savedAt:Date.now(),data}));
+      const st=el("ebDraftStatus");if(st)st.textContent="تم حفظ المسودة تلقائياً ✓";
+    }catch(_){const st=el("ebDraftStatus");if(st)st.textContent="⚠️ تعذّر حفظ المسودة — المساحة ممتلئة";}
   };
+  // v2.17.0: الحفظ فوري عند الإغلاق أو إخفاء التطبيق (كان ينتظر 0.7 ثانية فقد يضيع آخر ما كُتب)
+  const saveDraft=now=>{clearTimeout(draftTimer);if(now===true){writeDraft();return}draftTimer=setTimeout(writeDraft,700)};
+  const onHide=()=>{if(document.visibilityState==="hidden")saveDraft(true)};
+  document.addEventListener("visibilitychange",onHide);window.addEventListener("pagehide",()=>saveDraft(true),{once:true});
   const clearDraft=()=>{try{localStorage.removeItem(draftKey)}catch(_){}};
   const validateBeforePrint=()=>{
     const questions=data.questions.filter(q=>stripHTML(q.text).trim()||q.parts.some(p=>stripHTML(p.text).trim()));
@@ -358,7 +359,7 @@ function openExamBuilder(){
       draw();
       toast("تم فتح النموذج «"+tpl.name+"» ✓");
     },draw);
-    el("ebX").onclick=el("ebClose").onclick=()=>{saveDraft();closeModal()};
+    el("ebX").onclick=el("ebClose").onclick=()=>{saveDraft(true);document.removeEventListener("visibilitychange",onHide);closeModal()};
     el("ebPrint").onclick=()=>{
       const check=validateBeforePrint();
       if(check.errors.length){toast("تعذر الطباعة: "+check.errors[0]);return}
